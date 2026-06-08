@@ -72,9 +72,7 @@
   <!-- Top Bar -->
   <div class="topbar">
     <button class="back-btn" onclick={() => goto('/notes')}>
-      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-      </svg>
+      <svelte:component this={ICONS.arrow} size={20} style="transform: rotate(180deg)" />
     </button>
 
     <div class="topbar-actions">
@@ -112,13 +110,13 @@
       class="tab-pill {activeTab === 'text' ? 'tab-pill--active' : ''}"
       onclick={() => activeTab = 'text'}
     >
-      ✏️ Teks
+      <svelte:component this={ICONS.edit} size={14} /> Teks
     </button>
     <button
       class="tab-pill {activeTab === 'checklist' ? 'tab-pill--active' : ''}"
       onclick={() => activeTab = 'checklist'}
     >
-      ✅ Checklist
+      <svelte:component this={ICONS.check} size={14} /> Checklist
       {#if checklist.length > 0}
         <span class="tab-badge">{doneCount}/{checklist.length}</span>
       {/if}
@@ -151,9 +149,7 @@
               onclick={() => toggleCheckItem(idx)}
             >
               {#if item.is_done}
-                <svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                </svg>
+                <svelte:component this={ICONS.check} size={12} color="white" strokeWidth={3} />
               {/if}
             </button>
             <input
@@ -165,9 +161,7 @@
               class="check-delete"
               onclick={() => checklist = checklist.filter((_, i) => i !== idx)}
             >
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
+              <svelte:component this={ICONS.empty} size={14} />
             </button>
           </div>
         {/each}
@@ -180,7 +174,9 @@
 
         <!-- All done state -->
         {#if checklist.length > 0 && doneCount === checklist.length}
-          <div class="all-done-banner">🎉 Semua item selesai!</div>
+          <div class="all-done-banner" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <svelte:component this={ICONS.sparkles} size={16} /> Semua item selesai!
+          </div>
         {/if}
       </div>
     {/if}
@@ -205,23 +201,23 @@
     align-items: center;
     justify-content: space-between;
     padding: 14px 18px;
-    border-bottom: 1.5px solid #F3F1FF;
+    border-bottom: 1.5px solid #F0F5FF;
     flex-shrink: 0;
   }
   .back-btn {
     width: 38px;
     height: 38px;
     border-radius: 12px;
-    background: #F7F5FF;
+    background: #F5F8FE;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #7B6EF6;
+    color: #4F7FE0;
     cursor: pointer;
     transition: background 0.15s;
   }
-  .back-btn:hover { background: #EAE6FF; }
+  .back-btn:hover { background: #E6EFFF; }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
   .delete-btn {
     padding: 8px 14px;
@@ -240,7 +236,7 @@
     padding: 8px 20px;
     border-radius: 12px;
     border: none;
-    background: linear-gradient(135deg, #7B6EF6, #9D8FF5);
+    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
     color: white;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
@@ -270,8 +266,8 @@
   .meta-pill {
     font-size: 11px;
     font-weight: 800;
-    color: #B8A9F5;
-    background: #F3F1FF;
+    color: #8DB2F0;
+    background: #F0F5FF;
     padding: 3px 10px;
     border-radius: 99px;
   }
@@ -291,8 +287,8 @@
     gap: 6px;
     padding: 7px 16px;
     border-radius: 99px;
-    border: 2px solid #EAE6FF;
-    background: #F7F5FF;
+    border: 2px solid #E6EFFF;
+    background: #F5F8FE;
     color: #aab4cc;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
@@ -300,7 +296,7 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .tab-pill--active { background: #7B6EF6; border-color: #7B6EF6; color: white; }
+  .tab-pill--active { background: #4F7FE0; border-color: #4F7FE0; color: white; }
   .tab-badge {
     background: rgba(255,255,255,0.25);
     padding: 1px 7px;
@@ -311,14 +307,14 @@
   .tab-progress {
     flex: 1;
     height: 6px;
-    background: #F3F1FF;
+    background: #F0F5FF;
     border-radius: 99px;
     overflow: hidden;
     min-width: 40px;
   }
   .tab-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #7B6EF6, #B8A9F5);
+    background: linear-gradient(90deg, #4F7FE0, #8DB2F0);
     border-radius: 99px;
     transition: width 0.4s ease;
   }
@@ -354,7 +350,7 @@
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    background: #F7F5FF;
+    background: #F5F8FE;
     border-radius: 16px;
     border: 2px solid transparent;
     transition: all 0.15s;
@@ -363,13 +359,13 @@
     background: #F0FDF4;
     border-color: transparent;
   }
-  .check-item:focus-within { border-color: #B8A9F5; }
+  .check-item:focus-within { border-color: #8DB2F0; }
 
   .check-bubble {
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    border: 2.5px solid #B8A9F5;
+    border: 2.5px solid #8DB2F0;
     background: white;
     display: flex;
     align-items: center;
@@ -378,7 +374,7 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .check-bubble--done { background: #7B6EF6; border-color: #7B6EF6; }
+  .check-bubble--done { background: #4F7FE0; border-color: #4F7FE0; }
 
   .check-text {
     flex: 1;
@@ -418,7 +414,7 @@
     border: 2px dashed #D8D4F0;
     border-radius: 16px;
     background: transparent;
-    color: #B8A9F5;
+    color: #8DB2F0;
     font-family: 'Nunito', sans-serif;
     font-size: 14px;
     font-weight: 800;
@@ -426,7 +422,7 @@
     transition: all 0.15s;
     margin-top: 4px;
   }
-  .add-item-btn:hover { border-color: #7B6EF6; color: #7B6EF6; background: #F7F5FF; }
+  .add-item-btn:hover { border-color: #4F7FE0; color: #4F7FE0; background: #F5F8FE; }
   .add-item-plus { font-size: 20px; line-height: 1; }
 
   .all-done-banner {

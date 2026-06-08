@@ -79,19 +79,6 @@
     return Math.min(Math.floor((current / target) * 100), 100);
   }
 
-  // Emoji berdasarkan nama tabungan
-  function getSavingEmoji(name: string): string {
-    const n = name.toLowerCase();
-    if (n.includes('liburan') || n.includes('travel') || n.includes('wisata')) return '✈️';
-    if (n.includes('rumah') || n.includes('kpr') || n.includes('properti')) return '🏠';
-    if (n.includes('nikah') || n.includes('wedding') || n.includes('pernikahan')) return '💍';
-    if (n.includes('mobil') || n.includes('motor') || n.includes('kendaraan')) return '🚗';
-    if (n.includes('hp') || n.includes('laptop') || n.includes('gadget')) return '📱';
-    if (n.includes('darurat') || n.includes('emergency')) return '🛟';
-    if (n.includes('anak') || n.includes('pendidikan') || n.includes('sekolah')) return '📚';
-    return '🌟';
-  }
-
   let totalSaved = $derived(savings.reduce((a, s) => a + s.current_amount, 0));
   let totalTarget = $derived(savings.reduce((a, s) => a + s.target_amount, 0));
   let overallPct = $derived(totalTarget > 0 ? Math.min(Math.floor((totalSaved / totalTarget) * 100), 100) : 0);
@@ -107,7 +94,9 @@
       <div class="header-top">
         <div>
           <p class="header-sub">Target Bersama</p>
-          <h1 class="header-title">Tabungan 💰</h1>
+          <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
+            Tabungan <svelte:component this={ICONS.wallet} size={24} />
+          </h1>
         </div>
         <button class="create-btn" onclick={() => showModal = true}>
           + Buat Target
@@ -148,7 +137,9 @@
 
     {:else if savings.length === 0}
       <div class="empty-state">
-        <div class="empty-icon">💸</div>
+        <div class="empty-icon">
+          <svelte:component this={ICONS.empty} size={56} />
+        </div>
         <p class="empty-title">Belum ada target tabungan</p>
         <p class="empty-sub">Yuk buat target impian bersama!</p>
         <button class="empty-cta" onclick={() => showModal = true}>+ Buat Target Pertama</button>
@@ -158,7 +149,6 @@
       <div class="savings-list">
         {#each savings as s}
           {@const percent = pct(s.current_amount, s.target_amount)}
-          {@const emoji = getSavingEmoji(s.name)}
           {@const remaining = s.target_amount - s.current_amount}
           {@const isDone = percent >= 100}
 
@@ -166,13 +156,16 @@
             <!-- Card Header -->
             <div class="saving-header">
               <div class="saving-emoji-wrap {isDone ? 'saving-emoji-wrap--done' : ''}">
-                <span class="saving-emoji">{isDone ? '🎉' : emoji}</span>
+                <div class="saving-emoji">
+                  <svelte:component this={isDone ? ICONS.success : ICONS.savings} size={24} />
+                </div>
               </div>
               <div class="saving-meta">
                 <h3 class="saving-name">{s.name}</h3>
                 {#if s.deadline}
-                  <p class="saving-deadline">
-                    📅 {new Date(s.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  <p class="saving-deadline" style="display: flex; align-items: center; gap: 5px;">
+                    <svelte:component this={ICONS.calendar} size={12} />
+                    {new Date(s.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 {/if}
               </div>
@@ -212,17 +205,19 @@
 
             <!-- Completed banner -->
             {#if isDone}
-              <div class="done-banner">🎊 Target tercapai! Selamat!</div>
+              <div class="done-banner" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svelte:component this={ICONS.sparkles} size={16} /> Target tercapai! Selamat!
+              </div>
             {/if}
 
             <!-- Actions -->
             <div class="saving-actions">
               <button class="action-btn action-btn--topup" onclick={() => openTopup(s)}>
-                <img src={ICONS.income} alt="topup" style="width:16px;height:16px;" />
+                <svelte:component this={ICONS.income} size={16} />
                 Top Up
               </button>
               <button class="action-btn action-btn--chat" onclick={() => goToSavingChat(s)}>
-                <img src={ICONS.chat} alt="chat" style="width:16px;height:16px;" />
+                <svelte:component this={ICONS.chat} size={16} />
                 Diskusi
               </button>
             </div>
@@ -240,7 +235,9 @@
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
-          <div class="modal-icon-circle">🎯</div>
+          <div class="modal-icon-circle">
+            <svelte:component this={ICONS.wallet} size={24} />
+          </div>
           <div>
             <h3 class="modal-title">Buat Target Tabungan</h3>
             <p class="modal-subtitle">Tentukan impian & nominalnya</p>
@@ -253,7 +250,7 @@
               type="text"
               bind:value={name}
               required
-              placeholder="Contoh: Liburan Bali ✈️"
+              placeholder="Contoh: Liburan Bali"
               class="form-input"
             />
           </div>
@@ -269,7 +266,7 @@
           </div>
           <div class="modal-actions">
             <button type="button" class="modal-cancel" onclick={() => showModal = false}>Batal</button>
-            <button type="submit" class="modal-submit">🎯 Buat Target</button>
+            <button type="submit" class="modal-submit">Buat Target</button>
           </div>
         </form>
       </div>
@@ -282,7 +279,9 @@
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
-          <div class="modal-icon-circle modal-icon-circle--green">💸</div>
+          <div class="modal-icon-circle modal-icon-circle--green">
+            <svelte:component this={ICONS.income} size={24} />
+          </div>
           <div>
             <h3 class="modal-title">Top Up Tabungan</h3>
             <p class="modal-subtitle">{selectedSaving.name}</p>
@@ -317,7 +316,7 @@
           </div>
           <div class="modal-actions">
             <button type="button" class="modal-cancel" onclick={() => showTopupModal = false}>Batal</button>
-            <button type="submit" class="modal-submit modal-submit--green">💸 Top Up</button>
+            <button type="submit" class="modal-submit modal-submit--green">Top Up</button>
           </div>
         </form>
       </div>
@@ -332,12 +331,12 @@
   .savings-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: #F7F5FF;
+    background: #F5F8FE;
   }
 
   /* ── Header ── */
   .header {
-    background: linear-gradient(145deg, #7B6EF6 0%, #9D8FF5 55%, #B8A9F5 100%);
+    background: linear-gradient(145deg, #4F7FE0 0%, #6B93E8 55%, #8DB2F0 100%);
     padding: 32px 20px 24px;
     position: relative;
     overflow: hidden;
@@ -352,7 +351,7 @@
 
   .create-btn {
     background: white;
-    color: #7B6EF6;
+    color: #4F7FE0;
     border: none;
     border-radius: 14px;
     padding: 10px 16px;
@@ -387,16 +386,16 @@
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #EAE6FF; border-top-color: #7B6EF6; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E6EFFF; border-top-color: #4F7FE0; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
   .empty-state { text-align: center; padding: 60px 20px; }
-  .empty-icon { font-size: 56px; margin-bottom: 14px; }
+  .empty-icon { margin-bottom: 14px; color: #aab4cc; display: flex; justify-content: center; }
   .empty-title { font-size: 16px; font-weight: 900; color: #2D2A5E; margin: 0 0 6px; }
   .empty-sub { font-size: 13px; color: #aab4cc; margin: 0 0 22px; }
   .empty-cta {
-    background: linear-gradient(135deg, #7B6EF6, #9D8FF5);
+    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
     color: white;
     border: none;
     border-radius: 16px;
@@ -431,14 +430,14 @@
     width: 48px;
     height: 48px;
     border-radius: 16px;
-    background: #F3F1FF;
+    background: #F0F5FF;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    color: #4F7FE0;
   }
-  .saving-emoji-wrap--done { background: #f0fdf4; }
-  .saving-emoji { font-size: 24px; }
+  .saving-emoji-wrap--done { background: #f0fdf4; color: #15803d; }
   .saving-meta { flex: 1; min-width: 0; }
   .saving-name { font-size: 15px; font-weight: 900; color: #2D2A5E; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .saving-deadline { font-size: 11px; color: #aab4cc; margin: 0; font-weight: 700; }
@@ -446,8 +445,8 @@
   .saving-pct-badge {
     font-size: 20px;
     font-weight: 900;
-    color: #7B6EF6;
-    background: #F3F1FF;
+    color: #4F7FE0;
+    background: #F0F5FF;
     padding: 5px 11px;
     border-radius: 12px;
     flex-shrink: 0;
@@ -457,16 +456,15 @@
 
   /* Progress */
   .saving-progress { margin-bottom: 12px; }
-  .progress-track { height: 8px; background: #F3F1FF; border-radius: 99px; overflow: hidden; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, #7B6EF6, #B8A9F5); border-radius: 99px; transition: width 0.6s ease; }
+  .progress-track { height: 8px; background: #F0F5FF; border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #4F7FE0, #8DB2F0); border-radius: 99px; transition: width 0.6s ease; }
   .progress-fill--done { background: linear-gradient(90deg, #22c55e, #86efac); }
 
   /* Amounts */
   .saving-amounts { display: flex; justify-content: space-between; margin-bottom: 14px; }
-  .amount-item {}
   .amount-label { font-size: 10px; font-weight: 800; color: #aab4cc; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px; }
   .amount-val { font-size: 13px; font-weight: 800; color: #2D2A5E; margin: 0; }
-  .amount-val--collected { color: #7B6EF6; }
+  .amount-val--collected { color: #4F7FE0; }
   .amount-val--remaining { color: #E06070; }
 
   /* Done banner */
@@ -500,8 +498,8 @@
     transition: transform 0.12s, opacity 0.15s;
   }
   .action-btn:active { transform: scale(0.96); }
-  .action-btn--topup { background: #F3F1FF; color: #7B6EF6; }
-  .action-btn--topup:hover { background: #EAE6FF; }
+  .action-btn--topup { background: #F0F5FF; color: #4F7FE0; }
+  .action-btn--topup:hover { background: #E6EFFF; }
   .action-btn--chat { background: #F0FDF4; color: #15803d; }
   .action-btn--chat:hover { background: #dcfce7; }
 
@@ -534,23 +532,23 @@
     width: 50px;
     height: 50px;
     border-radius: 16px;
-    background: #F3F1FF;
+    background: #F0F5FF;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    color: #4F7FE0;
     flex-shrink: 0;
   }
-  .modal-icon-circle--green { background: #F0FDF4; }
+  .modal-icon-circle--green { background: #F0FDF4; color: #22c55e; }
   .modal-title { font-size: 17px; font-weight: 900; color: #2D2A5E; margin: 0 0 3px; }
   .modal-subtitle { font-size: 13px; color: #aab4cc; margin: 0; font-weight: 700; }
 
   /* Topup progress mini */
-  .topup-progress { background: #F7F5FF; border-radius: 16px; padding: 14px; margin-bottom: 18px; }
+  .topup-progress { background: #F5F8FE; border-radius: 16px; padding: 14px; margin-bottom: 18px; }
   .topup-progress-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
   .topup-progress-row:last-child { margin-bottom: 0; margin-top: 8px; }
   .topup-label { font-size: 11px; font-weight: 800; color: #aab4cc; }
-  .topup-amount-text { font-size: 13px; font-weight: 900; color: #7B6EF6; }
+  .topup-amount-text { font-size: 13px; font-weight: 900; color: #4F7FE0; }
 
   /* Form */
   .modal-form { display: flex; flex-direction: column; gap: 14px; }
@@ -558,7 +556,7 @@
   .form-label { font-size: 11px; font-weight: 800; color: #aab4cc; text-transform: uppercase; letter-spacing: 0.05em; }
   .form-input {
     padding: 13px 16px;
-    border: 2px solid #EAE6FF;
+    border: 2px solid #E6EFFF;
     border-radius: 16px;
     font-size: 15px;
     font-weight: 700;
@@ -570,7 +568,7 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #7B6EF6; }
+  .form-input:focus { border-color: #4F7FE0; }
   .form-input--amount { font-size: 24px; font-weight: 900; }
   .form-input--green:focus { border-color: #22c55e; }
 
@@ -578,7 +576,7 @@
   .modal-cancel {
     flex: 1;
     padding: 14px;
-    background: #F7F5FF;
+    background: #F5F8FE;
     color: #aab4cc;
     border: none;
     border-radius: 16px;
@@ -590,7 +588,7 @@
   .modal-submit {
     flex: 2;
     padding: 14px;
-    background: linear-gradient(135deg, #7B6EF6, #9D8FF5);
+    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
     color: white;
     border: none;
     border-radius: 16px;

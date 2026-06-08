@@ -13,9 +13,6 @@
 
   let showFolderModal = $state(false);
   let folderName = $state('');
-  let folderEmoji = $state('📁');
-
-  const emojiOptions = ['📁', '📓', '🍳', '✈️', '💡', '🛒', '💪', '💍', '🏠', '🎯', '📚', '🌿'];
 
   onMount(async () => {
     if (!auth.token) { goto('/login'); return; }
@@ -51,11 +48,10 @@
       await fetch(`${API_URL}/folders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
-        body: JSON.stringify({ name: folderName, emoji: folderEmoji })
+        body: JSON.stringify({ name: folderName, emoji: 'folder' })
       });
       showFolderModal = false;
       folderName = '';
-      folderEmoji = '📁';
       await fetchFolders();
     } catch(e) {}
   }
@@ -89,7 +85,9 @@
       <div class="header-row">
         <div>
           <p class="header-sub">Ruang Tulis</p>
-          <h1 class="header-title">Catatan 📝</h1>
+          <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
+            Catatan <svelte:component this={ICONS.notes} size={24} />
+          </h1>
         </div>
         <button class="new-folder-btn" onclick={() => showFolderModal = true}>
           + Folder
@@ -104,7 +102,7 @@
               class="folder-tab {selectedFolder === f.id ? 'folder-tab--active' : ''}"
               onclick={() => fetchNotes(f.id)}
             >
-              <span>{f.emoji || '📁'}</span>
+              <svelte:component this={ICONS.folder} size={14} />
               {f.name}
             </button>
           {/each}
@@ -121,7 +119,9 @@
 
     {:else if folders.length === 0}
       <div class="empty-state">
-        <div class="empty-icon">📂</div>
+        <div class="empty-icon">
+          <svelte:component this={ICONS.folder} size={56} />
+        </div>
         <p class="empty-title">Belum ada folder</p>
         <p class="empty-sub">Buat folder pertama untuk mulai menulis</p>
         <button class="empty-cta" onclick={() => showFolderModal = true}>+ Buat Folder</button>
@@ -132,7 +132,9 @@
       {#if selectedFolderData}
         <div class="section-header">
           <div class="section-title-group">
-            <span class="section-emoji">{selectedFolderData.emoji || '📁'}</span>
+            <div class="section-emoji">
+              <svelte:component this={ICONS.folder} size={26} />
+            </div>
             <div>
               <p class="section-title">{selectedFolderData.name}</p>
               <p class="section-sub">{notes.length} catatan</p>
@@ -155,7 +157,9 @@
 
       {:else if notes.length === 0}
         <div class="empty-notes">
-          <div style="font-size:40px;margin-bottom:12px;">✏️</div>
+          <div style="margin-bottom:12px; display: flex; justify-content: center; color: #aab4cc;">
+            <svelte:component this={ICONS.edit} size={40} />
+          </div>
           <p class="empty-notes-title">Folder ini masih kosong</p>
           <p class="empty-notes-sub">Yuk mulai menulis catatan pertama!</p>
           {#if selectedFolder}
@@ -171,7 +175,7 @@
             <a href="/notes/{note.id}" class="note-card">
               <div class="note-card-top">
                 <span class="note-type-badge {type === 'checklist' ? 'note-type-badge--check' : ''}">
-                  {type === 'checklist' ? '✅' : '✏️'}
+                  <svelte:component this={type === 'checklist' ? ICONS.check : ICONS.edit} size={14} />
                 </span>
                 <span class="note-date">
                   {new Date(note.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
@@ -196,21 +200,13 @@
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
-          <div class="modal-icon-circle">{folderEmoji}</div>
+          <div class="modal-icon-circle">
+            <svelte:component this={ICONS.folder} size={24} />
+          </div>
           <div>
             <h3 class="modal-title">Buat Folder Baru</h3>
-            <p class="modal-subtitle">Pilih emoji & nama folder</p>
+            <p class="modal-subtitle">Tentukan nama folder catatan</p>
           </div>
-        </div>
-
-        <!-- Emoji picker -->
-        <div class="emoji-grid">
-          {#each emojiOptions as em}
-            <button
-              class="emoji-btn {folderEmoji === em ? 'emoji-btn--active' : ''}"
-              onclick={() => folderEmoji = em}
-            >{em}</button>
-          {/each}
         </div>
 
         <form class="modal-form" onsubmit={createFolder}>
@@ -226,7 +222,7 @@
           </div>
           <div class="modal-actions">
             <button type="button" class="modal-cancel" onclick={() => showFolderModal = false}>Batal</button>
-            <button type="submit" class="modal-submit">📁 Buat Folder</button>
+            <button type="submit" class="modal-submit">Buat Folder</button>
           </div>
         </form>
       </div>
@@ -241,12 +237,12 @@
   .notes-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: #F7F5FF;
+    background: #F5F8FE;
   }
 
   /* Header */
   .header {
-    background: linear-gradient(145deg, #7B6EF6 0%, #9D8FF5 55%, #B8A9F5 100%);
+    background: linear-gradient(145deg, #4F7FE0 0%, #6B93E8 55%, #8DB2F0 100%);
     padding: 32px 20px 20px;
     position: relative;
     overflow: hidden;
@@ -298,23 +294,23 @@
     white-space: nowrap;
     transition: all 0.15s;
   }
-  .folder-tab--active { background: white; color: #7B6EF6; }
+  .folder-tab--active { background: white; color: #4F7FE0; }
 
   /* Body */
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #EAE6FF; border-top-color: #7B6EF6; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E6EFFF; border-top-color: #4F7FE0; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
   .empty-state { text-align: center; padding: 60px 20px; }
-  .empty-icon { font-size: 56px; margin-bottom: 14px; }
+  .empty-icon { margin-bottom: 14px; color: #aab4cc; display: flex; justify-content: center; }
   .empty-title { font-size: 16px; font-weight: 900; color: #2D2A5E; margin: 0 0 6px; }
   .empty-sub { font-size: 13px; color: #aab4cc; margin: 0 0 22px; }
   .empty-cta {
     display: inline-block;
-    background: linear-gradient(135deg, #7B6EF6, #9D8FF5);
+    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
     color: white;
     border: none;
     border-radius: 16px;
@@ -330,12 +326,12 @@
   /* Section header */
   .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .section-title-group { display: flex; align-items: center; gap: 10px; }
-  .section-emoji { font-size: 26px; }
+  .section-emoji { color: #4F7FE0; }
   .section-title { font-size: 16px; font-weight: 900; color: #2D2A5E; margin: 0 0 2px; }
   .section-sub { font-size: 12px; color: #aab4cc; margin: 0; font-weight: 700; }
   .new-note-btn {
     display: inline-block;
-    background: linear-gradient(135deg, #7B6EF6, #9D8FF5);
+    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
     color: white;
     border-radius: 12px;
     padding: 9px 16px;
@@ -366,17 +362,20 @@
     gap: 8px;
     min-height: 110px;
   }
-  .note-card:hover { border-color: #B8A9F5; }
+  .note-card:hover { border-color: #8DB2F0; }
   .note-card:active { transform: scale(0.97); }
 
   .note-card-top { display: flex; align-items: center; justify-content: space-between; }
   .note-type-badge {
-    font-size: 14px;
-    background: #F3F1FF;
-    padding: 3px 8px;
+    color: #4F7FE0;
+    background: #F0F5FF;
+    padding: 5px;
     border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .note-type-badge--check { background: #F0FDF4; }
+  .note-type-badge--check { background: #F0FDF4; color: #15803d; }
   .note-date { font-size: 10px; color: #aab4cc; font-weight: 700; }
   .note-title { font-size: 13px; font-weight: 900; color: #2D2A5E; margin: 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .note-preview { font-size: 11px; color: #aab4cc; margin: 0; font-weight: 600; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -418,38 +417,16 @@
   .modal-handle { width: 44px; height: 5px; background: #E0DBFF; border-radius: 99px; margin: 0 auto 20px; }
 
   .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-  .modal-icon-circle { width: 50px; height: 50px; border-radius: 16px; background: #F3F1FF; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .modal-icon-circle { width: 50px; height: 50px; border-radius: 16px; background: #F0F5FF; display: flex; align-items: center; justify-content: center; color: #4F7FE0; flex-shrink: 0; }
   .modal-title { font-size: 17px; font-weight: 900; color: #2D2A5E; margin: 0 0 3px; }
   .modal-subtitle { font-size: 13px; color: #aab4cc; margin: 0; font-weight: 700; }
-
-  /* Emoji grid */
-  .emoji-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-    margin-bottom: 18px;
-  }
-  .emoji-btn {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 12px;
-    border: 2px solid #EAE6FF;
-    background: #F7F5FF;
-    font-size: 22px;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .emoji-btn--active { border-color: #7B6EF6; background: #EAE6FF; transform: scale(1.1); }
 
   .modal-form { display: flex; flex-direction: column; gap: 14px; }
   .form-group { display: flex; flex-direction: column; gap: 5px; }
   .form-label { font-size: 11px; font-weight: 800; color: #aab4cc; text-transform: uppercase; letter-spacing: 0.05em; }
   .form-input {
     padding: 13px 16px;
-    border: 2px solid #EAE6FF;
+    border: 2px solid #E6EFFF;
     border-radius: 16px;
     font-size: 15px;
     font-weight: 700;
@@ -461,8 +438,8 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #7B6EF6; }
+  .form-input:focus { border-color: #4F7FE0; }
   .modal-actions { display: flex; gap: 12px; }
-  .modal-cancel { flex: 1; padding: 14px; background: #F7F5FF; color: #aab4cc; border: none; border-radius: 16px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; }
-  .modal-submit { flex: 2; padding: 14px; background: linear-gradient(135deg, #7B6EF6, #9D8FF5); color: white; border: none; border-radius: 16px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 20px rgba(123,110,246,0.3); }
+  .modal-cancel { flex: 1; padding: 14px; background: #F5F8FE; color: #aab4cc; border: none; border-radius: 16px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; }
+  .modal-submit { flex: 2; padding: 14px; background: linear-gradient(135deg, #4F7FE0, #6B93E8); color: white; border: none; border-radius: 16px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 20px rgba(123,110,246,0.3); }
 </style>
