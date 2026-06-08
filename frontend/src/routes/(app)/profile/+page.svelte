@@ -101,7 +101,7 @@
   function logout() { auth.setToken(''); auth.setUser(null); goto('/login'); }
 
   function getAvatarColor(name: string) {
-    const colors = ['#B8A9F5', '#A8D4B8', '#F5C0B8', '#B8D4F5', '#F5E0A8'];
+    const colors = ['#B5D8FF', '#E6C7FF', '#B5EBD9', '#FFD9B5', '#FFEB99'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     return colors[Math.abs(hash) % colors.length];
@@ -112,15 +112,11 @@
 </script>
 
 <div class="profile-root">
-
-  <!-- Hero Header -->
   <div class="hero">
     <div class="hero-blob blob-1"></div>
     <div class="hero-blob blob-2"></div>
     <div class="hero-blob blob-3"></div>
-
     <div class="hero-content">
-      <!-- Avatar -->
       <button class="avatar-btn" onclick={() => { isEditingAvatar = true; }}>
         <div class="avatar-ring">
           <div class="avatar-inner" style="background: {avatarColor};">
@@ -131,31 +127,28 @@
             {/if}
           </div>
         </div>
-        <span class="avatar-edit-badge">✏️</span>
+        <span class="avatar-edit-badge"><svelte:component this={ICONS.edit} size={12} /></span>
       </button>
-
-      <!-- Name & Email -->
       <div class="hero-text">
         <h1 class="hero-name">{auth.user?.name || 'Pengguna'}</h1>
         <p class="hero-email">{auth.user?.email || ''}</p>
-
         {#if auth.partner}
           <div class="partner-chip partner-chip--connected">
             {#if auth.partner.avatar}
               <img src={auth.partner.avatar} alt={auth.partner.name} class="partner-chip-img" />
             {:else}
-              <span>💑</span>
+              <svelte:component this={ICONS.couple} size={14} />
             {/if}
             <span>{auth.partner.name}</span>
           </div>
         {:else if auth.user?.partner_id}
           <div class="partner-chip partner-chip--connected">
-            <span>💑</span>
+            <svelte:component this={ICONS.couple} size={14} />
             <span>Terhubung dengan pasangan</span>
           </div>
         {:else}
           <div class="partner-chip partner-chip--pending">
-            <span>🔗</span>
+            <svelte:component this={ICONS.link} size={14} />
             <span>Belum terhubung</span>
           </div>
         {/if}
@@ -163,29 +156,24 @@
     </div>
   </div>
 
-  <!-- Body -->
   <div class="body">
-
-    <!-- Success Toast -->
     {#if successMsg}
       <div class="toast toast--success">
-        <span>✅</span> {successMsg}
+        <svelte:component this={ICONS.success} size={16} /> {successMsg}
       </div>
     {/if}
-
-    <!-- Error Toast -->
     {#if pairErrorMsg}
       <div class="toast toast--error">
-        <span>⚠️</span> {pairErrorMsg}
+        <svelte:component this={ICONS.error} size={16} /> {pairErrorMsg}
       </div>
     {/if}
 
-    <!-- Partner Card -->
     <div class="card">
       <div class="card-row">
-        <div class="card-icon-wrap card-icon-wrap--purple">
-          <img src={ICONS.couple} alt="couple" class="card-icon" />
+        <div class="card-icon-wrap">
+          <svelte:component this={ICONS.couple} size={22} class="card-icon" />
         </div>
+
         <div class="card-label-group">
           <p class="card-label-title">Hubungkan Pasangan</p>
           <p class="card-label-sub">{auth.user?.partner_id ? '✅ Sudah terhubung' : 'Belum terhubung'}</p>
@@ -212,12 +200,12 @@
             </div>
           {:else}
             <button class="btn btn--outline btn--block" onclick={generateCode} disabled={pairLoading}>
-              {pairLoading ? 'Membuat...' : '🎲 Generate Kode'}
+              {pairLoading ? 'Membuat...' : ''}
+              {#if !pairLoading}<svelte:component this={ICONS.dice} size={18} style="margin-right: 8px;" />{/if}
+              Generate Kode
             </button>
           {/if}
-
           <div class="divider"><span>atau</span></div>
-
           <p class="section-label">Masukkan Kode Pasangan</p>
           <div class="input-row">
             <input
@@ -239,18 +227,17 @@
       {/if}
     </div>
 
-    <!-- Account Info Card -->
     <div class="card">
       <p class="section-label section-label--card">Akun Anda</p>
       <div class="info-row">
-        <span class="info-emoji">👤</span>
+        <span class="info-emoji"><svelte:component this={ICONS.profile} size={20} /></span>
         <div>
           <p class="info-key">Nama</p>
           <p class="info-val">{auth.user?.name || '-'}</p>
         </div>
       </div>
       <div class="info-row">
-        <span class="info-emoji">📧</span>
+        <span class="info-emoji"><svelte:component this={ICONS.email} size={20} /></span>
         <div>
           <p class="info-key">Email</p>
           <p class="info-val">{auth.user?.email || '-'}</p>
@@ -265,7 +252,7 @@
             {#if auth.partner.avatar}
               <img src={auth.partner.avatar} alt={auth.partner.name} style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
             {:else}
-              💑
+              <svelte:component this={ICONS.couple} size={18} />
             {/if}
           </div>
           <div>
@@ -276,14 +263,12 @@
       {/if}
     </div>
 
-    <!-- Edit Profile Card -->
     <div class="card">
       <p class="section-label section-label--card">Pengaturan Profil</p>
-
       {#if isEditingAvatar}
         <div class="edit-form">
           <label class="file-label">
-            📷 Pilih foto baru
+            <svelte:component this={ICONS.profile} size={18} style="margin-right: 8px;" /> Pilih foto baru
             <input type="file" accept="image/*" onchange={uploadAvatar} style="display:none" />
           </label>
           <button class="btn btn--ghost btn--block" onclick={() => isEditingAvatar = false}>Batal</button>
@@ -292,9 +277,9 @@
         <div class="edit-form">
           <input type="text" bind:value={editForm.name} placeholder="Nama" class="form-input" />
           <textarea bind:value={editForm.bio} placeholder="Bio singkat..." class="form-input form-textarea"></textarea>
-          <label class="form-date-label">🎂 Tanggal Lahir</label>
+          <label class="form-date-label"><svelte:component this={ICONS.birthday} size={14} /> Tanggal Lahir</label>
           <input type="date" bind:value={editForm.birthday} class="form-input" />
-          <label class="form-date-label">💍 Hari Jadian</label>
+          <label class="form-date-label"><svelte:component this={ICONS.couple} size={14} /> Hari Jadian</label>
           <input type="date" bind:value={editForm.anniversary} class="form-input" />
           <div class="btn-row">
             <button class="btn btn--primary" onclick={updateProfile} disabled={pairLoading}>
@@ -308,16 +293,15 @@
           class="btn btn--outline btn--block"
           onclick={() => { isEditingProfile = true; editForm = { name: auth.user?.name || '', birthday: auth.user?.birthday || '', anniversary: auth.user?.anniversary || '', bio: auth.user?.bio || '' }; }}
         >
-          ✏️ Edit Info Profil
+          <svelte:component this={ICONS.edit} size={16} style="margin-right: 8px;" /> Edit Info Profil
         </button>
       {/if}
     </div>
 
-    <!-- Logout -->
     <button class="logout-btn" onclick={logout}>
-      <img src={ICONS.logout} alt="logout" style="width:18px;height:18px;" />
-      Keluar dari Akun
+      <svelte:component this={ICONS.logout} size={18} /> Keluar
     </button>
+
 
     <div style="height: 32px;"></div>
   </div>
@@ -329,12 +313,11 @@
   .profile-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: #F7F5FF;
+    background: #F5F8FE;
   }
 
-  /* ── Hero ── */
   .hero {
-    background: linear-gradient(145deg, #7B6EF6 0%, #9D8FF5 50%, #B8A9F5 100%);
+    background: linear-gradient(145deg, #4F7FE0 0%, #6B93E8 50%, #8DB2F0 100%);
     padding: 48px 24px 56px;
     position: relative;
     overflow: hidden;
@@ -356,7 +339,6 @@
     gap: 18px;
   }
 
-  /* Avatar */
   .avatar-btn {
     background: none;
     border: none;
@@ -434,7 +416,6 @@
   .partner-chip--pending { background: rgba(255,200,150,0.3); }
   .partner-chip-img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
 
-  /* ── Body ── */
   .body {
     padding: 20px 16px;
     margin-top: -24px;
@@ -442,7 +423,6 @@
     z-index: 2;
   }
 
-  /* Toasts */
   .toast {
     display: flex;
     align-items: center;
@@ -456,13 +436,12 @@
   .toast--success { background: #f0fdf4; border: 1.5px solid #86efac; color: #15803d; }
   .toast--error { background: #fff5f5; border: 1.5px solid #fca5a5; color: #dc2626; }
 
-  /* Cards */
   .card {
     background: white;
     border-radius: 24px;
     padding: 18px;
     margin-bottom: 14px;
-    box-shadow: 0 4px 20px rgba(123,110,246,0.08);
+    box-shadow: 0 4px 20px rgba(79,127,224,0.08);
   }
   .card-row {
     display: flex;
@@ -473,12 +452,12 @@
     width: 46px;
     height: 46px;
     border-radius: 14px;
+    background: rgba(79,127,224,0.10);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
-  .card-icon-wrap--purple { background: rgba(123,110,246,0.10); }
   .card-icon { width: 22px; height: 22px; }
   .card-label-group { flex: 1; min-width: 0; }
   .card-label-title { font-size: 14px; font-weight: 800; color: #2D2A5E; margin: 0 0 2px; }
@@ -495,17 +474,16 @@
     font-weight: 900;
     font-size: 14px;
   }
-  .card-divider { height: 1px; background: #F3F1FF; margin: 14px 0; }
+  .card-divider { height: 1px; background: #EEF2F9; margin: 14px 0; }
 
-  /* Pairing Panel */
   .pairing-panel {
     margin-top: 18px;
     padding-top: 18px;
-    border-top: 1.5px dashed #EAE6FF;
+    border-top: 1.5px dashed #EEF2F9;
   }
   .code-display {
-    background: #F7F5FF;
-    border: 2px dashed #B8A9F5;
+    background: #F5F8FE;
+    border: 2px dashed #B5D8FF;
     border-radius: 18px;
     padding: 20px;
     text-align: center;
@@ -516,7 +494,7 @@
     font-size: 36px;
     font-weight: 900;
     letter-spacing: 0.25em;
-    color: #7B6EF6;
+    color: #4F7FE0;
     margin-bottom: 6px;
   }
   .code-hint { font-size: 11px; color: #aab4cc; margin: 0; }
@@ -535,13 +513,13 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: #EAE6FF;
+    background: #EEF2F9;
   }
   .input-row { display: flex; gap: 10px; }
   .code-input {
     flex: 1;
     padding: 12px 16px;
-    border: 2px solid #EAE6FF;
+    border: 2px solid #EEF2F9;
     border-radius: 14px;
     font-size: 20px;
     font-weight: 900;
@@ -554,9 +532,8 @@
     font-family: 'Nunito', sans-serif;
     transition: border-color 0.2s;
   }
-  .code-input:focus { border-color: #7B6EF6; }
+  .code-input:focus { border-color: #4F7FE0; }
 
-  /* Info rows */
   .info-row {
     display: flex;
     align-items: center;
@@ -566,12 +543,12 @@
   .info-emoji { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
   .info-key { font-size: 11px; color: #aab4cc; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
   .info-val { font-size: 14px; color: #2D2A5E; font-weight: 700; margin: 3px 0 0; }
-  .info-val--accent { color: #7B6EF6; }
+  .info-val--accent { color: #4F7FE0; }
   .partner-avatar-sm {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: #EAE6FF;
+    background: #EEF2F9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -580,7 +557,6 @@
     overflow: hidden;
   }
 
-  /* Section labels */
   .section-label {
     font-size: 11px;
     font-weight: 800;
@@ -591,11 +567,10 @@
   }
   .section-label--card { margin-bottom: 10px; }
 
-  /* Edit form */
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
   .form-input {
     padding: 11px 14px;
-    border: 2px solid #EAE6FF;
+    border: 2px solid #EEF2F9;
     border-radius: 14px;
     font-size: 14px;
     color: #2D2A5E;
@@ -605,24 +580,23 @@
     transition: border-color 0.2s;
     background: #FAFAFF;
   }
-  .form-input:focus { border-color: #7B6EF6; }
+  .form-input:focus { border-color: #4F7FE0; }
   .form-textarea { resize: vertical; min-height: 72px; }
   .form-date-label { font-size: 12px; font-weight: 700; color: #aab4cc; margin: 0; }
   .file-label {
     display: block;
     padding: 14px;
-    background: #F7F5FF;
-    border: 2px dashed #B8A9F5;
+    background: #F5F8FE;
+    border: 2px dashed #B5D8FF;
     border-radius: 14px;
     text-align: center;
     font-size: 14px;
     font-weight: 700;
-    color: #7B6EF6;
+    color: #4F7FE0;
     cursor: pointer;
   }
   .btn-row { display: flex; gap: 10px; }
 
-  /* Buttons */
   .btn {
     border: none;
     border-radius: 14px;
@@ -635,18 +609,17 @@
   }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn:active:not(:disabled) { transform: scale(0.97); }
-  .btn--primary { background: linear-gradient(135deg, #7B6EF6, #9D8FF5); color: white; }
+  .btn--primary { background: linear-gradient(135deg, #4F7FE0, #6B93E8); color: white; }
   .btn--success { background: linear-gradient(135deg, #5ba882, #7DC4A4); color: white; }
   .btn--outline {
     background: white;
-    border: 2px solid #EAE6FF;
-    color: #7B6EF6;
+    border: 2px solid #EEF2F9;
+    color: #4F7FE0;
   }
-  .btn--ghost { background: #F7F5FF; color: #888; }
+  .btn--ghost { background: #F5F8FE; color: #888; }
   .btn--sm { padding: 8px 14px; font-size: 12px; border-radius: 12px; }
   .btn--block { width: 100%; }
 
-  /* Logout */
   .logout-btn {
     width: 100%;
     padding: 16px;
