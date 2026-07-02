@@ -39,17 +39,17 @@
 
 ## 3. 🎨 Desain & UX
 
-### Warna CoupleGrow (Soft Blue & Soft Lavender)
+### Warna CoupleGrow (Biru & Ungu)
 
 | Peran          | Warna         | Kode Hex  |
 | -------------- | ------------- | --------- |
-| **Primary**    | Soft Blue     | `#6C91D1` |
-| **Secondary**  | Soft Lavender | `#A28BDF` |
-| **Accent**     | Dusty Purple  | `#C5B8F0` |
-| **Background** | Pale Blue     | `#E8EEF9` |
-| **Text**       | Dark Navy     | `#2D3A5E` |
-| **Success**    | Soft Mint     | `#8BC6A5` |
-| **Warning**    | Soft Coral    | `#F4A2A2` |
+| **Primary**    | Sky Blue      | `#0C8CE9` |
+| **Secondary**  | Bright Purple | `#7C3AED` |
+| **Accent**     | Lavender Mist | `#D8B4FE` |
+| **Background** | Soft Sky Blue | `#F0F4FF` |
+| **Text**       | Dark Navy     | `#1E293B` |
+| **Success**    | Emerald Green | `#10B981` |
+| **Warning**    | Rose Red      | `#F43F5E` |
 
 ### Visual Palet
 
@@ -58,13 +58,13 @@
 │  🎨 CoupleGrow Color Palette                        │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│  ████  #6C91D1      Soft Blue (Primary)            │
-│  ████  #A28BDF      Soft Lavender (Secondary)      │
-│  ████  #C5B8F0      Dusty Purple (Accent)          │
-│  ████  #E8EEF9      Pale Blue (Background)         │
-│  ████  #2D3A5E      Dark Navy (Text)               │
-│  ████  #8BC6A5      Soft Mint (Success)            │
-│  ████  #F4A2A2      Soft Coral (Warning)           │
+│  ████  #0C8CE9      Sky Blue (Primary)              │
+│  ████  #7C3AED      Bright Purple (Secondary)       │
+│  ████  #D8B4FE      Lavender Mist (Accent)          │
+│  ████  #F0F4FF      Soft Sky Blue (Background)      │
+│  ████  #1E293B      Dark Navy (Text)                │
+│  ████  #10B981      Emerald Green (Success)         │
+│  ████  #F43F5E      Rose Red (Warning)              │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```

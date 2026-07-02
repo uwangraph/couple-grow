@@ -3,7 +3,13 @@
   import { API_URL } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { ICONS } from '$lib/icons';
+  import { 
+    FileText as NotesIcon, 
+    TrendingUp as TrendingUpIcon,
+    Inbox as EmptyIcon,
+    TrendingDown as ExpenseIcon,
+    ArrowUpCircle as IncomeIcon
+  } from '@lucide/svelte';
 
   let transactions = $state<any[]>([]);
   let stats = $state<{ monthly: any[]; categories: any[] }>({ monthly: [], categories: [] });
@@ -21,39 +27,53 @@
     await Promise.all([fetchTransactions(), fetchStats()]);
   });
 
+  function handleUnauthorized() {
+    auth.logout();
+    goto('/login');
+  }
+
   async function fetchTransactions() {
+    if (!auth.token) return;
     try {
       const res = await fetch(`${API_URL}/transactions`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
+      if (res.status === 401) { handleUnauthorized(); return; }
       const data = await res.json();
       if (res.ok) transactions = data.transactions || [];
     } catch(e) {} finally { loading = false; }
   }
 
   async function fetchStats() {
+    if (!auth.token) return;
     try {
       const res = await fetch(`${API_URL}/transactions/stats`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
+      if (res.status === 401) { handleUnauthorized(); return; }
       const data = await res.json();
       if (res.ok) stats = data;
     } catch(e) {}
   }
 
+  import { toast } from '$lib/toast.svelte';
+
   async function addTransaction(e: Event) {
     e.preventDefault();
+    if (!auth.token) { goto('/login'); return; }
     try {
       const res = await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({ amount: parseInt(amount), type, category, note })
       });
+      if (res.status === 401) { handleUnauthorized(); return; }
       if (!res.ok) throw new Error((await res.json()).error);
       showModal = false;
       amount = ''; category = ''; note = '';
       await Promise.all([fetchTransactions(), fetchStats()]);
-    } catch(e: any) { alert(e.message); }
+      toast.success('Transaksi berhasil ditambahkan!');
+    } catch(e: any) { toast.error(e.message || 'Gagal menambahkan transaksi'); }
   }
 
   let totalBalance = $derived(
@@ -108,14 +128,16 @@
     <button
       class="tab {activeTab === 'history' ? 'tab--active' : ''}"
       onclick={() => activeTab = 'history'}
+      style="display: flex; align-items: center; justify-content: center; gap: 6px;"
     >
-      📋 Riwayat
+      <NotesIcon size={16} /> Riwayat
     </button>
     <button
       class="tab {activeTab === 'stats' ? 'tab--active' : ''}"
       onclick={() => activeTab = 'stats'}
+      style="display: flex; align-items: center; justify-content: center; gap: 6px;"
     >
-      📊 Statistik
+      <TrendingUpIcon size={16} /> Statistik
     </button>
     <button class="add-btn" onclick={() => showModal = true}>
       + Catat
@@ -134,15 +156,16 @@
       <div class="list">
         {#if transactions.length === 0}
           <div class="empty-state">
-            <img src={ICONS.empty} alt="kosong" style="width:40px;height:40px;opacity:0.4;margin-bottom:12px;" />
+            <EmptyIcon size={40} aria-hidden="true" style="opacity:0.4;margin-bottom:12px;" />
             <p>Belum ada transaksi</p>
             <button class="empty-link" onclick={() => showModal = true}>Catat sekarang →</button>
           </div>
         {/if}
         {#each transactions as t}
+          {@const TransactionIcon = t.type === 'income' ? IncomeIcon : ExpenseIcon}
           <div class="tx-row">
             <div class="tx-icon {t.type === 'income' ? 'tx-icon--in' : 'tx-icon--out'}">
-              <img src={t.type === 'income' ? ICONS.income : ICONS.expense} alt="type" style="width:18px;height:18px;" />
+              <TransactionIcon size={18} aria-hidden="true" />
             </div>
             <div class="tx-info">
               <p class="tx-cat">{t.category}</p>
@@ -225,14 +248,14 @@
             class="type-btn {type === 'expense' ? 'type-btn--out' : ''}"
             onclick={() => type = 'expense'}
           >
-            <img src={ICONS.expense} alt="expense" style="width:16px;height:16px;" />
+            <ExpenseIcon size={16} aria-hidden="true" />
             Pengeluaran
           </button>
           <button
             class="type-btn {type === 'income' ? 'type-btn--in' : ''}"
             onclick={() => type = 'income'}
           >
-            <img src={ICONS.income} alt="income" style="width:16px;height:16px;" />
+            <IncomeIcon size={16} aria-hidden="true" />
             Pemasukan
           </button>
         </div>
@@ -277,7 +300,7 @@
   .wallet-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: #F7F5FF;
+    background: transparent;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -285,17 +308,17 @@
 
   /* Header */
   .header {
-    background: linear-gradient(145deg, #7B6EF6 0%, #9D8FF5 55%, #B8A9F5 100%);
+    background: linear-gradient(145deg, #3B82F6 0%, #2563EB 50%, #0EA5E9 100%);
     padding: 28px 22px 32px;
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
   }
-  .blob { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.07); }
+  .blob { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.08); }
   .b1 { width: 150px; height: 150px; top: -40px; right: -40px; }
   .b2 { width: 90px; height: 90px; bottom: 0; left: -20px; }
   .header-inner { position: relative; z-index: 1; }
-  .balance-label { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px; }
+  .balance-label { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px; }
   .balance-amount { font-size: 30px; font-weight: 900; color: white; margin: 0 0 18px; }
   .balance-row { display: flex; gap: 10px; }
   .balance-chip {
@@ -308,9 +331,9 @@
     background: rgba(255,255,255,0.15);
   }
   .chip-arrow { font-size: 18px; font-weight: 900; }
-  .balance-chip--in .chip-arrow { color: #a3f0c4; }
-  .balance-chip--out .chip-arrow { color: #f0a3a3; }
-  .chip-label { font-size: 10px; color: rgba(255,255,255,0.65); margin: 0 0 2px; font-weight: 700; text-transform: uppercase; }
+  .balance-chip--in .chip-arrow { color: #86EFAC; }
+  .balance-chip--out .chip-arrow { color: #FDA4AF; }
+  .chip-label { font-size: 10px; color: rgba(255,255,255,0.7); margin: 0 0 2px; font-weight: 700; text-transform: uppercase; }
   .chip-val { font-size: 13px; font-weight: 800; color: white; margin: 0; }
 
   /* Tab bar */
@@ -318,8 +341,10 @@
     display: flex;
     gap: 8px;
     padding: 14px 16px;
-    background: white;
-    border-bottom: 1.5px solid #EAE6FF;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.5);
     flex-shrink: 0;
     align-items: center;
   }
@@ -333,15 +358,15 @@
     border: 2px solid transparent;
     cursor: pointer;
     transition: all 0.2s;
-    background: #F7F5FF;
-    color: #aab4cc;
+    background: rgba(255, 255, 255, 0.4);
+    color: #64748B;
   }
-  .tab--active { background: #7B6EF6; color: white; border-color: #7B6EF6; }
+  .tab--active { background: #3B82F6; color: white; border-color: #3B82F6; }
   .add-btn {
     padding: 9px 16px;
     background: #F0FDF4;
-    color: #15803d;
-    border: 2px solid #86efac;
+    color: #15803D;
+    border: 2px solid #86EFAC;
     border-radius: 12px;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
@@ -350,7 +375,7 @@
     white-space: nowrap;
     transition: background 0.2s;
   }
-  .add-btn:hover { background: #dcfce7; }
+  .add-btn:hover { background: #DCFCE7; }
 
   /* Content */
   .content { flex: 1; overflow-y: auto; padding: 14px 16px; }
@@ -358,8 +383,8 @@
   .loading-wrap { display: flex; justify-content: center; padding: 40px 0; }
   .spinner {
     width: 28px; height: 28px;
-    border: 3px solid #EAE6FF;
-    border-top-color: #7B6EF6;
+    border: 3px solid #E0E7FF;
+    border-top-color: #3B82F6;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
@@ -370,66 +395,72 @@
   .tx-row {
     display: flex;
     align-items: center;
-    background: white;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 18px;
     padding: 12px 14px;
-    box-shadow: 0 3px 12px rgba(123,110,246,0.06);
+    box-shadow: 0 3px 12px rgba(59,130,246,0.06);
   }
   .tx-icon { width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
-  .tx-icon--in { background: rgba(91,168,130,0.12); }
-  .tx-icon--out { background: rgba(224,96,96,0.12); }
+  .tx-icon--in { background: rgba(34,197,94,0.12); }
+  .tx-icon--out { background: rgba(244,63,94,0.12); }
   .tx-info { flex: 1; min-width: 0; }
-  .tx-cat { font-weight: 800; color: #2D2A5E; font-size: 13px; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tx-date { font-size: 11px; color: #aab4cc; margin: 0; }
+  .tx-cat { font-weight: 800; color: #1E293B; font-size: 13px; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-date { font-size: 11px; color: #94A3B8; margin: 0; }
   .tx-amount { font-weight: 900; font-size: 13px; flex-shrink: 0; }
-  .tx-amount--in { color: #15803d; }
-  .tx-amount--out { color: #dc2626; }
+  .tx-amount--in { color: #15803D; }
+  .tx-amount--out { color: #BE123C; }
 
   /* Empty */
-  .empty-state { background: white; border-radius: 20px; padding: 32px; text-align: center; box-shadow: 0 3px 12px rgba(123,110,246,0.06); color: #aab4cc; font-size: 13px; font-weight: 700; }
-  .empty-link { color: #7B6EF6; font-weight: 800; background: none; border: none; font-family: 'Nunito', sans-serif; font-size: 13px; cursor: pointer; margin-top: 10px; display: block; }
+  .empty-state { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 20px; padding: 32px; text-align: center; box-shadow: 0 3px 12px rgba(59,130,246,0.06); color: #94A3B8; font-size: 13px; font-weight: 700; }
+  .empty-link { color: #3B82F6; font-weight: 800; background: none; border: none; font-family: 'Nunito', sans-serif; font-size: 13px; cursor: pointer; margin-top: 10px; display: block; }
 
   /* Stats */
   .stats-list { display: flex; flex-direction: column; gap: 14px; }
-  .stat-card { background: white; border-radius: 22px; padding: 18px; box-shadow: 0 3px 14px rgba(123,110,246,0.07); }
-  .stat-card-title { font-size: 14px; font-weight: 800; color: #2D2A5E; margin: 0 0 16px; }
-  .stat-empty { font-size: 13px; color: #aab4cc; text-align: center; padding: 12px 0; margin: 0; }
+  .stat-card { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 22px; padding: 18px; box-shadow: 0 3px 14px rgba(59,130,246,0.07); }
+  .stat-card-title { font-size: 14px; font-weight: 800; color: #1E293B; margin: 0 0 16px; }
+  .stat-empty { font-size: 13px; color: #94A3B8; text-align: center; padding: 12px 0; margin: 0; }
 
   /* Bar Chart */
   .bar-chart { display: flex; align-items: flex-end; justify-content: space-around; height: 120px; gap: 6px; margin-bottom: 12px; }
   .bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; }
   .bars { display: flex; align-items: flex-end; gap: 2px; width: 100%; height: 108px; }
   .bar { flex: 1; border-radius: 5px 5px 0 0; transition: height 0.5s ease; min-height: 4px; }
-  .bar--in { background: #5ba882; opacity: 0.75; }
-  .bar--out { background: #E06070; opacity: 0.75; }
-  .bar-label { font-size: 10px; color: #aab4cc; margin: 4px 0 0; font-weight: 700; }
+  .bar--in { background: #22C55E; opacity: 0.75; }
+  .bar--out { background: #F43F5E; opacity: 0.75; }
+  .bar-label { font-size: 10px; color: #94A3B8; margin: 4px 0 0; font-weight: 700; }
   .bar-legend { display: flex; justify-content: center; gap: 18px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #888; font-weight: 700; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #64748B; font-weight: 700; }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
-  .legend-dot--in { background: #5ba882; }
-  .legend-dot--out { background: #E06070; }
+  .legend-dot--in { background: #22C55E; }
+  .legend-dot--out { background: #F43F5E; }
 
   /* Categories */
   .cat-list { display: flex; flex-direction: column; gap: 12px; }
   .cat-item {}
   .cat-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
-  .cat-name { font-size: 13px; font-weight: 800; color: #2D2A5E; }
-  .cat-val { font-size: 12px; color: #888; font-weight: 700; }
-  .cat-track { height: 7px; background: #F3F1FF; border-radius: 99px; overflow: hidden; }
-  .cat-fill { height: 100%; background: linear-gradient(90deg, #7B6EF6, #B8A9F5); border-radius: 99px; transition: width 0.5s ease; }
+  .cat-name { font-size: 13px; font-weight: 800; color: #1E293B; }
+  .cat-val { font-size: 12px; color: #64748B; font-weight: 700; }
+  .cat-track { height: 7px; background: #EFF6FF; border-radius: 99px; overflow: hidden; }
+  .cat-fill { height: 100%; background: linear-gradient(90deg, #3B82F6, #0EA5E9); border-radius: 99px; transition: width 0.5s ease; }
 
   /* Modal */
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(45,42,94,0.45);
+    background: rgba(30,41,59,0.5);
     display: flex;
     align-items: flex-end;
     justify-content: center;
     z-index: 100;
   }
   .modal {
-    background: white;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.8);
     border-radius: 28px 28px 0 0;
     width: 100%;
     max-width: 540px;
@@ -440,8 +471,8 @@
     from { transform: translateY(40px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
-  .modal-handle { width: 44px; height: 5px; background: #E0DBFF; border-radius: 99px; margin: 0 auto 18px; }
-  .modal-title { font-size: 18px; font-weight: 900; color: #2D2A5E; margin: 0 0 18px; }
+  .modal-handle { width: 44px; height: 5px; background: #E0E7FF; border-radius: 99px; margin: 0 auto 18px; }
+  .modal-title { font-size: 18px; font-weight: 900; color: #1E293B; margin: 0 0 18px; }
 
   /* Type Toggle */
   .type-toggle { display: flex; gap: 10px; margin-bottom: 18px; }
@@ -453,46 +484,46 @@
     gap: 6px;
     padding: 12px;
     border-radius: 16px;
-    border: 2px solid #EAE6FF;
-    background: #F7F5FF;
-    color: #aab4cc;
+    border: 2px solid #E0E7FF;
+    background: #F0F4FF;
+    color: #94A3B8;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
     font-weight: 800;
     cursor: pointer;
     transition: all 0.15s;
   }
-  .type-btn--in { border-color: #86efac; background: #F0FDF4; color: #15803d; }
-  .type-btn--out { border-color: #fca5a5; background: #FFF5F5; color: #dc2626; }
+  .type-btn--in { border-color: #86EFAC; background: #F0FDF4; color: #15803D; }
+  .type-btn--out { border-color: #FDA4AF; background: #FFF1F2; color: #BE123C; }
 
   /* Form */
   .modal-form { display: flex; flex-direction: column; gap: 14px; }
   .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; }
   .form-row { display: flex; gap: 12px; }
-  .form-label { font-size: 11px; font-weight: 800; color: #aab4cc; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-label { font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; }
   .form-input {
     padding: 12px 14px;
-    border: 2px solid #EAE6FF;
+    border: 2px solid #E0E7FF;
     border-radius: 14px;
     font-size: 14px;
     font-weight: 700;
-    color: #2D2A5E;
+    color: #1E293B;
     font-family: 'Nunito', sans-serif;
     outline: none;
-    background: #FAFAFF;
+    background: #F8FAFC;
     transition: border-color 0.2s;
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #7B6EF6; }
+  .form-input:focus { border-color: #3B82F6; }
   .form-input--amount { font-size: 22px; font-weight: 900; }
 
   .modal-actions { display: flex; gap: 12px; margin-top: 4px; }
   .modal-cancel {
     flex: 1;
     padding: 14px;
-    background: #F7F5FF;
-    color: #aab4cc;
+    background: #F0F4FF;
+    color: #94A3B8;
     border: none;
     border-radius: 16px;
     font-family: 'Nunito', sans-serif;
@@ -503,7 +534,7 @@
   .modal-submit {
     flex: 2;
     padding: 14px;
-    background: linear-gradient(135deg, #7B6EF6, #9D8FF5);
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
     color: white;
     border: none;
     border-radius: 16px;
@@ -511,6 +542,6 @@
     font-size: 14px;
     font-weight: 900;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(123,110,246,0.3);
+    box-shadow: 0 6px 20px rgba(59,130,246,0.3);
   }
 </style>

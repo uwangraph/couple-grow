@@ -3,7 +3,7 @@
   import { API_URL } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { ICONS } from '$lib/icons';
+  import Icon from '$lib/Icon.svelte';
 
   let inviteCode = $state('');
   let generatedCode = $state<string | null>(null);
@@ -88,7 +88,7 @@
 
   <div class="p-4 border border-gray-100 bg-gray-50 rounded-xl">
     <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-      <img src={ICONS.dice} alt="dice" class="w-4 h-4 opacity-70" /> Buat Kode Undangan
+      <Icon name="dice" class="w-4 h-4 opacity-70" /> Buat Kode Undangan
     </h3>
     {#if generatedCode}
       <div class="text-center">
@@ -97,7 +97,7 @@
       </div>
     {:else}
       <button onclick={generateCode} disabled={loading} class="w-full py-2 bg-secondary hover:bg-secondary/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-        <img src={ICONS.dice} alt="dice" class="w-4 h-4 invert" /> Generate Kode
+        <Icon name="dice" class="w-4 h-4 invert" /> Generate Kode
       </button>
     {/if}
   </div>
@@ -110,7 +110,7 @@
 
   <div>
     <h3 class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-      <img src={ICONS.link} alt="link" class="w-4 h-4 opacity-70" /> Masukkan Kode Pasangan
+      <Icon name="link" class="w-4 h-4 opacity-70" /> Masukkan Kode Pasangan
     </h3>
     <div class="flex space-x-2">
       <input type="text" bind:value={inviteCode} placeholder="Kode 6 digit" class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none uppercase text-center tracking-widest transition-all" maxlength="6" />
@@ -122,7 +122,7 @@
 
   <div class="pt-6 text-center">
     <button onclick={() => goto('/home')} class="text-sm font-semibold text-gray-500 hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto">
-      Lewati dulu, masuk ke aplikasi <img src={ICONS.arrow} alt="arrow" class="w-3 h-3 opacity-50" />
+      Lewati dulu, masuk ke aplikasi <Icon name="arrow" class="w-3 h-3 opacity-50" />
     </button>
   </div>
 </div>

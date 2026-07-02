@@ -3,7 +3,7 @@
   import { API_URL } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { ICONS } from '$lib/icons';
+  import Icon from '$lib/Icon.svelte';
 
   let folders = $state<any[]>([]);
   let selectedFolder = $state<string | null>(null);
@@ -86,7 +86,7 @@
         <div>
           <p class="header-sub">Ruang Tulis</p>
           <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
-            Catatan <svelte:component this={ICONS.notes} size={24} />
+            Catatan <Icon name="notes" size={24} />
           </h1>
         </div>
         <button class="new-folder-btn" onclick={() => showFolderModal = true}>
@@ -102,7 +102,7 @@
               class="folder-tab {selectedFolder === f.id ? 'folder-tab--active' : ''}"
               onclick={() => fetchNotes(f.id)}
             >
-              <svelte:component this={ICONS.folder} size={14} />
+              <Icon name="folder" size={14} />
               {f.name}
             </button>
           {/each}
@@ -120,7 +120,7 @@
     {:else if folders.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          <svelte:component this={ICONS.folder} size={56} />
+          <Icon name="folder" size={56} />
         </div>
         <p class="empty-title">Belum ada folder</p>
         <p class="empty-sub">Buat folder pertama untuk mulai menulis</p>
@@ -133,7 +133,7 @@
         <div class="section-header">
           <div class="section-title-group">
             <div class="section-emoji">
-              <svelte:component this={ICONS.folder} size={26} />
+              <Icon name="folder" size={26} />
             </div>
             <div>
               <p class="section-title">{selectedFolderData.name}</p>
@@ -141,7 +141,7 @@
             </div>
           </div>
           {#if selectedFolder}
-            <a href="/notes/new?folder_id={selectedFolder}" class="new-note-btn">
+            <a href="/notes/new?folder_id={selectedFolder}" class="new-note-btn" role="button" aria-label="Buat catatan baru">
               + Catatan
             </a>
           {/if}
@@ -158,12 +158,12 @@
       {:else if notes.length === 0}
         <div class="empty-notes">
           <div style="margin-bottom:12px; display: flex; justify-content: center; color: #aab4cc;">
-            <svelte:component this={ICONS.edit} size={40} />
+            <Icon name="edit" size={40} />
           </div>
           <p class="empty-notes-title">Folder ini masih kosong</p>
           <p class="empty-notes-sub">Yuk mulai menulis catatan pertama!</p>
           {#if selectedFolder}
-            <a href="/notes/new?folder_id={selectedFolder}" class="empty-cta">+ Buat Catatan</a>
+            <a href="/notes/new?folder_id={selectedFolder}" class="empty-cta" role="button" aria-label="Buat catatan baru">+ Buat Catatan</a>
           {/if}
         </div>
 
@@ -175,7 +175,7 @@
             <a href="/notes/{note.id}" class="note-card">
               <div class="note-card-top">
                 <span class="note-type-badge {type === 'checklist' ? 'note-type-badge--check' : ''}">
-                  <svelte:component this={type === 'checklist' ? ICONS.check : ICONS.edit} size={14} />
+                  <Icon name={type === 'checklist' ? 'check' : 'edit'} size={14} />
                 </span>
                 <span class="note-date">
                   {new Date(note.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
@@ -201,7 +201,7 @@
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
           <div class="modal-icon-circle">
-            <svelte:component this={ICONS.folder} size={24} />
+            <Icon name="folder" size={24} />
           </div>
           <div>
             <h3 class="modal-title">Buat Folder Baru</h3>

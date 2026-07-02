@@ -6,8 +6,8 @@
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
 
-  let id = $derived(page.params.id);
   let folderId = $derived(page.url.searchParams.get('folder_id'));
+  let id = 'new';
 
   let title = $state('');
   let content = $state('');
@@ -18,45 +18,27 @@
 
   onMount(async () => {
     if (!auth.token) return goto('/login');
-    if (id !== 'new') await fetchNote();
   });
 
-  async function fetchNote() {
-    loading = true;
-    try {
-      const res = await fetch(`${API_URL}/notes/${id}`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
-      const data = await res.json();
-      if (res.ok && data.note) {
-        title = data.note.title || '';
-        content = data.note.content || '';
-        try { checklist = data.note.checklist ? JSON.parse(data.note.checklist) : []; }
-        catch(e) { checklist = []; }
-        if (checklist.length > 0) activeTab = 'checklist';
-      }
-    } catch(e) {} finally { loading = false; }
-  }
-
   async function saveNote() {
+    if (!folderId) {
+      alert('Folder ID is required');
+      return;
+    }
     loading = true;
     const body = { folder_id: folderId, title, content, checklist: checklist.length > 0 ? checklist : null };
     try {
-      const url = id === 'new' ? `${API_URL}/notes` : `${API_URL}/notes/${id}`;
-      const method = id === 'new' ? 'POST' : 'PUT';
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`${API_URL}/notes`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify(body)
       });
-      if (res.ok) { saved = true; setTimeout(() => goto('/notes'), 600); }
+      if (res.ok) {
+        const data = await res.json();
+        saved = true;
+        setTimeout(() => goto(`/notes/${data.id}`), 300);
+      }
     } catch(e) {} finally { loading = false; }
-  }
-
-  async function deleteNote() {
-    if (!confirm('Hapus catatan ini?')) return;
-    try {
-      await fetch(`${API_URL}/notes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${auth.token}` } });
-      goto('/notes');
-    } catch(e) {}
   }
 
   function addCheckItem() { checklist = [...checklist, { text: '', is_done: false }]; }
@@ -76,9 +58,6 @@
     </button>
 
     <div class="topbar-actions">
-      {#if id !== 'new'}
-        <button class="delete-btn" onclick={deleteNote}>Hapus</button>
-      {/if}
       <button class="save-btn {saved ? 'save-btn--saved' : ''}" onclick={saveNote} disabled={loading}>
         {#if saved}✓ Tersimpan{:else if loading}...{:else}Simpan{/if}
       </button>
@@ -97,9 +76,6 @@
         <span class="meta-pill">{wordCount} kata</span>
       {:else if checklist.length > 0}
         <span class="meta-pill meta-pill--progress">{doneCount}/{checklist.length} selesai</span>
-      {/if}
-      {#if id !== 'new'}
-        <span class="meta-pill">Diedit</span>
       {/if}
     </div>
   </div>
@@ -219,19 +195,6 @@
   }
   .back-btn:hover { background: #E6EFFF; }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
-  .delete-btn {
-    padding: 8px 14px;
-    border-radius: 12px;
-    border: none;
-    background: #FFF5F5;
-    color: #E06070;
-    font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 800;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .delete-btn:hover { background: #fde8e8; }
   .save-btn {
     padding: 8px 20px;
     border-radius: 12px;

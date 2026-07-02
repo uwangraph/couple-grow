@@ -2,17 +2,22 @@
   import { auth } from '$lib/auth.svelte';
   import { API_URL } from '$lib/api';
   import { goto } from '$app/navigation';
-  import { ICONS } from '$lib/icons';
+  import Icon from '$lib/Icon.svelte';
+  import { toast } from '$lib/toast.svelte';
 
   let showPairingSection = $state(false);
   let inviteCode = $state('');
   let generatedCode = $state<string | null>(null);
-  let pairErrorMsg = $state('');
   let pairLoading = $state(false);
-  let successMsg = $state('');
+  let passwordLoading = $state(false);
+  let isChangingPassword = $state(false);
+  let passwordForm = $state({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
 
   async function generateCode() {
-    pairErrorMsg = '';
     pairLoading = true;
     try {
       const res = await fetch(`${API_URL}/partner/invite`, {
@@ -22,8 +27,9 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal membuat kode');
       generatedCode = data.code;
+      toast.success('Kode undangan berhasil dibuat!');
     } catch (e: any) {
-      pairErrorMsg = e.message;
+      toast.error(e.message);
     } finally {
       pairLoading = false;
     }
@@ -31,7 +37,6 @@
 
   async function connectPartner() {
     if (!inviteCode || inviteCode.length !== 6) return;
-    pairErrorMsg = '';
     pairLoading = true;
     try {
       const res = await fetch(`${API_URL}/partner/connect`, {
@@ -41,19 +46,19 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal menghubungkan');
-      if (auth.user) auth.setUser({ ...auth.user, partner_id: 'connected' }, auth.partner);
-      successMsg = 'Pasangan berhasil terhubung! 🎉';
+      await auth.init();
+      toast.success('Pasangan berhasil terhubung!');
       showPairingSection = false;
       inviteCode = '';
     } catch (e: any) {
-      pairErrorMsg = e.message;
+      toast.error(e.message);
     } finally {
       pairLoading = false;
     }
   }
 
   let isEditingProfile = $state(false);
-  let isEditingAvatar = $state(false);
+  let avatarInput = $state<HTMLInputElement>();
   let editForm = $state({
     name: auth.user?.name || '',
     birthday: auth.user?.birthday || '',
@@ -71,37 +76,233 @@
       });
       if (!res.ok) throw new Error('Gagal update');
       if (auth.user) auth.setUser({ ...auth.user, ...editForm }, auth.partner);
-      successMsg = 'Profil diupdate! 🎉';
+      toast.success('Profil berhasil diperbarui!');
       isEditingProfile = false;
-      isEditingAvatar = false;
-    } catch (e: any) { pairErrorMsg = e.message; }
+    } catch (e: any) { toast.error(e.message); }
     finally { pairLoading = false; }
   }
 
-  async function uploadAvatar(e: Event) {
+  let cropModalVisible = $state(false);
+  let cropImg = $state<HTMLImageElement | null>(null);
+  let cropScale = $state(1);
+  const SCALE_MIN = 0.5;
+  const SCALE_MAX = 4;
+  let cropOffsetX = $state(0);
+  let cropOffsetY = $state(0);
+  let cropCanvasEl = $state<HTMLCanvasElement | null>(null);
+
+  // For drag
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragOffsetXStart = 0;
+  let dragOffsetYStart = 0;
+
+  function drawCropCanvas() {
+    const canvas = cropCanvasEl;
+    if (!canvas || !cropImg || !cropImg.complete || !cropImg.naturalWidth) return;
+    const size = Math.min(canvas.parentElement?.clientWidth ?? 340, 500);
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, size, size);
+
+    const imgW = cropImg.naturalWidth * cropScale;
+    const imgH = cropImg.naturalHeight * cropScale;
+    const drawX = size / 2 + cropOffsetX - imgW / 2;
+    const drawY = size / 2 + cropOffsetY - imgH / 2;
+
+    // Draw dark bg
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, size, size);
+
+    // Draw image
+    ctx.drawImage(cropImg, drawX, drawY, imgW, imgH);
+
+    // Draw circular mask (cut out)
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Draw outer dark overlay (ring effect)
+    const outerCanvas = document.createElement('canvas');
+    outerCanvas.width = size;
+    outerCanvas.height = size;
+    const octx = outerCanvas.getContext('2d')!;
+    octx.fillStyle = 'rgba(0,0,0,0.55)';
+    octx.fillRect(0, 0, size, size);
+    octx.globalCompositeOperation = 'destination-out';
+    octx.beginPath();
+    octx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+    octx.fill();
+    ctx.drawImage(outerCanvas, 0, 0);
+  }
+
+  $effect(() => {
+    if (cropModalVisible && cropCanvasEl) {
+      const drawLoop = () => {
+        drawCropCanvas();
+      };
+      drawLoop();
+    }
+  });
+
+  $effect(() => {
+    // redraw whenever these change
+    cropScale; cropOffsetX; cropOffsetY;
+    drawCropCanvas();
+  });
+
+  function handleAvatarSelect(e: Event) {
     const input = e.target as HTMLInputElement;
     if (!input.files?.length) return;
-    pairLoading = true;
-    const formData = new FormData();
-    formData.append('file', input.files[0]);
-    try {
-      const res = await fetch(`${API_URL}/profile/avatar`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${auth.token}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error('Gagal upload');
-      if (auth.user) auth.setUser({ ...auth.user, avatar: data.avatarUrl }, auth.partner);
-      isEditingAvatar = false;
-    } catch (e: any) { pairErrorMsg = e.message; }
-    finally { pairLoading = false; }
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      cropImg = new Image();
+      cropImg.onload = () => {
+        cropScale = 1;
+        cropOffsetX = 0;
+        cropOffsetY = 0;
+        cropModalVisible = true;
+        // Draw after next tick when canvas is mounted
+        setTimeout(() => drawCropCanvas(), 50);
+      };
+      cropImg.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
   }
 
-  function logout() { auth.setToken(''); auth.setUser(null); goto('/login'); }
+  function onCropWheel(e: WheelEvent) {
+    e.preventDefault();
+    cropScale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, cropScale - e.deltaY * 0.002));
+  }
+
+  function onCropMouseDown(e: MouseEvent) {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragOffsetXStart = cropOffsetX;
+    dragOffsetYStart = cropOffsetY;
+  }
+
+  function onCropMouseMove(e: MouseEvent) {
+    if (!isDragging) return;
+    cropOffsetX = dragOffsetXStart + (e.clientX - dragStartX);
+    cropOffsetY = dragOffsetYStart + (e.clientY - dragStartY);
+  }
+
+  function onCropMouseUp() { isDragging = false; }
+
+  // Touch support
+  let lastTouchDist = 0;
+  function onCropTouchStart(e: TouchEvent) {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+      dragOffsetXStart = cropOffsetX;
+      dragOffsetYStart = cropOffsetY;
+    } else if (e.touches.length === 2) {
+      isDragging = false;
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      lastTouchDist = Math.hypot(dx, dy);
+    }
+  }
+  function onCropTouchMove(e: TouchEvent) {
+    e.preventDefault();
+    if (e.touches.length === 1 && isDragging) {
+      cropOffsetX = dragOffsetXStart + (e.touches[0].clientX - dragStartX);
+      cropOffsetY = dragOffsetYStart + (e.touches[0].clientY - dragStartY);
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      const dist = Math.hypot(dx, dy);
+      cropScale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, cropScale * (dist / lastTouchDist)));
+      lastTouchDist = dist;
+    }
+  }
+  function onCropTouchEnd() { isDragging = false; }
+
+  function cropZoomIn() { cropScale = Math.min(SCALE_MAX, cropScale + 0.15); }
+  function cropZoomOut() { cropScale = Math.max(SCALE_MIN, cropScale - 0.15); }
+  function cropReset() { cropScale = 1; cropOffsetX = 0; cropOffsetY = 0; }
+
+  async function saveCroppedAvatar() {
+    if (!cropCanvasEl || !cropImg) return;
+    pairLoading = true;
+    const size = cropCanvasEl.width;
+    // Final render at 400×400
+    const output = document.createElement('canvas');
+    output.width = 400;
+    output.height = 400;
+    const ctx = output.getContext('2d')!;
+    const imgW = cropImg.naturalWidth * cropScale;
+    const imgH = cropImg.naturalHeight * cropScale;
+    const drawX = size / 2 + cropOffsetX - imgW / 2;
+    const drawY = size / 2 + cropOffsetY - imgH / 2;
+    const ratio = 400 / size;
+    ctx.drawImage(cropImg, drawX * ratio, drawY * ratio, imgW * ratio, imgH * ratio);
+
+    output.toBlob(async (blob) => {
+      if (!blob) { pairLoading = false; return; }
+      const formData = new FormData();
+      formData.append('file', blob, 'avatar.jpg');
+      try {
+        const res = await fetch(`${API_URL}/profile/avatar`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${auth.token}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error('Gagal upload');
+        if (auth.user) auth.setUser({ ...auth.user, avatar: data.avatarUrl }, auth.partner);
+        toast.success('Foto profil berhasil diubah!');
+        cropModalVisible = false;
+      } catch (e: any) {
+        toast.error(e.message);
+      } finally {
+        pairLoading = false;
+      }
+    }, 'image/jpeg', 0.92);
+  }
+
+  async function changePassword() {
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      toast.error('Konfirmasi password baru tidak sama');
+      return;
+    }
+    passwordLoading = true;
+    try {
+      const res = await fetch(`${API_URL}/auth/change-password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
+        body: JSON.stringify({
+          current_password: passwordForm.current_password,
+          new_password: passwordForm.new_password
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mengganti password');
+      toast.success(data.message || 'Password berhasil diubah!');
+      passwordForm = { current_password: '', new_password: '', confirm_password: '' };
+      isChangingPassword = false;
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      passwordLoading = false;
+    }
+  }
+
+  function logout() { auth.logout(); goto('/login'); }
 
   function getAvatarColor(name: string) {
-    const colors = ['#B5D8FF', '#E6C7FF', '#B5EBD9', '#FFD9B5', '#FFEB99'];
+    const colors = ['#BFDBFE', '#93C5FD', '#A7F3D0', '#FDE68A', '#FECACA'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     return colors[Math.abs(hash) % colors.length];
@@ -111,13 +312,18 @@
   let initials = $derived((auth.user?.name || 'U').slice(0, 2).toUpperCase());
 </script>
 
+<svelte:head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+</svelte:head>
+
 <div class="profile-root">
+  <input type="file" bind:this={avatarInput} accept="image/*" onchange={handleAvatarSelect} style="display:none" />
   <div class="hero">
     <div class="hero-blob blob-1"></div>
     <div class="hero-blob blob-2"></div>
     <div class="hero-blob blob-3"></div>
     <div class="hero-content">
-      <button class="avatar-btn" onclick={() => { isEditingAvatar = true; }}>
+      <button class="avatar-btn" onclick={() => avatarInput.click()} aria-label="Ubah foto profil">
         <div class="avatar-ring">
           <div class="avatar-inner" style="background: {avatarColor};">
             {#if auth.user?.avatar}
@@ -127,7 +333,7 @@
             {/if}
           </div>
         </div>
-        <span class="avatar-edit-badge"><svelte:component this={ICONS.edit} size={12} /></span>
+        <span class="avatar-edit-badge"><Icon name="edit" size={12} /></span>
       </button>
       <div class="hero-text">
         <h1 class="hero-name">{auth.user?.name || 'Pengguna'}</h1>
@@ -137,18 +343,18 @@
             {#if auth.partner.avatar}
               <img src={auth.partner.avatar} alt={auth.partner.name} class="partner-chip-img" />
             {:else}
-              <svelte:component this={ICONS.couple} size={14} />
+              <Icon name="couple" size={14} />
             {/if}
             <span>{auth.partner.name}</span>
           </div>
         {:else if auth.user?.partner_id}
           <div class="partner-chip partner-chip--connected">
-            <svelte:component this={ICONS.couple} size={14} />
+            <Icon name="couple" size={14} />
             <span>Terhubung dengan pasangan</span>
           </div>
         {:else}
           <div class="partner-chip partner-chip--pending">
-            <svelte:component this={ICONS.link} size={14} />
+            <Icon name="link" size={14} />
             <span>Belum terhubung</span>
           </div>
         {/if}
@@ -157,31 +363,26 @@
   </div>
 
   <div class="body">
-    {#if successMsg}
-      <div class="toast toast--success">
-        <svelte:component this={ICONS.success} size={16} /> {successMsg}
-      </div>
-    {/if}
-    {#if pairErrorMsg}
-      <div class="toast toast--error">
-        <svelte:component this={ICONS.error} size={16} /> {pairErrorMsg}
-      </div>
-    {/if}
-
     <div class="card">
       <div class="card-row">
         <div class="card-icon-wrap">
-          <svelte:component this={ICONS.couple} size={22} class="card-icon" />
+          <Icon name="couple" size={22} class="card-icon" />
         </div>
 
         <div class="card-label-group">
           <p class="card-label-title">Hubungkan Pasangan</p>
-          <p class="card-label-sub">{auth.user?.partner_id ? '✅ Sudah terhubung' : 'Belum terhubung'}</p>
+          <p class="card-label-sub" style="display:flex; align-items:center; gap:4px;">
+            {#if auth.user?.partner_id}
+              <Icon name="success" size={12} /> Sudah terhubung
+            {:else}
+              Belum terhubung
+            {/if}
+          </p>
         </div>
         {#if !auth.user?.partner_id}
           <button
             class="btn btn--primary btn--sm"
-            onclick={() => { showPairingSection = !showPairingSection; generatedCode = null; pairErrorMsg = ''; }}
+            onclick={() => { showPairingSection = !showPairingSection; generatedCode = null; }}
           >
             {showPairingSection ? 'Tutup' : 'Hubungkan'}
           </button>
@@ -200,9 +401,8 @@
             </div>
           {:else}
             <button class="btn btn--outline btn--block" onclick={generateCode} disabled={pairLoading}>
-              {pairLoading ? 'Membuat...' : ''}
-              {#if !pairLoading}<svelte:component this={ICONS.dice} size={18} style="margin-right: 8px;" />{/if}
-              Generate Kode
+              {#if !pairLoading}<Icon name="dice" size={18} style="margin-right: 8px;" />{/if}
+              {pairLoading ? 'Membuat...' : 'Generate Kode'}
             </button>
           {/if}
           <div class="divider"><span>atau</span></div>
@@ -214,6 +414,7 @@
               maxlength={6}
               placeholder="000000"
               class="code-input"
+              aria-label="Kode undangan pasangan"
             />
             <button
               class="btn btn--success"
@@ -230,14 +431,14 @@
     <div class="card">
       <p class="section-label section-label--card">Akun Anda</p>
       <div class="info-row">
-        <span class="info-emoji"><svelte:component this={ICONS.profile} size={20} /></span>
+        <span class="info-emoji"><Icon name="profile" size={20} /></span>
         <div>
           <p class="info-key">Nama</p>
           <p class="info-val">{auth.user?.name || '-'}</p>
         </div>
       </div>
       <div class="info-row">
-        <span class="info-emoji"><svelte:component this={ICONS.email} size={20} /></span>
+        <span class="info-emoji"><Icon name="email" size={20} /></span>
         <div>
           <p class="info-key">Email</p>
           <p class="info-val">{auth.user?.email || '-'}</p>
@@ -252,7 +453,7 @@
             {#if auth.partner.avatar}
               <img src={auth.partner.avatar} alt={auth.partner.name} style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
             {:else}
-              <svelte:component this={ICONS.couple} size={18} />
+              <Icon name="couple" size={18} />
             {/if}
           </div>
           <div>
@@ -265,21 +466,13 @@
 
     <div class="card">
       <p class="section-label section-label--card">Pengaturan Profil</p>
-      {#if isEditingAvatar}
-        <div class="edit-form">
-          <label class="file-label">
-            <svelte:component this={ICONS.profile} size={18} style="margin-right: 8px;" /> Pilih foto baru
-            <input type="file" accept="image/*" onchange={uploadAvatar} style="display:none" />
-          </label>
-          <button class="btn btn--ghost btn--block" onclick={() => isEditingAvatar = false}>Batal</button>
-        </div>
-      {:else if isEditingProfile}
+      {#if isEditingProfile}
         <div class="edit-form">
           <input type="text" bind:value={editForm.name} placeholder="Nama" class="form-input" />
           <textarea bind:value={editForm.bio} placeholder="Bio singkat..." class="form-input form-textarea"></textarea>
-          <label class="form-date-label"><svelte:component this={ICONS.birthday} size={14} /> Tanggal Lahir</label>
+          <label class="form-date-label"><Icon name="birthday" size={14} /> Tanggal Lahir</label>
           <input type="date" bind:value={editForm.birthday} class="form-input" />
-          <label class="form-date-label"><svelte:component this={ICONS.couple} size={14} /> Hari Jadian</label>
+          <label class="form-date-label"><Icon name="couple" size={14} /> Hari Jadian</label>
           <input type="date" bind:value={editForm.anniversary} class="form-input" />
           <div class="btn-row">
             <button class="btn btn--primary" onclick={updateProfile} disabled={pairLoading}>
@@ -293,19 +486,89 @@
           class="btn btn--outline btn--block"
           onclick={() => { isEditingProfile = true; editForm = { name: auth.user?.name || '', birthday: auth.user?.birthday || '', anniversary: auth.user?.anniversary || '', bio: auth.user?.bio || '' }; }}
         >
-          <svelte:component this={ICONS.edit} size={16} style="margin-right: 8px;" /> Edit Info Profil
+          <Icon name="edit" size={16} style="margin-right: 8px;" /> Edit Info Profil
+        </button>
+      {/if}
+    </div>
+
+    <div class="card">
+      <p class="section-label section-label--card">Keamanan Akun</p>
+      {#if isChangingPassword}
+        <div class="edit-form">
+          <input type="password" bind:value={passwordForm.current_password} placeholder="Password saat ini" class="form-input" />
+          <input type="password" bind:value={passwordForm.new_password} placeholder="Password baru" class="form-input" />
+          <input type="password" bind:value={passwordForm.confirm_password} placeholder="Ulangi password baru" class="form-input" />
+          <div class="btn-row">
+            <button class="btn btn--primary" onclick={changePassword} disabled={passwordLoading}>
+              {passwordLoading ? 'Menyimpan...' : 'Ganti Password'}
+            </button>
+            <button class="btn btn--ghost" onclick={() => { isChangingPassword = false; passwordForm = { current_password: '', new_password: '', confirm_password: '' }; }}>Batal</button>
+          </div>
+        </div>
+      {:else}
+        <button class="btn btn--outline btn--block" onclick={() => { isChangingPassword = true; pairErrorMsg = ''; successMsg = ''; }}>
+          <Icon name="lock" size={16} style="margin-right: 8px;" /> Ganti Password
         </button>
       {/if}
     </div>
 
     <button class="logout-btn" onclick={logout}>
-      <svelte:component this={ICONS.logout} size={18} /> Keluar
+      <Icon name="logout" size={18} /> Keluar
     </button>
-
 
     <div style="height: 32px;"></div>
   </div>
 </div>
+
+{#if cropModalVisible}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="crop-overlay" onclick={() => cropModalVisible = false}></div>
+  <div class="crop-modal-card">
+    <div class="crop-modal-header">
+      <h3 class="crop-modal-title">Atur Foto Profil</h3>
+      <button class="crop-close-btn" onclick={() => cropModalVisible = false} aria-label="Tutup">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <!-- Canvas area -->
+    <div
+      class="crop-canvas-wrap"
+      onmousedown={onCropMouseDown}
+      onmousemove={onCropMouseMove}
+      onmouseup={onCropMouseUp}
+      onmouseleave={onCropMouseUp}
+      onwheel={onCropWheel}
+      ontouchstart={onCropTouchStart}
+      ontouchmove={onCropTouchMove}
+      ontouchend={onCropTouchEnd}
+      role="img"
+      aria-label="Atur foto profil"
+    >
+      <canvas bind:this={cropCanvasEl} class="crop-canvas"></canvas>
+      <p class="crop-hint">Geser atau cubit untuk menyesuaikan</p>
+    </div>
+    <!-- Bottom controls -->
+    <div class="crop-controls">
+      <button class="crop-ctrl-btn" onclick={cropZoomOut} aria-label="Zoom out" title="Zoom out">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      </button>
+      <button class="crop-ctrl-btn crop-ctrl-reset" onclick={cropReset} aria-label="Reset">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        <span>Reset</span>
+      </button>
+      <button class="crop-ctrl-btn" onclick={cropZoomIn} aria-label="Zoom in" title="Zoom in">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      </button>
+      <button class="crop-ctrl-btn crop-ctrl-save" onclick={saveCroppedAvatar} disabled={pairLoading}>
+        {#if !pairLoading}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        {/if}
+        <span>{pairLoading ? 'Menyimpan...' : 'Gunakan'}</span>
+      </button>
+    </div>
+  </div>
+{/if}
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -313,15 +576,16 @@
   .profile-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: #F5F8FE;
+    background: transparent;
   }
 
   .hero {
-    background: linear-gradient(145deg, #4F7FE0 0%, #6B93E8 50%, #8DB2F0 100%);
-    padding: 48px 24px 56px;
+    background: linear-gradient(145deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%);
+    padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
   }
+
   .hero-blob {
     position: absolute;
     border-radius: 50%;
@@ -395,7 +659,7 @@
   }
   .hero-email {
     font-size: 13px;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.75);
     margin: 0 0 10px;
     white-space: nowrap;
     overflow: hidden;
@@ -433,15 +697,18 @@
     font-size: 13px;
     font-weight: 700;
   }
-  .toast--success { background: #f0fdf4; border: 1.5px solid #86efac; color: #15803d; }
-  .toast--error { background: #fff5f5; border: 1.5px solid #fca5a5; color: #dc2626; }
+  .toast--success { background: #F0FDF4; border: 1.5px solid #86EFAC; color: #15803D; }
+  .toast--error { background: #FFF1F2; border: 1.5px solid #FDA4AF; color: #BE123C; }
 
   .card {
-    background: white;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 24px;
     padding: 18px;
     margin-bottom: 14px;
-    box-shadow: 0 4px 20px rgba(79,127,224,0.08);
+    box-shadow: 0 4px 20px rgba(59,130,246,0.08);
   }
   .card-row {
     display: flex;
@@ -452,38 +719,38 @@
     width: 46px;
     height: 46px;
     border-radius: 14px;
-    background: rgba(79,127,224,0.10);
+    background: rgba(59,130,246,0.10);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
-  .card-icon { width: 22px; height: 22px; }
+  .card-icon { width: 22px; height: 22px; color: #3B82F6; }
   .card-label-group { flex: 1; min-width: 0; }
-  .card-label-title { font-size: 14px; font-weight: 800; color: #2D2A5E; margin: 0 0 2px; }
-  .card-label-sub { font-size: 12px; color: #aab4cc; margin: 0; }
+  .card-label-title { font-size: 14px; font-weight: 800; color: #1E293B; margin: 0 0 2px; }
+  .card-label-sub { font-size: 12px; color: #94A3B8; margin: 0; }
   .badge-check {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #e8fdf0;
-    color: #15803d;
+    background: #DCFCE7;
+    color: #15803D;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 900;
     font-size: 14px;
   }
-  .card-divider { height: 1px; background: #EEF2F9; margin: 14px 0; }
+  .card-divider { height: 1px; background: #E0E7FF; margin: 14px 0; }
 
   .pairing-panel {
     margin-top: 18px;
     padding-top: 18px;
-    border-top: 1.5px dashed #EEF2F9;
+    border-top: 1.5px dashed #E0E7FF;
   }
   .code-display {
-    background: #F5F8FE;
-    border: 2px dashed #B5D8FF;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px dashed rgba(59,130,246,0.3);
     border-radius: 18px;
     padding: 20px;
     text-align: center;
@@ -494,16 +761,139 @@
     font-size: 36px;
     font-weight: 900;
     letter-spacing: 0.25em;
-    color: #4F7FE0;
+    color: #3B82F6;
     margin-bottom: 6px;
   }
-  .code-hint { font-size: 11px; color: #aab4cc; margin: 0; }
+  .code-hint { font-size: 13px; color: #94A3B8; margin: 0; }
+
+  /* Crop Modal */
+  .crop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 200;
+  }
+  .crop-modal-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(92vw, 420px);
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15), 0 4px 24px rgba(0,0,0,0.12);
+    z-index: 201;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .crop-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 0;
+  }
+  .crop-modal-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: #1E293B;
+    font-family: 'Nunito', sans-serif;
+  }
+  .crop-close-btn {
+    background: #F1F5F9;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748B;
+    transition: background 0.15s;
+  }
+  .crop-close-btn:hover { background: #E2E8F0; }
+  .crop-canvas-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    padding: 16px 16px 8px;
+    background: #1E293B;
+  }
+  .crop-canvas-wrap:active { cursor: grabbing; }
+  .crop-canvas {
+    border-radius: 50%;
+    display: block;
+    width: min(70vw, 300px);
+    height: min(70vw, 300px);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 0 6px rgba(59, 130, 246, 0.15);
+  }
+  .crop-hint {
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+    margin: 10px 0 0;
+    font-family: 'Nunito', sans-serif;
+  }
+  .crop-controls {
+    width: 100%;
+    padding: 12px 16px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #F8FAFC;
+    border-top: 1px solid #E0E7FF;
+  }
+  .crop-ctrl-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #EFF6FF;
+    border: none;
+    color: #2563EB;
+    border-radius: 50px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .crop-ctrl-btn:hover { background: #DBEAFE; }
+  .crop-ctrl-btn:active { transform: scale(0.94); }
+  .crop-ctrl-reset {
+    background: #F1F5F9;
+    color: #64748B;
+    font-size: 12px;
+  }
+  .crop-ctrl-reset:hover { background: #E2E8F0; }
+  .crop-ctrl-save {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    color: white;
+    padding: 9px 20px;
+    font-size: 14px;
+    flex: 1;
+    max-width: 160px;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  }
+  .crop-ctrl-save:hover { background: linear-gradient(135deg, #60A5FA, #3B82F6); }
+  .crop-ctrl-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
   .divider {
     display: flex;
     align-items: center;
     gap: 10px;
     margin: 16px 0;
-    color: #ccc;
+    color: #CBD5E1;
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
@@ -513,26 +903,26 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: #EEF2F9;
+    background: #E0E7FF;
   }
   .input-row { display: flex; gap: 10px; }
   .code-input {
     flex: 1;
     padding: 12px 16px;
-    border: 2px solid #EEF2F9;
+    border: 2px solid #E0E7FF;
     border-radius: 14px;
     font-size: 20px;
     font-weight: 900;
     text-align: center;
     letter-spacing: 0.3em;
-    color: #2D2A5E;
+    color: #1E293B;
     text-transform: uppercase;
-    background: #FAFAFF;
+    background: #F8FAFC;
     outline: none;
     font-family: 'Nunito', sans-serif;
     transition: border-color 0.2s;
   }
-  .code-input:focus { border-color: #4F7FE0; }
+  .code-input:focus { border-color: #3B82F6; }
 
   .info-row {
     display: flex;
@@ -541,14 +931,14 @@
     padding: 10px 0;
   }
   .info-emoji { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
-  .info-key { font-size: 11px; color: #aab4cc; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-  .info-val { font-size: 14px; color: #2D2A5E; font-weight: 700; margin: 3px 0 0; }
-  .info-val--accent { color: #4F7FE0; }
+  .info-key { font-size: 11px; color: #94A3B8; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .info-val { font-size: 14px; color: #1E293B; font-weight: 700; margin: 3px 0 0; }
+  .info-val--accent { color: #3B82F6; }
   .partner-avatar-sm {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: #EEF2F9;
+    background: #E0E7FF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -560,7 +950,7 @@
   .section-label {
     font-size: 11px;
     font-weight: 800;
-    color: #aab4cc;
+    color: #94A3B8;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin: 0 0 12px;
@@ -570,29 +960,29 @@
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
   .form-input {
     padding: 11px 14px;
-    border: 2px solid #EEF2F9;
+    border: 2px solid #E0E7FF;
     border-radius: 14px;
     font-size: 14px;
-    color: #2D2A5E;
+    color: #1E293B;
     font-family: 'Nunito', sans-serif;
     font-weight: 600;
     outline: none;
     transition: border-color 0.2s;
-    background: #FAFAFF;
+    background: rgba(255, 255, 255, 0.6);
   }
-  .form-input:focus { border-color: #4F7FE0; }
+  .form-input:focus { border-color: #3B82F6; }
   .form-textarea { resize: vertical; min-height: 72px; }
-  .form-date-label { font-size: 12px; font-weight: 700; color: #aab4cc; margin: 0; }
+  .form-date-label { font-size: 12px; font-weight: 700; color: #94A3B8; margin: 0; }
   .file-label {
     display: block;
     padding: 14px;
-    background: #F5F8FE;
-    border: 2px dashed #B5D8FF;
+    background: #F0F4FF;
+    border: 2px dashed #BFDBFE;
     border-radius: 14px;
     text-align: center;
     font-size: 14px;
     font-weight: 700;
-    color: #4F7FE0;
+    color: #3B82F6;
     cursor: pointer;
   }
   .btn-row { display: flex; gap: 10px; }
@@ -609,23 +999,25 @@
   }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn:active:not(:disabled) { transform: scale(0.97); }
-  .btn--primary { background: linear-gradient(135deg, #4F7FE0, #6B93E8); color: white; }
-  .btn--success { background: linear-gradient(135deg, #5ba882, #7DC4A4); color: white; }
+  .btn--primary { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; }
+  .btn--success { background: linear-gradient(135deg, #22C55E, #16A34A); color: white; }
   .btn--outline {
-    background: white;
-    border: 2px solid #EEF2F9;
-    color: #4F7FE0;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    color: #3B82F6;
   }
-  .btn--ghost { background: #F5F8FE; color: #888; }
+  .btn--ghost { background: rgba(255, 255, 255, 0.4); color: #64748B; }
   .btn--sm { padding: 8px 14px; font-size: 12px; border-radius: 12px; }
   .btn--block { width: 100%; }
 
   .logout-btn {
     width: 100%;
     padding: 16px;
-    background: white;
-    color: #e07070;
-    border: 2px solid #fde8e8;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #F43F5E;
+    border: 1px solid rgba(244, 63, 94, 0.3);
     border-radius: 20px;
     font-size: 15px;
     font-weight: 800;
@@ -637,6 +1029,7 @@
     font-family: 'Nunito', sans-serif;
     transition: background 0.2s;
     margin-top: 4px;
+    box-shadow: 0 4px 16px rgba(244,63,94,0.05);
   }
-  .logout-btn:hover { background: #fff5f5; }
+  .logout-btn:hover { background: rgba(255, 241, 242, 0.8); }
 </style>

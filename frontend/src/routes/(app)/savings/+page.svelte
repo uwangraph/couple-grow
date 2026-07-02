@@ -3,7 +3,7 @@
   import { API_URL } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { ICONS } from '$lib/icons';
+  import Icon from '$lib/Icon.svelte';
 
   let savings = $state<any[]>([]);
   let loading = $state(true);
@@ -21,39 +21,53 @@
     await fetchSavings();
   });
 
+  function handleUnauthorized() {
+    auth.logout();
+    goto('/login');
+  }
+
   async function fetchSavings() {
+    if (!auth.token) return;
     try {
       const res = await fetch(`${API_URL}/savings`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
+      if (res.status === 401) { handleUnauthorized(); return; }
       const data = await res.json();
       if (res.ok) savings = data.savings || [];
     } catch(e) {} finally { loading = false; }
   }
 
+  import { toast } from '$lib/toast.svelte';
+
   async function createSaving(e: Event) {
     e.preventDefault();
+    if (!auth.token) { goto('/login'); return; }
     try {
       const res = await fetch(`${API_URL}/savings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({ name, target_amount: parseInt(targetAmount) })
       });
-      if (!res.ok) throw new Error('Gagal buat tabungan');
+      if (res.status === 401) { handleUnauthorized(); return; }
+      if (!res.ok) throw new Error('Gagal membuat mimpi/tabungan baru');
       showModal = false; name = ''; targetAmount = '';
       await fetchSavings();
-    } catch(e: any) { alert(e.message); }
+      toast.success('Mimpi baru berhasil ditambahkan!');
+    } catch(e: any) { toast.error(e.message || 'Gagal menambahkan mimpi'); }
   }
 
   async function topupSaving(e: Event) {
     e.preventDefault();
     if (!selectedSaving) return;
     try {
-      await fetch(`${API_URL}/savings/${selectedSaving.id}/topup`, {
+      const resTopup = await fetch(`${API_URL}/savings/${selectedSaving.id}/topup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({ amount: parseInt(topupAmount) })
       });
+      if (!resTopup.ok) throw new Error('Gagal melakukan top up tabungan');
+
       await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
@@ -61,7 +75,8 @@
       });
       showTopupModal = false; topupAmount = '';
       await fetchSavings();
-    } catch(e: any) { alert(e.message); }
+      toast.success('Top up tabungan berhasil!');
+    } catch(e: any) { toast.error(e.message || 'Gagal melakukan top up'); }
   }
 
   function openTopup(s: any) { selectedSaving = s; showTopupModal = true; }
@@ -95,7 +110,7 @@
         <div>
           <p class="header-sub">Target Bersama</p>
           <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
-            Tabungan <svelte:component this={ICONS.wallet} size={24} />
+            Tabungan <Icon name="wallet" size={24} />
           </h1>
         </div>
         <button class="create-btn" onclick={() => showModal = true}>
@@ -138,7 +153,7 @@
     {:else if savings.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          <svelte:component this={ICONS.empty} size={56} />
+          <Icon name="empty" size={56} />
         </div>
         <p class="empty-title">Belum ada target tabungan</p>
         <p class="empty-sub">Yuk buat target impian bersama!</p>
@@ -157,14 +172,14 @@
             <div class="saving-header">
               <div class="saving-emoji-wrap {isDone ? 'saving-emoji-wrap--done' : ''}">
                 <div class="saving-emoji">
-                  <svelte:component this={isDone ? ICONS.success : ICONS.savings} size={24} />
+                  <Icon name={isDone ? 'success' : 'savings'} size={24} />
                 </div>
               </div>
               <div class="saving-meta">
                 <h3 class="saving-name">{s.name}</h3>
                 {#if s.deadline}
                   <p class="saving-deadline" style="display: flex; align-items: center; gap: 5px;">
-                    <svelte:component this={ICONS.calendar} size={12} />
+                    <Icon name="calendar" size={12} />
                     {new Date(s.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 {/if}
@@ -206,18 +221,18 @@
             <!-- Completed banner -->
             {#if isDone}
               <div class="done-banner" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <svelte:component this={ICONS.sparkles} size={16} /> Target tercapai! Selamat!
+                <Icon name="sparkles" size={16} /> Target tercapai! Selamat!
               </div>
             {/if}
 
             <!-- Actions -->
             <div class="saving-actions">
               <button class="action-btn action-btn--topup" onclick={() => openTopup(s)}>
-                <svelte:component this={ICONS.income} size={16} />
+                <Icon name="income" size={16} />
                 Top Up
               </button>
               <button class="action-btn action-btn--chat" onclick={() => goToSavingChat(s)}>
-                <svelte:component this={ICONS.chat} size={16} />
+                <Icon name="chat" size={16} />
                 Diskusi
               </button>
             </div>
@@ -236,7 +251,7 @@
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
           <div class="modal-icon-circle">
-            <svelte:component this={ICONS.wallet} size={24} />
+            <Icon name="wallet" size={24} />
           </div>
           <div>
             <h3 class="modal-title">Buat Target Tabungan</h3>
@@ -280,7 +295,7 @@
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
           <div class="modal-icon-circle modal-icon-circle--green">
-            <svelte:component this={ICONS.income} size={24} />
+            <Icon name="income" size={24} />
           </div>
           <div>
             <h3 class="modal-title">Top Up Tabungan</h3>
@@ -331,27 +346,28 @@
   .savings-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: #F5F8FE;
+    background: transparent;
   }
 
-  /* ── Header ── */
+  /* Header */
   .header {
-    background: linear-gradient(145deg, #4F7FE0 0%, #6B93E8 55%, #8DB2F0 100%);
-    padding: 32px 20px 24px;
+    background: linear-gradient(145deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%);
+    padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
   }
-  .blob { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.07); }
+
+  .blob { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.08); }
   .b1 { width: 160px; height: 160px; top: -50px; right: -40px; }
   .b2 { width: 90px; height: 90px; bottom: -20px; left: -20px; }
   .header-inner { position: relative; z-index: 1; }
   .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .header-sub { font-size: 12px; color: rgba(255,255,255,0.65); margin: 0 0 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
   .header-title { font-size: 24px; font-weight: 900; color: white; margin: 0; }
 
   .create-btn {
     background: white;
-    color: #4F7FE0;
+    color: #3B82F6;
     border: none;
     border-radius: 14px;
     padding: 10px 16px;
@@ -375,27 +391,27 @@
     backdrop-filter: blur(4px);
   }
   .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
-  .summary-label { font-size: 11px; color: rgba(255,255,255,0.65); margin: 0 0 3px; font-weight: 700; }
+  .summary-label { font-size: 11px; color: rgba(255,255,255,0.7); margin: 0 0 3px; font-weight: 700; }
   .summary-amount { font-size: 18px; font-weight: 900; color: white; margin: 0; }
   .summary-track { height: 8px; background: rgba(255,255,255,0.2); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
   .summary-fill { height: 100%; background: white; border-radius: 99px; transition: width 0.6s ease; }
-  .summary-meta { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 700; }
+  .summary-meta { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 700; }
   .summary-pct { color: white; }
 
-  /* ── Body ── */
+  /* Body */
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E6EFFF; border-top-color: #4F7FE0; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
   .empty-state { text-align: center; padding: 60px 20px; }
-  .empty-icon { margin-bottom: 14px; color: #aab4cc; display: flex; justify-content: center; }
-  .empty-title { font-size: 16px; font-weight: 900; color: #2D2A5E; margin: 0 0 6px; }
-  .empty-sub { font-size: 13px; color: #aab4cc; margin: 0 0 22px; }
+  .empty-icon { margin-bottom: 14px; color: #94A3B8; display: flex; justify-content: center; }
+  .empty-title { font-size: 16px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
+  .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
   .empty-cta {
-    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
     color: white;
     border: none;
     border-radius: 16px;
@@ -404,7 +420,7 @@
     font-size: 14px;
     font-weight: 900;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(123,110,246,0.3);
+    box-shadow: 0 6px 20px rgba(59,130,246,0.3);
   }
 
   /* Savings List */
@@ -412,16 +428,18 @@
 
   /* Saving Card */
   .saving-card {
-    background: white;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 24px;
     padding: 18px;
-    box-shadow: 0 4px 20px rgba(123,110,246,0.08);
-    border: 2px solid transparent;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.08);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     transition: transform 0.15s;
   }
   .saving-card--done {
-    border-color: #86efac;
-    background: linear-gradient(to bottom right, #fff, #f0fdf4);
+    border-color: rgba(134, 239, 172, 0.5);
+    background: linear-gradient(to bottom right, rgba(255,255,255,0.7), rgba(240,253,244,0.7));
   }
   .saving-card:active { transform: scale(0.99); }
 
@@ -430,52 +448,52 @@
     width: 48px;
     height: 48px;
     border-radius: 16px;
-    background: #F0F5FF;
+    background: #EFF6FF;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: #4F7FE0;
+    color: #3B82F6;
   }
-  .saving-emoji-wrap--done { background: #f0fdf4; color: #15803d; }
+  .saving-emoji-wrap--done { background: #F0FDF4; color: #15803D; }
   .saving-meta { flex: 1; min-width: 0; }
-  .saving-name { font-size: 15px; font-weight: 900; color: #2D2A5E; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .saving-deadline { font-size: 11px; color: #aab4cc; margin: 0; font-weight: 700; }
+  .saving-name { font-size: 15px; font-weight: 900; color: #1E293B; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .saving-deadline { font-size: 11px; color: #94A3B8; margin: 0; font-weight: 700; }
 
   .saving-pct-badge {
     font-size: 20px;
     font-weight: 900;
-    color: #4F7FE0;
-    background: #F0F5FF;
+    color: #0EA5E9;
+    background: #F0F9FF;
     padding: 5px 11px;
     border-radius: 12px;
     flex-shrink: 0;
     line-height: 1;
   }
-  .saving-pct-badge--done { background: #f0fdf4; color: #15803d; }
+  .saving-pct-badge--done { background: #F0FDF4; color: #15803D; }
 
   /* Progress */
   .saving-progress { margin-bottom: 12px; }
-  .progress-track { height: 8px; background: #F0F5FF; border-radius: 99px; overflow: hidden; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, #4F7FE0, #8DB2F0); border-radius: 99px; transition: width 0.6s ease; }
-  .progress-fill--done { background: linear-gradient(90deg, #22c55e, #86efac); }
+  .progress-track { height: 8px; background: #E0F2FE; border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #0EA5E9, #7DD3FC); border-radius: 99px; transition: width 0.6s ease; }
+  .progress-fill--done { background: linear-gradient(90deg, #22C55E, #86EFAC); }
 
   /* Amounts */
   .saving-amounts { display: flex; justify-content: space-between; margin-bottom: 14px; }
-  .amount-label { font-size: 10px; font-weight: 800; color: #aab4cc; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px; }
-  .amount-val { font-size: 13px; font-weight: 800; color: #2D2A5E; margin: 0; }
-  .amount-val--collected { color: #4F7FE0; }
-  .amount-val--remaining { color: #E06070; }
+  .amount-label { font-size: 10px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px; }
+  .amount-val { font-size: 13px; font-weight: 800; color: #1E293B; margin: 0; }
+  .amount-val--collected { color: #0EA5E9; }
+  .amount-val--remaining { color: #F43F5E; }
 
   /* Done banner */
   .done-banner {
-    background: #f0fdf4;
-    border: 1.5px solid #86efac;
+    background: #F0FDF4;
+    border: 1.5px solid #86EFAC;
     border-radius: 12px;
     padding: 8px 12px;
     font-size: 13px;
     font-weight: 800;
-    color: #15803d;
+    color: #15803D;
     text-align: center;
     margin-bottom: 14px;
   }
@@ -498,23 +516,28 @@
     transition: transform 0.12s, opacity 0.15s;
   }
   .action-btn:active { transform: scale(0.96); }
-  .action-btn--topup { background: #F0F5FF; color: #4F7FE0; }
-  .action-btn--topup:hover { background: #E6EFFF; }
-  .action-btn--chat { background: #F0FDF4; color: #15803d; }
-  .action-btn--chat:hover { background: #dcfce7; }
+  .action-btn--topup { background: #EFF6FF; color: #3B82F6; }
+  .action-btn--topup:hover { background: #DBEAFE; }
+  .action-btn--chat { background: #F0F9FF; color: #0EA5E9; }
+  .action-btn--chat:hover { background: #E0F2FE; }
 
-  /* ── Modal ── */
+  /* Modal */
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(45,42,94,0.45);
+    background: rgba(30,41,59,0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     display: flex;
     align-items: flex-end;
     justify-content: center;
     z-index: 100;
   }
   .modal {
-    background: white;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.8);
     border-radius: 28px 28px 0 0;
     width: 100%;
     max-width: 540px;
@@ -525,59 +548,59 @@
     from { transform: translateY(40px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
-  .modal-handle { width: 44px; height: 5px; background: #E0DBFF; border-radius: 99px; margin: 0 auto 20px; }
+  .modal-handle { width: 44px; height: 5px; background: #E0E7FF; border-radius: 99px; margin: 0 auto 20px; }
 
   .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
   .modal-icon-circle {
     width: 50px;
     height: 50px;
     border-radius: 16px;
-    background: #F0F5FF;
+    background: #EFF6FF;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #4F7FE0;
+    color: #3B82F6;
     flex-shrink: 0;
   }
-  .modal-icon-circle--green { background: #F0FDF4; color: #22c55e; }
-  .modal-title { font-size: 17px; font-weight: 900; color: #2D2A5E; margin: 0 0 3px; }
-  .modal-subtitle { font-size: 13px; color: #aab4cc; margin: 0; font-weight: 700; }
+  .modal-icon-circle--green { background: #F0FDF4; color: #22C55E; }
+  .modal-title { font-size: 17px; font-weight: 900; color: #1E293B; margin: 0 0 3px; }
+  .modal-subtitle { font-size: 13px; color: #94A3B8; margin: 0; font-weight: 700; }
 
   /* Topup progress mini */
-  .topup-progress { background: #F5F8FE; border-radius: 16px; padding: 14px; margin-bottom: 18px; }
+  .topup-progress { background: #F0F4FF; border-radius: 16px; padding: 14px; margin-bottom: 18px; }
   .topup-progress-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
   .topup-progress-row:last-child { margin-bottom: 0; margin-top: 8px; }
-  .topup-label { font-size: 11px; font-weight: 800; color: #aab4cc; }
-  .topup-amount-text { font-size: 13px; font-weight: 900; color: #4F7FE0; }
+  .topup-label { font-size: 11px; font-weight: 800; color: #94A3B8; }
+  .topup-amount-text { font-size: 13px; font-weight: 900; color: #0EA5E9; }
 
   /* Form */
   .modal-form { display: flex; flex-direction: column; gap: 14px; }
   .form-group { display: flex; flex-direction: column; gap: 5px; }
-  .form-label { font-size: 11px; font-weight: 800; color: #aab4cc; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-label { font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; }
   .form-input {
     padding: 13px 16px;
-    border: 2px solid #E6EFFF;
+    border: 2px solid #E0E7FF;
     border-radius: 16px;
     font-size: 15px;
     font-weight: 700;
-    color: #2D2A5E;
+    color: #1E293B;
     font-family: 'Nunito', sans-serif;
     outline: none;
-    background: #FAFAFF;
+    background: #F8FAFC;
     transition: border-color 0.2s;
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #4F7FE0; }
+  .form-input:focus { border-color: #3B82F6; }
   .form-input--amount { font-size: 24px; font-weight: 900; }
-  .form-input--green:focus { border-color: #22c55e; }
+  .form-input--green:focus { border-color: #22C55E; }
 
   .modal-actions { display: flex; gap: 12px; padding-top: 4px; }
   .modal-cancel {
     flex: 1;
     padding: 14px;
-    background: #F5F8FE;
-    color: #aab4cc;
+    background: #F0F4FF;
+    color: #94A3B8;
     border: none;
     border-radius: 16px;
     font-family: 'Nunito', sans-serif;
@@ -588,7 +611,7 @@
   .modal-submit {
     flex: 2;
     padding: 14px;
-    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
     color: white;
     border: none;
     border-radius: 16px;
@@ -596,12 +619,12 @@
     font-size: 14px;
     font-weight: 900;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(123,110,246,0.3);
+    box-shadow: 0 6px 20px rgba(59,130,246,0.3);
     transition: transform 0.12s;
   }
   .modal-submit:active { transform: scale(0.97); }
   .modal-submit--green {
-    background: linear-gradient(135deg, #22c55e, #5ba882);
-    box-shadow: 0 6px 20px rgba(91,168,130,0.3);
+    background: linear-gradient(135deg, #22C55E, #16A34A);
+    box-shadow: 0 6px 20px rgba(34,197,94,0.3);
   }
 </style>

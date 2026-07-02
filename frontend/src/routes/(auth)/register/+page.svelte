@@ -1,7 +1,7 @@
 <script lang="ts">
   import { API_URL } from '$lib/api';
   import { goto } from '$app/navigation';
-  import { ICONS } from '$lib/icons';
+  import Icon from '$lib/Icon.svelte';
 
   let name = $state('');
   let email = $state('');
@@ -54,10 +54,11 @@
 
   <button type="submit" disabled={loading} class="auth-btn flex items-center justify-center gap-2">
     {#if loading}
-      <img src={ICONS.loading} alt="loading" class="w-5 h-5 animate-spin invert" /> Memproses...
+      <Icon name="loading" class="w-5 h-5 animate-spin invert" /> Memproses...
     {:else}
-      Daftar Sekarang <img src={ICONS.arrow} alt="arrow" class="w-4 h-4 invert" />
+      Daftar Sekarang <Icon name="arrow" class="w-4 h-4 invert" />
     {/if}
+
   </button>
 
   <p style="text-align: center; font-size: 13px; color: #8898c0; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
