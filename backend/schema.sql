@@ -21,6 +21,19 @@ CREATE TABLE IF NOT EXISTS invites (
   FOREIGN KEY (from_user_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS password_resets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  code TEXT NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used BOOLEAN DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_user_code
+ON password_resets(user_id, code, used, expires_at);
+
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL,
@@ -82,8 +95,17 @@ CREATE TABLE IF NOT EXISTS messages (
   room_id INTEGER NOT NULL,
   sender_id TEXT NOT NULL,
   message TEXT NOT NULL,
+  type TEXT DEFAULT 'text',
+  file_url TEXT,
+  reply_to_id INTEGER,
+  is_deleted BOOLEAN DEFAULT 0,
+  is_pinned BOOLEAN DEFAULT 0,
+  is_starred BOOLEAN DEFAULT 0,
+  is_edited BOOLEAN DEFAULT 0,
+  reactions TEXT,
   is_read BOOLEAN DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (room_id) REFERENCES chat_rooms(id),
-  FOREIGN KEY (sender_id) REFERENCES users(id)
+  FOREIGN KEY (sender_id) REFERENCES users(id),
+  FOREIGN KEY (reply_to_id) REFERENCES messages(id)
 );
