@@ -2,10 +2,11 @@ import {
   Home, User, Heart, MessageSquare, FileText, Wallet, PiggyBank, 
   TrendingUp, TrendingDown, Inbox, Loader2, Bell, Smile, Mail, 
   LogOut, Dice5, Check, Link, ChevronRight, Folder, Calendar,
-  Gift, Users, Sparkles, CheckCircle2, AlertCircle, Pencil
+  Gift, Users, Sparkles, CheckCircle2, AlertCircle, Pencil, Lock
 } from '@lucide/svelte';
+import type { Component } from 'svelte';
 
-export const ICONS = {
+export const ICONS: Record<string, Component> = {
   home: Home,
   profile: User,
   couple: Heart,
@@ -32,5 +33,13 @@ export const ICONS = {
   sparkles: Sparkles,
   success: CheckCircle2,
   error: AlertCircle,
-  edit: Pencil
+  edit: Pencil,
+  lock: Lock
+};
+
+export {
+  Home, User, Heart, MessageSquare, FileText, Wallet, PiggyBank, 
+  TrendingUp, TrendingDown, Inbox, Loader2, Bell, Smile, Mail, 
+  LogOut, Dice5, Check, Link, ChevronRight, Folder, Calendar,
+  Gift, Users, Sparkles, CheckCircle2, AlertCircle, Pencil, Lock
 };
