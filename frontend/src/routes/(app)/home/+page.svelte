@@ -4,10 +4,12 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
+  import Onboarding from '$lib/Onboarding.svelte';
 
   let transactions = $state<any[]>([]);
   let savings = $state<any[]>([]);
   let loading = $state(true);
+  let onboarding: any;
 
   const hour = new Date().getHours();
   const greeting = hour < 5 ? 'Selamat malam' : hour < 12 ? 'Selamat pagi' : hour < 15 ? 'Selamat siang' : hour < 18 ? 'Selamat sore' : 'Selamat malam';
@@ -17,6 +19,11 @@
   onMount(async () => {
     await Promise.all([fetchTransactions(), fetchSavings()]);
     loading = false;
+    
+    // Start onboarding after data loaded
+    setTimeout(() => {
+      if (onboarding) onboarding.start();
+    }, 500);
   });
 
   function handleUnauthorized() {
@@ -150,6 +157,37 @@
   <div class="body">
 
     <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="quick-btn quick-btn--expense" onclick={() => goto('/wallet')}>
+        <div class="quick-icon quick-icon--red">
+          <Icon name="expense" size={20} />
+        </div>
+        <span>Catat Pengeluaran</span>
+      </button>
+      
+      <button class="quick-btn quick-btn--income" onclick={() => goto('/wallet')}>
+        <div class="quick-icon quick-icon--green">
+          <Icon name="income" size={20} />
+        </div>
+        <span>Catat Pemasukan</span>
+      </button>
+      
+      <button class="quick-btn quick-btn--saving" onclick={() => goto('/savings')}>
+        <div class="quick-icon quick-icon--blue">
+          <Icon name="savings" size={20} />
+        </div>
+        <span>Nabung</span>
+      </button>
+      
+      <button class="quick-btn quick-btn--wish" onclick={() => goto('/wishlist')}>
+        <div class="quick-icon quick-icon--pink">
+          <Icon name="sparkles" size={20} />
+        </div>
+        <span>Wishlist</span>
+      </button>
+    </div>
+
+    <!-- Quick Actions -->
     <div class="section">
       <p class="section-title">Menu Cepat</p>
       <div class="quick-grid">
@@ -238,6 +276,8 @@
   </div>
 </div>
 
+<Onboarding bind:this={onboarding} />
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
@@ -282,6 +322,81 @@
     position: relative;
     z-index: 2;
   }
+  .balance-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 6px;
+  }
+
+  /* Quick Actions */
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .quick-btn {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 18px;
+    padding: 16px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    color: #1E293B;
+    text-align: center;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  }
+
+  .quick-btn:active {
+    transform: scale(0.95);
+  }
+
+  .quick-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+  }
+
+  .quick-btn:hover .quick-icon {
+    transform: scale(1.1);
+  }
+
+  .quick-icon--red {
+    background: linear-gradient(135deg, #FFF1F2, #FFE4E6);
+    color: #F43F5E;
+  }
+
+  .quick-icon--green {
+    background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+    color: #22C55E;
+  }
+
+  .quick-icon--blue {
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    color: #3B82F6;
+  }
+
+  .quick-icon--pink {
+    background: linear-gradient(135deg, #FDF2F8, #FCE7F3);
+    color: #EC4899;
+  }
+
   .balance-label {
     font-size: 11px;
     font-weight: 800;
