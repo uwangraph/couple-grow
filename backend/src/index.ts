@@ -452,6 +452,178 @@ app.get('/transactions', async (c) => {
   return c.json({ transactions: transactions.results })
 })
 
+// ANALYTICS
+app.get('/analytics/spending-pattern', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ pattern: [] })
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const { period = 'week' } = c.req.query() // week or month
+
+  try {
+    let groupBy = ''
+    let dateFormat = ''
+    
+    if (period === 'week') {
+      // Last 7 days
+      groupBy = "date(created_at)"
+      dateFormat = "SELECT date(created_at) as date, SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense, SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income FROM transactions WHERE couple_id = ? AND created_at >= datetime('now', '-7 days') GROUP BY date(created_at) ORDER BY date ASC"
+    } else {
+      // Last 6 months
+      groupBy = "strftime('%Y-%m', created_at)"
+      dateFormat = "SELECT strftime('%Y-%m', created_at) as period, SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense, SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income FROM transactions WHERE couple_id = ? AND created_at >= datetime('now', '-6 months') GROUP BY strftime('%Y-%m', created_at) ORDER BY period ASC"
+    }
+
+    const pattern = await c.env.DB.prepare(dateFormat).bind(couple_id).all()
+    return c.json({ pattern: pattern.results })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.get('/analytics/category-breakdown', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ breakdown: [] })
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const { period = 'month' } = c.req.query() // month, 3months, year
+
+  try {
+    let dateFilter = ''
+    if (period === 'month') {
+      dateFilter = "datetime('now', '-1 month')"
+    } else if (period === '3months') {
+      dateFilter = "datetime('now', '-3 months')"
+    } else {
+      dateFilter = "datetime('now', '-1 year')"
+    }
+
+    const breakdown = await c.env.DB.prepare(
+      `SELECT category, SUM(amount) as total, COUNT(*) as count 
+       FROM transactions 
+       WHERE couple_id = ? AND type = 'expense' AND created_at >= ${dateFilter}
+       GROUP BY category 
+       ORDER BY total DESC`
+    ).bind(couple_id).all()
+
+    return c.json({ breakdown: breakdown.results })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.get('/analytics/compare-months', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ comparison: {} })
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+
+  try {
+    // Current month
+    const currentMonth = await c.env.DB.prepare(
+      `SELECT 
+        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense,
+        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+        COUNT(CASE WHEN type = 'expense' THEN 1 END) as expense_count
+       FROM transactions 
+       WHERE couple_id = ? AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')`
+    ).bind(couple_id).first()
+
+    // Previous month
+    const previousMonth = await c.env.DB.prepare(
+      `SELECT 
+        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense,
+        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+        COUNT(CASE WHEN type = 'expense' THEN 1 END) as expense_count
+       FROM transactions 
+       WHERE couple_id = ? AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', '-1 month')`
+    ).bind(couple_id).first()
+
+    const currentExpense = (currentMonth?.expense as number) || 0
+    const previousExpense = (previousMonth?.expense as number) || 0
+    
+    const difference = previousExpense > 0 
+      ? Math.round(((previousExpense - currentExpense) / previousExpense) * 100)
+      : 0
+
+    return c.json({ 
+      comparison: {
+        current: currentMonth,
+        previous: previousMonth,
+        difference_percentage: difference,
+        status: difference > 0 ? 'hemat' : difference < 0 ? 'boros' : 'sama'
+      }
+    })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.get('/analytics/savings-velocity', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ velocity: [] })
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+
+  try {
+    const savings = await c.env.DB.prepare(
+      'SELECT id, name, target_amount, current_amount, created_at FROM savings WHERE couple_id = ?'
+    ).bind(couple_id).all()
+
+    const velocities = []
+    
+    for (const saving of savings.results as any[]) {
+      // Calculate days since created
+      const created = new Date(saving.created_at)
+      const now = new Date()
+      const daysPassed = Math.max(1, Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+      
+      // Calculate average per day
+      const avgPerDay = saving.current_amount / daysPassed
+      
+      // Calculate days needed to reach target
+      const remaining = saving.target_amount - saving.current_amount
+      const daysNeeded = remaining > 0 && avgPerDay > 0 ? Math.ceil(remaining / avgPerDay) : 0
+      
+      // Convert to months
+      const monthsNeeded = Math.ceil(daysNeeded / 30)
+      
+      // Estimated completion date
+      const estimatedDate = new Date()
+      estimatedDate.setDate(estimatedDate.getDate() + daysNeeded)
+
+      velocities.push({
+        saving_id: saving.id,
+        name: saving.name,
+        current_amount: saving.current_amount,
+        target_amount: saving.target_amount,
+        days_passed: daysPassed,
+        avg_per_day: Math.round(avgPerDay),
+        days_needed: daysNeeded,
+        months_needed: monthsNeeded,
+        estimated_completion: daysNeeded > 0 ? estimatedDate.toISOString() : null,
+        velocity_status: avgPerDay > 0 ? 'on_track' : 'stalled'
+      })
+    }
+
+    return c.json({ velocity: velocities })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
 // SAVINGS
 app.post('/savings', async (c) => {
   const payload = c.get('jwtPayload')
@@ -470,7 +642,31 @@ app.post('/savings', async (c) => {
       'INSERT INTO savings (couple_id, name, target_amount, current_amount, deadline) VALUES (?, ?, ?, 0, ?) RETURNING id'
     ).bind(couple_id, name, target_amount, deadline || null).first()
     
+    // Log activity: created
+    await c.env.DB.prepare(
+      'INSERT INTO saving_activities (saving_id, user_id, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+    ).bind(res?.id, payload.id, 'created', target_amount, `Target: ${name}`).run()
+    
     return c.json({ message: 'Saving created', id: res?.id })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.get('/savings/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    const saving = await c.env.DB.prepare(
+      'SELECT * FROM savings WHERE id = ?'
+    ).bind(id).first()
+
+    if (!saving) return c.json({ error: 'Saving not found' }, 404)
+
+    return c.json({ saving })
   } catch(e) {
     return c.json({ error: 'Database error' }, 500)
   }
@@ -499,15 +695,444 @@ app.post('/savings/:id/topup', async (c) => {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
 
   const id = c.req.param('id')
-  const { amount } = await c.req.json()
+  const { amount, note } = await c.req.json()
   if (!amount) return c.json({ error: 'Missing amount' }, 400)
 
   try {
+    // Get saving info before update
+    const saving = await c.env.DB.prepare(
+      'SELECT current_amount, target_amount FROM savings WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!saving) return c.json({ error: 'Saving not found' }, 404)
+    
+    const oldAmount = saving.current_amount as number
+    const targetAmount = saving.target_amount as number
+    const newAmount = oldAmount + amount
+    
+    // Calculate milestone
+    const oldPct = Math.floor((oldAmount / targetAmount) * 100)
+    const newPct = Math.floor((newAmount / targetAmount) * 100)
+    
+    // Update saving
     await c.env.DB.prepare(
       'UPDATE savings SET current_amount = current_amount + ? WHERE id = ?'
     ).bind(amount, id).run()
 
-    return c.json({ message: 'Top up successful' })
+    // Log activity: topup
+    await c.env.DB.prepare(
+      'INSERT INTO saving_activities (saving_id, user_id, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+    ).bind(id, payload.id, 'topup', amount, note || null).run()
+    
+    // Check for milestone reached (25%, 50%, 75%, 100%)
+    const milestones = [25, 50, 75, 100]
+    for (const milestone of milestones) {
+      if (oldPct < milestone && newPct >= milestone) {
+        await c.env.DB.prepare(
+          'INSERT INTO saving_activities (saving_id, user_id, type, amount, metadata) VALUES (?, ?, ?, ?, ?)'
+        ).bind(id, payload.id, 'milestone', newAmount, JSON.stringify({ percentage: milestone })).run()
+      }
+    }
+
+    return c.json({ 
+      message: 'Top up successful',
+      milestone: milestones.find(m => oldPct < m && newPct >= m) || null
+    })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.post('/savings/:id/deduct', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  const { amount, note } = await c.req.json()
+  if (!amount) return c.json({ error: 'Missing amount' }, 400)
+
+  try {
+    // Get current amount first to validate
+    const saving = await c.env.DB.prepare(
+      'SELECT current_amount FROM savings WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!saving) return c.json({ error: 'Saving not found' }, 404)
+    
+    const currentAmount = saving.current_amount as number
+    if (currentAmount < amount) {
+      return c.json({ error: 'Insufficient balance in savings' }, 400)
+    }
+
+    await c.env.DB.prepare(
+      'UPDATE savings SET current_amount = current_amount - ? WHERE id = ?'
+    ).bind(amount, id).run()
+
+    // Log activity: deduct
+    await c.env.DB.prepare(
+      'INSERT INTO saving_activities (saving_id, user_id, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+    ).bind(id, payload.id, 'deduct', amount, note || null).run()
+
+    return c.json({ message: 'Deduction successful' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.put('/savings/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  const { name, target_amount, deadline } = await c.req.json()
+  
+  if (!name && !target_amount && deadline === undefined) {
+    return c.json({ error: 'No fields to update' }, 400)
+  }
+
+  try {
+    // Verify saving exists and belongs to couple
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user || !user.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
+    const saving = await c.env.DB.prepare(
+      'SELECT couple_id FROM savings WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!saving) return c.json({ error: 'Saving not found' }, 404)
+    if (saving.couple_id !== couple_id) return c.json({ error: 'Unauthorized' }, 403)
+
+    // Build dynamic update query
+    const updates: string[] = []
+    const values: any[] = []
+    
+    if (name) {
+      updates.push('name = ?')
+      values.push(name)
+    }
+    if (target_amount) {
+      updates.push('target_amount = ?')
+      values.push(target_amount)
+    }
+    if (deadline !== undefined) {
+      updates.push('deadline = ?')
+      values.push(deadline || null)
+    }
+    
+    values.push(id)
+    
+    await c.env.DB.prepare(
+      `UPDATE savings SET ${updates.join(', ')} WHERE id = ?`
+    ).bind(...values).run()
+
+    // Log activity: updated
+    await c.env.DB.prepare(
+      'INSERT INTO saving_activities (saving_id, user_id, type, note) VALUES (?, ?, ?, ?)'
+    ).bind(id, payload.id, 'updated', 'Tabungan diupdate').run()
+
+    return c.json({ message: 'Saving updated successfully' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.delete('/savings/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    // Verify saving exists and belongs to couple
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user || !user.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
+    const saving = await c.env.DB.prepare(
+      'SELECT couple_id FROM savings WHERE id = ?'
+    ).bind(id).first()
+    
+    if (!saving) return c.json({ error: 'Saving not found' }, 404)
+    if (saving.couple_id !== couple_id) return c.json({ error: 'Unauthorized' }, 403)
+
+    await c.env.DB.prepare('DELETE FROM savings WHERE id = ?').bind(id).run()
+
+    return c.json({ message: 'Saving deleted successfully' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+// SAVING ACTIVITIES (History & Contribution Tracking)
+app.get('/savings/:id/activities', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    const activities = await c.env.DB.prepare(
+      `SELECT sa.*, u.name as user_name 
+       FROM saving_activities sa 
+       JOIN users u ON sa.user_id = u.id 
+       WHERE sa.saving_id = ? 
+       ORDER BY sa.created_at DESC`
+    ).bind(id).all()
+
+    return c.json({ activities: activities.results })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.get('/savings/:id/contributions', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    const contributions = await c.env.DB.prepare(
+      `SELECT u.id, u.name, u.avatar, 
+       SUM(CASE WHEN sa.type = 'topup' THEN sa.amount ELSE 0 END) as total_topup,
+       SUM(CASE WHEN sa.type = 'deduct' THEN sa.amount ELSE 0 END) as total_deduct,
+       SUM(CASE WHEN sa.type = 'topup' THEN sa.amount ELSE 0 END) - 
+       SUM(CASE WHEN sa.type = 'deduct' THEN sa.amount ELSE 0 END) as net_contribution
+       FROM saving_activities sa
+       JOIN users u ON sa.user_id = u.id
+       WHERE sa.saving_id = ? AND sa.type IN ('topup', 'deduct')
+       GROUP BY u.id, u.name, u.avatar`
+    ).bind(id).all()
+
+    return c.json({ contributions: contributions.results })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+// BUDGETS
+app.get('/budgets', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ budgets: [] })
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  
+  // Get current month and year
+  const now = new Date()
+  const month = now.getMonth() + 1
+  const year = now.getFullYear()
+
+  try {
+    const budgets = await c.env.DB.prepare(
+      'SELECT * FROM budgets WHERE couple_id = ? AND period_month = ? AND period_year = ?'
+    ).bind(couple_id, month, year).all()
+
+    return c.json({ budgets: budgets.results })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.post('/budgets', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  
+  const { category, amount, period_month, period_year } = await c.req.json()
+  if (!category || !amount) return c.json({ error: 'Missing fields' }, 400)
+
+  // Default to current period if not specified
+  const now = new Date()
+  const month = period_month || now.getMonth() + 1
+  const year = period_year || now.getFullYear()
+
+  try {
+    await c.env.DB.prepare(
+      'INSERT OR REPLACE INTO budgets (couple_id, category, amount, period_month, period_year) VALUES (?, ?, ?, ?, ?)'
+    ).bind(couple_id, category, amount, month, year).run()
+
+    return c.json({ message: 'Budget set successfully' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.delete('/budgets/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    await c.env.DB.prepare('DELETE FROM budgets WHERE id = ?').bind(id).run()
+    return c.json({ message: 'Budget deleted successfully' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+// SPLIT BILLS
+app.post('/transactions/split', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  
+  const { amount, category, note, splits } = await c.req.json()
+  // splits = [{ user_id, amount }, { user_id, amount }]
+  if (!amount || !category || !splits || splits.length === 0) {
+    return c.json({ error: 'Missing fields' }, 400)
+  }
+
+  try {
+    // Create main transaction
+    const txn = await c.env.DB.prepare(
+      'INSERT INTO transactions (user_id, couple_id, amount, type, category, note) VALUES (?, ?, ?, ?, ?, ?) RETURNING id'
+    ).bind(payload.id, couple_id, amount, 'expense', category, note || null).first()
+
+    // Create split records
+    for (const split of splits) {
+      await c.env.DB.prepare(
+        'INSERT INTO transaction_splits (transaction_id, user_id, amount) VALUES (?, ?, ?)'
+      ).bind(txn?.id, split.user_id, split.amount).run()
+    }
+
+    return c.json({ message: 'Split transaction created', id: txn?.id })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.get('/transactions/:id/splits', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    const splits = await c.env.DB.prepare(
+      `SELECT ts.*, u.name as user_name, u.avatar 
+       FROM transaction_splits ts 
+       JOIN users u ON ts.user_id = u.id 
+       WHERE ts.transaction_id = ?`
+    ).bind(id).all()
+
+    return c.json({ splits: splits.results })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.put('/transactions/splits/:id/pay', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    await c.env.DB.prepare(
+      'UPDATE transaction_splits SET is_paid = 1 WHERE id = ?'
+    ).bind(id).run()
+
+    return c.json({ message: 'Split marked as paid' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+// WISHLIST
+app.get('/wishlists', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ wishlists: [] })
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+
+  try {
+    const wishlists = await c.env.DB.prepare(
+      'SELECT * FROM wishlists WHERE couple_id = ? ORDER BY priority DESC, created_at DESC'
+    ).bind(couple_id).all()
+
+    return c.json({ wishlists: wishlists.results })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.post('/wishlists', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user || !user.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  
+  const { name, description, estimated_price, priority, image_url, linked_saving_id } = await c.req.json()
+  if (!name) return c.json({ error: 'Missing name' }, 400)
+
+  try {
+    const res = await c.env.DB.prepare(
+      'INSERT INTO wishlists (couple_id, name, description, estimated_price, priority, image_url, linked_saving_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id'
+    ).bind(couple_id, name, description || null, estimated_price || null, priority || 0, image_url || null, linked_saving_id || null).first()
+
+    return c.json({ message: 'Wishlist created', id: res?.id })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.put('/wishlists/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  const { name, description, estimated_price, priority, image_url, is_completed } = await c.req.json()
+
+  try {
+    const updates: string[] = []
+    const values: any[] = []
+    
+    if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+    if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+    if (estimated_price !== undefined) { updates.push('estimated_price = ?'); values.push(estimated_price); }
+    if (priority !== undefined) { updates.push('priority = ?'); values.push(priority); }
+    if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
+    if (is_completed !== undefined) { updates.push('is_completed = ?'); values.push(is_completed ? 1 : 0); }
+    
+    if (updates.length === 0) return c.json({ error: 'No fields to update' }, 400)
+    
+    values.push(id)
+    await c.env.DB.prepare(`UPDATE wishlists SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run()
+
+    return c.json({ message: 'Wishlist updated' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.delete('/wishlists/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    await c.env.DB.prepare('DELETE FROM wishlists WHERE id = ?').bind(id).run()
+    return c.json({ message: 'Wishlist deleted' })
   } catch(e) {
     return c.json({ error: 'Database error' }, 500)
   }

@@ -109,3 +109,71 @@ CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY (sender_id) REFERENCES users(id),
   FOREIGN KEY (reply_to_id) REFERENCES messages(id)
 );
+
+-- Phase 1: Foundation Tables
+
+-- 1. History log per tabungan (tracking semua aktivitas di tabungan)
+CREATE TABLE IF NOT EXISTS saving_activities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  saving_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
+  type TEXT CHECK(type IN ('topup', 'deduct', 'created', 'updated', 'milestone')) NOT NULL,
+  amount INTEGER DEFAULT 0,
+  note TEXT,
+  metadata TEXT, -- JSON untuk data tambahan seperti milestone percentage
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (saving_id) REFERENCES savings(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_saving_activities_saving 
+ON saving_activities(saving_id, created_at DESC);
+
+-- 2. Budget bulanan per kategori
+CREATE TABLE IF NOT EXISTS budgets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  couple_id TEXT NOT NULL,
+  category TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  period_month INTEGER NOT NULL, -- 1-12
+  period_year INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(couple_id, category, period_month, period_year)
+);
+
+CREATE INDEX IF NOT EXISTS idx_budgets_couple_period 
+ON budgets(couple_id, period_year, period_month);
+
+-- 3. Split bill - modifikasi transactions untuk support split
+-- Kita perlu table baru untuk track split details
+CREATE TABLE IF NOT EXISTS transaction_splits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  transaction_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  is_paid BOOLEAN DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (transaction_id) REFERENCES transactions(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_transaction_splits_transaction 
+ON transaction_splits(transaction_id);
+
+-- 4. Wishlist untuk shared dreams
+CREATE TABLE IF NOT EXISTS wishlists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  couple_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  estimated_price INTEGER,
+  priority INTEGER DEFAULT 0, -- 1=low, 2=medium, 3=high
+  image_url TEXT,
+  is_completed BOOLEAN DEFAULT 0,
+  linked_saving_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (linked_saving_id) REFERENCES savings(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wishlists_couple 
+ON wishlists(couple_id, priority DESC, created_at DESC);
