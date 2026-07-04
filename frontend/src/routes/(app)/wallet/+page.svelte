@@ -3,6 +3,7 @@
   import { API_URL } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import Icon from '$lib/Icon.svelte';
   import { 
     FileText as NotesIcon, 
     TrendingUp as TrendingUpIcon,
@@ -84,6 +85,11 @@
 
   function formatRp(num: number) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+  }
+  function formatCompact(num: number) {
+    if (num >= 1_000_000) return `${(num/1_000_000).toFixed(1)}jt`;
+    if (num >= 1_000) return `${(num/1_000).toFixed(0)}rb`;
+    return `${num}`;
   }
   function shortMonth(ym: string) {
     const [y, m] = ym.split('-');
@@ -187,44 +193,75 @@
 
         <!-- Bar Chart -->
         <div class="stat-card">
-          <p class="stat-card-title">📈 Grafik 6 Bulan Terakhir</p>
+          <div class="stat-card-header">
+            <div class="stat-card-icon stat-card-icon--blue">
+              <Icon name="income" size={18} />
+            </div>
+            <p class="stat-card-title">Grafik 6 Bulan Terakhir</p>
+          </div>
           {#if stats.monthly.length === 0}
             <p class="stat-empty">Belum ada data statistik</p>
           {:else}
             <div class="bar-chart">
               {#each stats.monthly as s}
+                {@const incomeH = Math.max(((s.total_income || 0) / maxBarValue) * 100, 3)}
+                {@const expenseH = Math.max(((s.total_expense || 0) / maxBarValue) * 100, 3)}
                 <div class="bar-col">
+                  <div class="bar-values">
+                    <span class="bar-tip bar-tip--in" style="opacity:{incomeH > 20 ? 1 : 0}">
+                      {#if s.total_income > 0}{formatCompact(s.total_income)}{/if}
+                    </span>
+                    <span class="bar-tip bar-tip--out" style="opacity:{expenseH > 20 ? 1 : 0}">
+                      {#if s.total_expense > 0}{formatCompact(s.total_expense)}{/if}
+                    </span>
+                  </div>
                   <div class="bars">
-                    <div class="bar bar--in" style="height:{Math.max(((s.total_income || 0) / maxBarValue) * 100, 4)}%;"></div>
-                    <div class="bar bar--out" style="height:{Math.max(((s.total_expense || 0) / maxBarValue) * 100, 4)}%;"></div>
+                    <div class="bar bar--in" style="height:{incomeH}%"></div>
+                    <div class="bar bar--out" style="height:{expenseH}%"></div>
                   </div>
                   <p class="bar-label">{shortMonth(s.month)}</p>
                 </div>
               {/each}
             </div>
             <div class="bar-legend">
-              <div class="legend-item"><div class="legend-dot legend-dot--in"></div><span>Masuk</span></div>
-              <div class="legend-item"><div class="legend-dot legend-dot--out"></div><span>Keluar</span></div>
+              <div class="legend-item">
+                <div class="legend-dot legend-dot--in"></div>
+                <span>Masuk</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot legend-dot--out"></div>
+                <span>Keluar</span>
+              </div>
             </div>
           {/if}
         </div>
 
         <!-- Categories -->
         <div class="stat-card">
-          <p class="stat-card-title">🏷️ Pengeluaran Terbesar Bulan Ini</p>
+          <div class="stat-card-header">
+            <div class="stat-card-icon stat-card-icon--rose">
+              <Icon name="expense" size={18} />
+            </div>
+            <p class="stat-card-title">Pengeluaran Terbesar Bulan Ini</p>
+          </div>
           {#if stats.categories.length === 0}
             <p class="stat-empty">Belum ada pengeluaran bulan ini</p>
           {:else}
             {@const maxCat = Math.max(...stats.categories.map(c => c.total), 1)}
+            {@const totalCat = stats.categories.reduce((sum, c) => sum + c.total, 0)}
             <div class="cat-list">
-              {#each stats.categories as cat, i}
+              {#each stats.categories.slice(0, 5) as cat, i}
+                {@const pct = Math.round((cat.total / totalCat) * 100)}
                 <div class="cat-item">
                   <div class="cat-header">
                     <span class="cat-name">{cat.category}</span>
-                    <span class="cat-val">{formatRp(cat.total)}</span>
+                    <div class="cat-right">
+                      <span class="cat-pct">{pct}%</span>
+                      <span class="cat-val">{formatRp(cat.total)}</span>
+                    </div>
                   </div>
                   <div class="cat-track">
-                    <div class="cat-fill" style="width:{(cat.total / maxCat) * 100}%; opacity: {1 - i * 0.12};"></div>
+                    <div class="cat-fill" style="width:{(cat.total / maxCat) * 100}%"></div>
                   </div>
                 </div>
               {/each}
@@ -240,7 +277,15 @@
     <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
-        <h3 class="modal-title">✍️ Catat Transaksi</h3>
+        <div class="modal-icon-header">
+          <div class="modal-icon-circle">
+            <Icon name="wallet" size={22} />
+          </div>
+          <div>
+            <h3 class="modal-title">Catat Transaksi</h3>
+            <p class="modal-subtitle">Masukkan detail transaksi</p>
+          </div>
+        </div>
 
         <!-- Type toggle -->
         <div class="type-toggle">
@@ -285,7 +330,7 @@
 
           <div class="modal-actions">
             <button type="button" class="modal-cancel" onclick={() => showModal = false}>Batal</button>
-            <button type="submit" class="modal-submit">💾 Simpan</button>
+            <button type="submit" class="modal-submit">Simpan</button>
           </div>
         </form>
       </div>
@@ -420,31 +465,41 @@
   /* Stats */
   .stats-list { display: flex; flex-direction: column; gap: 14px; }
   .stat-card { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 22px; padding: 18px; box-shadow: 0 3px 14px rgba(59,130,246,0.07); }
-  .stat-card-title { font-size: 14px; font-weight: 800; color: #1E293B; margin: 0 0 16px; }
+  .stat-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .stat-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .stat-card-icon--blue { background: #EFF6FF; color: #3B82F6; }
+  .stat-card-icon--rose { background: #FFF1F2; color: #F43F5E; }
+  .stat-card-title { font-size: 14px; font-weight: 900; color: #1E293B; margin: 0; }
   .stat-empty { font-size: 13px; color: #94A3B8; text-align: center; padding: 12px 0; margin: 0; }
 
   /* Bar Chart */
-  .bar-chart { display: flex; align-items: flex-end; justify-content: space-around; height: 120px; gap: 6px; margin-bottom: 12px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-bottom: 4px; margin-bottom: 14px; }
   .bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; }
-  .bars { display: flex; align-items: flex-end; gap: 2px; width: 100%; height: 108px; }
-  .bar { flex: 1; border-radius: 5px 5px 0 0; transition: height 0.5s ease; min-height: 4px; }
-  .bar--in { background: #22C55E; opacity: 0.75; }
-  .bar--out { background: #F43F5E; opacity: 0.75; }
-  .bar-label { font-size: 10px; color: #94A3B8; margin: 4px 0 0; font-weight: 700; }
-  .bar-legend { display: flex; justify-content: center; gap: 18px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #64748B; font-weight: 700; }
+  .bar-values { display: flex; gap: 2px; height: 16px; align-items: flex-end; margin-bottom: 4px; width: 100%; justify-content: center; }
+  .bar-tip { font-size: 9px; font-weight: 800; line-height: 1; transition: opacity .3s; }
+  .bar-tip--in { color: #16A34A; }
+  .bar-tip--out { color: #BE123C; }
+  .bars { display: flex; align-items: flex-end; gap: 3px; width: 100%; flex: 1; }
+  .bar { flex: 1; border-radius: 6px 6px 0 0; transition: height 0.6s cubic-bezier(.34,1.56,.64,1); min-height: 4px; }
+  .bar--in { background: linear-gradient(180deg, #4ADE80, #22C55E); }
+  .bar--out { background: linear-gradient(180deg, #FB7185, #F43F5E); }
+  .bar-label { font-size: 10px; color: #94A3B8; margin: 6px 0 0; font-weight: 800; }
+  .bar-legend { display: flex; justify-content: center; gap: 20px; padding-top: 4px; border-top: 1px solid #F1F5F9; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748B; font-weight: 700; padding-top: 12px; }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
-  .legend-dot--in { background: #22C55E; }
-  .legend-dot--out { background: #F43F5E; }
+  .legend-dot--in { background: linear-gradient(135deg, #4ADE80, #22C55E); }
+  .legend-dot--out { background: linear-gradient(135deg, #FB7185, #F43F5E); }
 
   /* Categories */
-  .cat-list { display: flex; flex-direction: column; gap: 12px; }
+  .cat-list { display: flex; flex-direction: column; gap: 14px; }
   .cat-item {}
-  .cat-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
   .cat-name { font-size: 13px; font-weight: 800; color: #1E293B; }
+  .cat-right { display: flex; align-items: center; gap: 10px; }
+  .cat-pct { font-size: 12px; font-weight: 900; color: #3B82F6; background: #EFF6FF; padding: 2px 7px; border-radius: 6px; }
   .cat-val { font-size: 12px; color: #64748B; font-weight: 700; }
-  .cat-track { height: 7px; background: #EFF6FF; border-radius: 99px; overflow: hidden; }
-  .cat-fill { height: 100%; background: linear-gradient(90deg, #3B82F6, #0EA5E9); border-radius: 99px; transition: width 0.5s ease; }
+  .cat-track { height: 8px; background: #F1F5F9; border-radius: 99px; overflow: hidden; }
+  .cat-fill { height: 100%; background: linear-gradient(90deg, #3B82F6, #60A5FA); border-radius: 99px; transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
 
   /* Modal */
   .modal-overlay {
@@ -472,7 +527,14 @@
     to { transform: translateY(0); opacity: 1; }
   }
   .modal-handle { width: 44px; height: 5px; background: #E0E7FF; border-radius: 99px; margin: 0 auto 18px; }
-  .modal-title { font-size: 18px; font-weight: 900; color: #1E293B; margin: 0 0 18px; }
+  .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .modal-icon-circle {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: #EFF6FF; color: #3B82F6;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .modal-title { font-size: 17px; font-weight: 900; color: #1E293B; margin: 0 0 2px; }
+  .modal-subtitle { font-size: 12px; color: #94A3B8; font-weight: 700; margin: 0; }
 
   /* Type Toggle */
   .type-toggle { display: flex; gap: 10px; margin-bottom: 18px; }
