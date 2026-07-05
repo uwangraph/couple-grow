@@ -1,102 +1,127 @@
 /**
- * Svelte action for swipe gestures
+ * Svelte action for swipe gestures (touch + mouse)
  * Usage: <div use:swipe={{ onSwipeLeft, onSwipeRight }}>
  */
 
 interface SwipeOptions {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
-  threshold?: number;  // minimum px to trigger (default 60)
-  maxVertical?: number; // max vertical drift (default 80)
-}
-
-interface SwipeState {
-  startX: number;
-  startY: number;
-  currentX: number;
-  isDragging: boolean;
-  el: HTMLElement;
+  threshold?: number;
+  maxVertical?: number;
 }
 
 export function swipe(node: HTMLElement, options: SwipeOptions) {
-  const threshold = options.threshold ?? 60;
-  const maxVertical = options.maxVertical ?? 80;
+  let threshold = options.threshold ?? 60;
+  let maxVertical = options.maxVertical ?? 80;
 
-  let state: SwipeState = {
-    startX: 0,
-    startY: 0,
-    currentX: 0,
-    isDragging: false,
-    el: node
-  };
+  let startX = 0;
+  let startY = 0;
+  let currentX = 0;
+  let isDragging = false;
 
-  function handleStart(e: TouchEvent | MouseEvent) {
-    const point = 'touches' in e ? e.touches[0] : e;
-    state.startX = point.clientX;
-    state.startY = point.clientY;
-    state.currentX = 0;
-    state.isDragging = true;
-    node.style.transition = 'none';
+  function getPoint(e: TouchEvent | MouseEvent) {
+    return 'touches' in e ? e.touches[0] : e;
   }
 
-  function handleMove(e: TouchEvent | MouseEvent) {
-    if (!state.isDragging) return;
-    
-    const point = 'touches' in e ? e.touches[0] : e;
-    const deltaX = point.clientX - state.startX;
-    const deltaY = Math.abs(point.clientY - state.startY);
-    
-    // Cancel if too much vertical movement
-    if (deltaY > maxVertical) {
-      handleEnd();
-      return;
-    }
+  function updateActions(deltaX: number) {
+    const parent = node.parentElement;
+    if (!parent) return;
+    const editEl = parent.querySelector<HTMLElement>('.tx-action--edit');
+    const deleteEl = parent.querySelector<HTMLElement>('.tx-action--delete');
+    const progress = Math.min(Math.abs(deltaX) / threshold, 1);
 
-    state.currentX = deltaX;
-    
-    // Visual feedback - limit to ±100px
-    const clampedX = Math.max(-100, Math.min(100, deltaX));
-    node.style.transform = `translateX(${clampedX}px)`;
-    
-    // Color hint
-    if (deltaX < -threshold * 0.5) {
-      node.style.background = 'rgba(244,63,94,0.08)';
-    } else if (deltaX > threshold * 0.5) {
-      node.style.background = 'rgba(34,197,94,0.08)';
+    if (deltaX > 0 && editEl) {
+      editEl.style.opacity = String(progress);
+      if (deleteEl) deleteEl.style.opacity = '0';
+    } else if (deltaX < 0 && deleteEl) {
+      deleteEl.style.opacity = String(progress);
+      if (editEl) editEl.style.opacity = '0';
     } else {
-      node.style.background = '';
+      if (editEl) editEl.style.opacity = '0';
+      if (deleteEl) deleteEl.style.opacity = '0';
     }
   }
 
-  function handleEnd() {
-    if (!state.isDragging) return;
-    state.isDragging = false;
-    
-    node.style.transition = 'transform 0.3s ease, background 0.3s ease';
+  function resetActions() {
+    const parent = node.parentElement;
+    if (!parent) return;
+    const editEl = parent.querySelector<HTMLElement>('.tx-action--edit');
+    const deleteEl = parent.querySelector<HTMLElement>('.tx-action--delete');
+    if (editEl) editEl.style.opacity = '0';
+    if (deleteEl) deleteEl.style.opacity = '0';
+  }
+
+  function onStart(e: TouchEvent | MouseEvent) {
+    const p = getPoint(e);
+    startX = p.clientX;
+    startY = p.clientY;
+    currentX = 0;
+    isDragging = true;
+    node.style.transition = 'none';
+    node.style.cursor = 'grabbing';
+  }
+
+  function onMove(e: TouchEvent | MouseEvent) {
+    if (!isDragging) return;
+    const p = getPoint(e);
+    const dX = p.clientX - startX;
+    const dY = Math.abs(p.clientY - startY);
+
+    if (dY > maxVertical) { onEnd(); return; }
+
+    currentX = dX;
+    const clamped = Math.max(-110, Math.min(110, dX));
+    node.style.transform = `translateX(${clamped}px)`;
+    updateActions(dX);
+  }
+
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+
+    node.style.transition = 'transform 0.3s cubic-bezier(.25,.8,.25,1)';
     node.style.transform = 'translateX(0)';
-    node.style.background = '';
+    node.style.cursor = 'grab';
+    resetActions();
 
-    if (state.currentX < -threshold) {
-      // Swipe left → delete hint
-      options.onSwipeLeft?.();
-    } else if (state.currentX > threshold) {
-      // Swipe right → edit hint
-      options.onSwipeRight?.();
-    }
+    if (currentX < -threshold) options.onSwipeLeft?.();
+    else if (currentX > threshold) options.onSwipeRight?.();
   }
 
-  node.addEventListener('touchstart', handleStart, { passive: true });
-  node.addEventListener('touchmove', handleMove, { passive: true });
-  node.addEventListener('touchend', handleEnd);
+  // Touch events
+  node.addEventListener('touchstart', onStart, { passive: true });
+  node.addEventListener('touchmove', onMove, { passive: true });
+  node.addEventListener('touchend', onEnd);
+
+  // Mouse events — listen on document for move/up so drag works outside element
+  node.addEventListener('mousedown', onStart);
+  const onMouseMove = (e: MouseEvent) => onMove(e);
+  const onMouseUp = () => onEnd();
+  node.addEventListener('mousedown', () => {
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp, { once: true });
+    document.addEventListener('mouseup', () => {
+      document.removeEventListener('mousemove', onMouseMove);
+    }, { once: true });
+  });
+
+  // Prevent text selection while dragging
+  node.style.userSelect = 'none';
+  node.style.cursor = 'grab';
 
   return {
     update(newOptions: SwipeOptions) {
       options = newOptions;
+      threshold = newOptions.threshold ?? 60;
+      maxVertical = newOptions.maxVertical ?? 80;
     },
     destroy() {
-      node.removeEventListener('touchstart', handleStart);
-      node.removeEventListener('touchmove', handleMove);
-      node.removeEventListener('touchend', handleEnd);
+      node.removeEventListener('touchstart', onStart);
+      node.removeEventListener('touchmove', onMove);
+      node.removeEventListener('touchend', onEnd);
+      node.removeEventListener('mousedown', onStart);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
     }
   };
 }
