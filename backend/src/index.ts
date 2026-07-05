@@ -224,7 +224,7 @@ app.post('/auth/login', async (c) => {
 
   let partner = null;
   if (user.partner_id) {
-    partner = await c.env.DB.prepare('SELECT id, email, name, avatar FROM users WHERE id = ?').bind(user.partner_id).first();
+    partner = await c.env.DB.prepare('SELECT id, email, name, avatar, birthday, anniversary, bio, phone FROM users WHERE id = ?').bind(user.partner_id).first();
   }
 
   return c.json({ token, user: { id: user.id, email: user.email, name: user.name, partner_id: user.partner_id, avatar: user.avatar }, partner })
@@ -232,12 +232,12 @@ app.post('/auth/login', async (c) => {
 
 app.get('/auth/me', async (c) => {
   const payload = c.get('jwtPayload')
-  const user = await c.env.DB.prepare('SELECT id, email, name, partner_id, avatar FROM users WHERE id = ?').bind(payload.id).first()
+  const user = await c.env.DB.prepare('SELECT id, email, name, partner_id, avatar, birthday, anniversary, bio, phone FROM users WHERE id = ?').bind(payload.id).first()
   if (!user) return c.json({ error: 'User not found' }, 404)
   
   let partner = null;
   if (user.partner_id) {
-    partner = await c.env.DB.prepare('SELECT id, email, name, avatar FROM users WHERE id = ?').bind(user.partner_id).first();
+    partner = await c.env.DB.prepare('SELECT id, email, name, avatar, birthday, anniversary, bio, phone FROM users WHERE id = ?').bind(user.partner_id).first();
   }
 
   return c.json({ user, partner })
@@ -406,6 +406,36 @@ app.post('/partner/connect', async (c) => {
     return c.json({ message: 'Successfully connected with partner' })
   } catch (e) {
     return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+app.delete('/partner/disconnect', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  try {
+    const user = await c.env.DB.prepare(
+      'SELECT partner_id FROM users WHERE id = ?'
+    ).bind(payload.id).first()
+
+    if (!user || !user.partner_id) {
+      return c.json({ error: 'No partner connected' }, 400)
+    }
+
+    const partnerId = user.partner_id as string
+
+    // Lepaskan kedua sisi
+    await c.env.DB.prepare(
+      'UPDATE users SET partner_id = NULL WHERE id = ?'
+    ).bind(payload.id).run()
+
+    await c.env.DB.prepare(
+      'UPDATE users SET partner_id = NULL WHERE id = ?'
+    ).bind(partnerId).run()
+
+    return c.json({ message: 'Partner disconnected successfully' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
   }
 })
 
@@ -1198,7 +1228,7 @@ app.get('/profile', async (c) => {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const user = await c.env.DB.prepare(
-      'SELECT id, name, email, avatar, birthday, anniversary, bio, partner_id FROM users WHERE id = ?'
+      'SELECT id, name, email, avatar, birthday, anniversary, bio, phone, partner_id FROM users WHERE id = ?'
     ).bind(payload.id).first()
     if (!user) return c.json({ error: 'User not found' }, 404)
     return c.json({ user })
@@ -1208,11 +1238,11 @@ app.get('/profile', async (c) => {
 app.put('/profile', async (c) => {
   const payload = c.get('jwtPayload')
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
-  const { name, birthday, anniversary, bio } = await c.req.json()
+  const { name, birthday, anniversary, bio, phone } = await c.req.json()
   
   try {
-    await c.env.DB.prepare('UPDATE users SET name = ?, birthday = ?, anniversary = ?, bio = ? WHERE id = ?')
-      .bind(name, birthday, anniversary, bio, payload.id)
+    await c.env.DB.prepare('UPDATE users SET name = ?, birthday = ?, anniversary = ?, bio = ?, phone = ? WHERE id = ?')
+      .bind(name, birthday, anniversary, bio, phone || null, payload.id)
       .run()
     return c.json({ message: 'Profile updated' })
   } catch(e) { return c.json({ error: 'Database error' }, 500) }

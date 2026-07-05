@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   birthday DATE,
   anniversary DATE,
   bio TEXT,
+  phone TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (partner_id) REFERENCES users(id)
 );
