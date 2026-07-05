@@ -57,13 +57,32 @@
     }
   }
 
+  let showDisconnectConfirm = $state(false);
+
+  async function disconnectPartner() {
+    try {
+      const res = await fetch(`${API_URL}/partner/disconnect`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${auth.token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal memutuskan hubungan');
+      await auth.init();
+      showDisconnectConfirm = false;
+      toast.success('Hubungan berhasil diputuskan.');
+    } catch(e: any) {
+      toast.error(e.message);
+    }
+  }
+
   let isEditingProfile = $state(false);
   let avatarInput = $state<HTMLInputElement>();
   let editForm = $state({
     name: auth.user?.name || '',
     birthday: auth.user?.birthday || '',
     anniversary: auth.user?.anniversary || '',
-    bio: auth.user?.bio || ''
+    bio: auth.user?.bio || '',
+    phone: (auth.user as any)?.phone || ''
   });
 
   async function updateProfile() {
@@ -461,6 +480,46 @@
             <p class="info-val info-val--accent">{auth.partner.name}</p>
           </div>
         </div>
+        {#if (auth.partner as any).phone}
+          <div class="info-row">
+            <span class="info-emoji"><Icon name="phone" size={18} /></span>
+            <div>
+              <p class="info-key">No. Telepon</p>
+              <p class="info-val">{(auth.partner as any).phone}</p>
+            </div>
+          </div>
+        {/if}
+        {#if (auth.partner as any).birthday}
+          <div class="info-row">
+            <span class="info-emoji"><Icon name="birthday" size={18} /></span>
+            <div>
+              <p class="info-key">Tanggal Lahir</p>
+              <p class="info-val">{new Date((auth.partner as any).birthday).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+          </div>
+        {/if}
+        {#if (auth.partner as any).anniversary}
+          <div class="info-row">
+            <span class="info-emoji"><Icon name="couple" size={18} /></span>
+            <div>
+              <p class="info-key">Hari Jadian</p>
+              <p class="info-val">{new Date((auth.partner as any).anniversary).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+          </div>
+        {/if}
+        {#if (auth.partner as any).bio}
+          <div class="info-row" style="align-items:flex-start;">
+            <span class="info-emoji" style="margin-top:2px;"><Icon name="notes" size={18} /></span>
+            <div>
+              <p class="info-key">Bio</p>
+              <p class="info-val">{(auth.partner as any).bio}</p>
+            </div>
+          </div>
+        {/if}
+        <button class="btn-disconnect" onclick={() => showDisconnectConfirm = true}>
+          <Icon name="link" size={15} />
+          Putuskan Hubungan
+        </button>
       {/if}
     </div>
 
@@ -469,6 +528,7 @@
       {#if isEditingProfile}
         <div class="edit-form">
           <input type="text" bind:value={editForm.name} placeholder="Nama" class="form-input" />
+          <input type="tel" bind:value={editForm.phone} placeholder="No. Telepon (opsional)" class="form-input" />
           <textarea bind:value={editForm.bio} placeholder="Bio singkat..." class="form-input form-textarea"></textarea>
           <label class="form-date-label"><Icon name="birthday" size={14} /> Tanggal Lahir</label>
           <input type="date" bind:value={editForm.birthday} class="form-input" />
@@ -484,7 +544,7 @@
       {:else}
         <button
           class="btn btn--outline btn--block"
-          onclick={() => { isEditingProfile = true; editForm = { name: auth.user?.name || '', birthday: auth.user?.birthday || '', anniversary: auth.user?.anniversary || '', bio: auth.user?.bio || '' }; }}
+          onclick={() => { isEditingProfile = true; editForm = { name: auth.user?.name || '', birthday: auth.user?.birthday || '', anniversary: auth.user?.anniversary || '', bio: auth.user?.bio || '', phone: (auth.user as any)?.phone || '' }; }}
         >
           <Icon name="edit" size={16} style="margin-right: 8px;" /> Edit Info Profil
         </button>
@@ -519,6 +579,26 @@
     <div style="height: 32px;"></div>
   </div>
 </div>
+
+<!-- Modal Konfirmasi Putuskan Hubungan -->
+{#if showDisconnectConfirm}
+  <div class="modal-backdrop" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showDisconnectConfirm = false; }}>
+    <div class="modal-sheet">
+      <div class="modal-handle-bar"></div>
+      <div class="disconnect-icon">
+        <Icon name="couple" size={28} />
+      </div>
+      <h3 class="disconnect-title">Putuskan Hubungan?</h3>
+      <p class="disconnect-msg">
+        Kamu dan <strong>{auth.partner?.name}</strong> tidak akan lagi terhubung di CoupleGrow. Data tabungan dan transaksi bersama tidak akan dihapus.
+      </p>
+      <div class="disconnect-actions">
+        <button class="btn btn--ghost" onclick={() => showDisconnectConfirm = false}>Batal</button>
+        <button class="btn btn--danger" onclick={disconnectPartner}>Ya, Putuskan</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 {#if cropModalVisible}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1032,4 +1112,106 @@
     box-shadow: 0 4px 16px rgba(244,63,94,0.05);
   }
   .logout-btn:hover { background: rgba(255, 241, 242, 0.8); }
+
+  /* Tombol putuskan hubungan */
+  .btn-disconnect {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: #FFF1F2;
+    border: 1.5px solid #FECDD3;
+    border-radius: 14px;
+    color: #F43F5E;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .btn-disconnect:hover { background: #FFE4E6; border-color: #FDA4AF; }
+  .btn-disconnect:active { transform: scale(0.98); }
+
+  /* btn--danger */
+  .btn--danger {
+    background: linear-gradient(135deg, #F43F5E, #E11D48);
+    color: white;
+    box-shadow: 0 4px 14px rgba(244,63,94,0.3);
+  }
+
+  /* Modal backdrop & sheet */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(30,41,59,0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 200;
+    animation: fade-in 0.2s ease;
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-sheet {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 28px 28px 0 0;
+    border-top: 1px solid rgba(255,255,255,0.8);
+    width: 100%;
+    max-width: 540px;
+    padding: 20px 24px 48px;
+    animation: slide-up 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    text-align: center;
+  }
+  @keyframes slide-up { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-handle-bar {
+    width: 44px;
+    height: 5px;
+    background: #E2E8F0;
+    border-radius: 99px;
+    margin: 0 auto 24px;
+  }
+
+  /* Disconnect modal content */
+  .disconnect-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFF1F2, #FFE4E6);
+    color: #F43F5E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: 0 4px 20px rgba(244,63,94,0.15);
+  }
+
+  .disconnect-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #1E293B;
+    margin: 0 0 10px;
+  }
+
+  .disconnect-msg {
+    font-size: 14px;
+    color: #64748B;
+    font-weight: 600;
+    line-height: 1.6;
+    margin: 0 0 28px;
+  }
+  .disconnect-msg strong { color: #1E293B; font-weight: 900; }
+
+  .disconnect-actions {
+    display: flex;
+    gap: 12px;
+  }
+  .disconnect-actions .btn { flex: 1; padding: 14px; font-size: 14px; }
 </style>
