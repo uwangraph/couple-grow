@@ -452,6 +452,60 @@ app.get('/transactions', async (c) => {
   return c.json({ transactions: transactions.results })
 })
 
+app.put('/transactions/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  const { amount, type, category, note } = await c.req.json()
+
+  try {
+    const txn = await c.env.DB.prepare(
+      'SELECT user_id FROM transactions WHERE id = ?'
+    ).bind(id).first()
+    if (!txn) return c.json({ error: 'Transaction not found' }, 404)
+    if (txn.user_id !== payload.id) return c.json({ error: 'Unauthorized' }, 403)
+
+    const updates: string[] = []
+    const values: any[] = []
+    if (amount !== undefined) { updates.push('amount = ?'); values.push(amount); }
+    if (type !== undefined) { updates.push('type = ?'); values.push(type); }
+    if (category !== undefined) { updates.push('category = ?'); values.push(category); }
+    if (note !== undefined) { updates.push('note = ?'); values.push(note); }
+
+    if (updates.length === 0) return c.json({ error: 'No fields to update' }, 400)
+    values.push(id)
+
+    await c.env.DB.prepare(
+      `UPDATE transactions SET ${updates.join(', ')} WHERE id = ?`
+    ).bind(...values).run()
+
+    return c.json({ message: 'Transaction updated' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
+app.delete('/transactions/:id', async (c) => {
+  const payload = c.get('jwtPayload')
+  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+
+  try {
+    const txn = await c.env.DB.prepare(
+      'SELECT user_id FROM transactions WHERE id = ?'
+    ).bind(id).first()
+    if (!txn) return c.json({ error: 'Transaction not found' }, 404)
+    if (txn.user_id !== payload.id) return c.json({ error: 'Unauthorized' }, 403)
+
+    await c.env.DB.prepare('DELETE FROM transactions WHERE id = ?').bind(id).run()
+    return c.json({ message: 'Transaction deleted' })
+  } catch(e) {
+    return c.json({ error: 'Database error' }, 500)
+  }
+})
+
 // ANALYTICS
 app.get('/analytics/spending-pattern', async (c) => {
   const payload = c.get('jwtPayload')
