@@ -77,21 +77,71 @@
   {#if showPartnerModal && auth.partner}
     <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Profil Pasangan" tabindex="0" onclick={(e) => { if (e.target === e.currentTarget) showPartnerModal = false; }} onkeydown={(e) => { if (e.key === 'Escape') showPartnerModal = false; }}>
       <div class="modal">
-        <h3 style="margin-top:0;">Profil Pasangan</h3>
-        {#if auth.partner.avatar}
-          <img src={auth.partner.avatar} alt={auth.partner.name} class="partner-modal-img" />
-        {:else}
-          <div class="partner-modal-avatar-placeholder">
-            <Icon name="couple" size={32} />
-          </div>
-        {/if}
-        <p class="partner-modal-name">{auth.partner.name}</p>
-        {#if auth.partner.bio}<p class="partner-modal-bio">{auth.partner.bio}</p>{/if}
-        <div class="partner-modal-info">
-          <p><Icon name="birthday" size={14} /> Ultah: {auth.partner.birthday || '-'}</p>
-          <p><Icon name="couple" size={14} /> Anniversary: {auth.partner.anniversary || '-'}</p>
+        <div class="pm-handle"></div>
+
+        <!-- Avatar -->
+        <div class="pm-avatar-wrap">
+          {#if auth.partner.avatar}
+            <img src={auth.partner.avatar} alt={auth.partner.name} class="pm-avatar-img" />
+          {:else}
+            <div class="pm-avatar-placeholder">
+              <Icon name="couple" size={36} />
+            </div>
+          {/if}
         </div>
-        <button onclick={() => showPartnerModal = false} class="close-btn">Tutup</button>
+
+        <!-- Name -->
+        <p class="pm-name">{auth.partner.name}</p>
+
+        <!-- Info rows -->
+        <div class="pm-info-list">
+          <div class="pm-info-row">
+            <div class="pm-info-icon">
+              <Icon name="phone" size={15} />
+            </div>
+            <div>
+              <p class="pm-info-label">No. Telepon</p>
+              <p class="pm-info-val {!(auth.partner as any).phone ? 'pm-info-empty' : ''}">{(auth.partner as any).phone || 'Belum diisi'}</p>
+            </div>
+          </div>
+          <div class="pm-info-row">
+            <div class="pm-info-icon">
+              <Icon name="birthday" size={15} />
+            </div>
+            <div>
+              <p class="pm-info-label">Tanggal Lahir</p>
+              <p class="pm-info-val {!(auth.partner as any).birthday ? 'pm-info-empty' : ''}">
+                {(auth.partner as any).birthday
+                  ? new Date((auth.partner as any).birthday).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  : 'Belum diisi'}
+              </p>
+            </div>
+          </div>
+          <div class="pm-info-row">
+            <div class="pm-info-icon">
+              <Icon name="couple" size={15} />
+            </div>
+            <div>
+              <p class="pm-info-label">Hari Jadian</p>
+              <p class="pm-info-val {!(auth.partner as any).anniversary ? 'pm-info-empty' : ''}">
+                {(auth.partner as any).anniversary
+                  ? new Date((auth.partner as any).anniversary).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  : 'Belum diisi'}
+              </p>
+            </div>
+          </div>
+          <div class="pm-info-row">
+            <div class="pm-info-icon">
+              <Icon name="notes" size={15} />
+            </div>
+            <div>
+              <p class="pm-info-label">Bio</p>
+              <p class="pm-info-val {!(auth.partner as any).bio ? 'pm-info-empty' : ''}">{(auth.partner as any).bio || 'Belum diisi'}</p>
+            </div>
+          </div>
+        </div>
+
+        <button onclick={() => showPartnerModal = false} class="pm-close-btn">Tutup</button>
       </div>
     </div>
   {/if}
@@ -555,15 +605,25 @@
   .skeleton--row { height: 60px; margin-bottom: 8px; }
 
   /* Modal Styles */
-  .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(30,41,59,0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index:100; display:flex; align-items:center; justify-content:center; }
-  .modal { background:rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.8); padding:24px; border-radius:24px; width: 85%; max-width: 400px; text-align:center; box-shadow: 0 20px 60px rgba(59,130,246,0.25); }
-  .partner-modal-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; }
-  .partner-modal-avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background: #E0E7FF; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #8B5CF6; }
-  .partner-modal-name { font-size: 18px; font-weight: 800; color: #1E293B; margin: 0 0 8px; }
-  .partner-modal-bio { font-size: 14px; color: #64748B; margin-bottom: 16px; }
-  .partner-modal-info { text-align: left; font-size: 13px; color: #475569; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
-  .partner-modal-info p { display: flex; align-items: center; gap: 8px; margin: 0; }
-  .close-btn { width: 100%; padding: 12px; background: #F0F4FF; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; color: #3B82F6; }
+  .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(30,41,59,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
+  .modal { background:rgba(255,255,255,0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid rgba(255,255,255,0.8); padding: 20px 24px 48px; border-radius: 28px 28px 0 0; width: 100%; max-width: 540px; text-align:center; box-shadow: 0 -8px 40px rgba(59,130,246,0.1); animation: slide-up 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes slide-up { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .pm-handle { width: 44px; height: 5px; background: #E2E8F0; border-radius: 99px; margin: 0 auto 20px; }
+  .pm-avatar-wrap { margin-bottom: 14px; }
+  .pm-avatar-img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 4px 20px rgba(99,102,241,0.2); }
+  .pm-avatar-placeholder { width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, #EEF2FF, #E0E7FF); color: #6366F1; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
+  .pm-name { font-size: 20px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
+  .pm-bio { font-size: 13px; color: #64748B; font-weight: 600; font-style: italic; margin: 0 0 20px; line-height: 1.5; }
+  .pm-info-list { display: flex; flex-direction: column; margin-bottom: 24px; background: #F8FAFC; border-radius: 18px; overflow: hidden; text-align: left; }
+  .pm-info-row { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid #F1F5F9; }
+  .pm-info-row:last-child { border-bottom: none; }
+  .pm-info-icon { width: 34px; height: 34px; border-radius: 10px; background: #EFF6FF; color: #3B82F6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .pm-info-label { font-size: 10px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 2px; }
+  .pm-info-val { font-size: 14px; font-weight: 700; color: #1E293B; margin: 0; }
+  .pm-info-empty { color: #CBD5E1 !important; font-style: italic; font-weight: 600 !important; }
+  .pm-close-btn { width: 100%; padding: 14px; background: #EFF6FF; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; color: #3B82F6; transition: background 0.2s; }
+  .pm-close-btn:hover { background: #DBEAFE; }
 
   @keyframes shimmer {
     0% { background-position: 200% 0; }
