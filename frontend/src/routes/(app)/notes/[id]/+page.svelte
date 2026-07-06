@@ -5,6 +5,8 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
+  import RichEditor from '$lib/RichEditor.svelte';
+  import Spreadsheet from '$lib/Spreadsheet.svelte';
 
   let id = $derived(page.params.id);
   let folderId = $derived(page.url.searchParams.get('folder_id'));
@@ -12,9 +14,10 @@
   let title = $state('');
   let content = $state('');
   let checklist = $state<any[]>([]);
-  let activeTab = $state<'text' | 'checklist'>('text');
+  let activeTab = $state<'text' | 'checklist' | 'spreadsheet'>('text');
   let loading = $state(false);
   let saved = $state(false);
+  let spreadsheetData = $state<string[][]>([]);
 
   onMount(async () => {
     if (!auth.token) return goto('/login');
@@ -31,14 +34,30 @@
         content = data.note.content || '';
         try { checklist = data.note.checklist ? JSON.parse(data.note.checklist) : []; }
         catch(e) { checklist = []; }
-        if (checklist.length > 0) activeTab = 'checklist';
+        // Load spreadsheet data from content if tab is spreadsheet
+        if (data.note.content?.startsWith('__SHEET__:')) {
+          try { spreadsheetData = JSON.parse(data.note.content.replace('__SHEET__:', '')); activeTab = 'spreadsheet'; }
+          catch(e) { spreadsheetData = []; }
+          content = '';
+        } else if (checklist.length > 0) {
+          activeTab = 'checklist';
+        }
       }
     } catch(e) {} finally { loading = false; }
   }
 
   async function saveNote() {
     loading = true;
-    const body = { folder_id: folderId, title, content, checklist: checklist.length > 0 ? checklist : null };
+    // Serialize spreadsheet data into content field
+    const contentToSave = activeTab === 'spreadsheet'
+      ? `__SHEET__:${JSON.stringify(spreadsheetData)}`
+      : content;
+    const body = {
+      folder_id: folderId,
+      title,
+      content: contentToSave,
+      checklist: activeTab === 'checklist' && checklist.length > 0 ? checklist : null
+    };
     try {
       const url = id === 'new' ? `${API_URL}/notes` : `${API_URL}/notes/${id}`;
       const method = id === 'new' ? 'POST' : 'PUT';
@@ -121,6 +140,12 @@
         <span class="tab-badge">{doneCount}/{checklist.length}</span>
       {/if}
     </button>
+    <button
+      class="tab-pill {activeTab === 'spreadsheet' ? 'tab-pill--active' : ''}"
+      onclick={() => activeTab = 'spreadsheet'}
+    >
+      <Icon name="wallet" size={14} /> Spreadsheet
+    </button>
 
     <!-- Checklist progress mini bar -->
     {#if activeTab === 'checklist' && checklist.length > 0}
@@ -131,13 +156,11 @@
   </div>
 
   <!-- Content -->
-  <div class="content-area">
+  <div class="content-area {activeTab === 'spreadsheet' ? 'content-area--sheet' : ''}">
     {#if activeTab === 'text'}
-      <textarea
-        bind:value={content}
-        placeholder="Tulis sesuatu di sini..."
-        class="text-area"
-      ></textarea>
+      <RichEditor bind:content placeholder="Tulis sesuatu di sini..." />
+    {:else if activeTab === 'spreadsheet'}
+      <Spreadsheet bind:data={spreadsheetData} />
 
     {:else}
       <div class="checklist-wrap">
