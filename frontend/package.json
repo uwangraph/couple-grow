@@ -28,7 +28,20 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^1.17.0",
+		"@tiptap/core": "^2.27.2",
+		"@tiptap/extension-color": "^2.27.2",
+		"@tiptap/extension-highlight": "^2.27.2",
+		"@tiptap/extension-table": "^2.27.2",
+		"@tiptap/extension-table-cell": "^2.27.2",
+		"@tiptap/extension-table-header": "^2.27.2",
+		"@tiptap/extension-table-row": "^2.27.2",
+		"@tiptap/extension-text-align": "^2.27.2",
+		"@tiptap/extension-text-style": "^2.27.2",
+		"@tiptap/extension-underline": "^2.27.2",
+		"@tiptap/pm": "^2.27.2",
+		"@tiptap/starter-kit": "^2.27.2",
 		"@types/cropperjs": "^1.1.5",
-		"cropperjs": "^2.1.1"
+		"cropperjs": "^2.1.1",
+		"hyperformula": "^3.3.0"
 	}
 }
