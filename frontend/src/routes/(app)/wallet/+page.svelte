@@ -12,6 +12,7 @@
     Inbox as EmptyIcon,
     TrendingDown as ExpenseIcon,
     ArrowUpCircle as IncomeIcon
+    ,Pencil as PencilIcon
   } from '@lucide/svelte';
 
   let transactions = $state<any[]>([]);
@@ -268,6 +269,9 @@
                   {new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                   {t.note ? '· ' + t.note : ''}
                 </p>
+                {#if t.user_name}
+                  <p class="tx-added-by">Ditambahkan oleh {t.user_name}</p>
+                {/if}
               </div>
               <span class="tx-amount {t.type === 'income' ? 'tx-amount--in' : 'tx-amount--out'}">
                 {t.type === 'income' ? '+' : '-'}{formatRp(t.amount)}
@@ -460,7 +464,7 @@
             <Icon name="wallet" size={22} />
           </div>
           <div>
-            <h3 class="modal-title">Catat Transaksi</h3>
+            <h3 class="modal-title"><PencilIcon size={22} strokeWidth={2.5} aria-hidden="true" /> Catat Transaksi</h3>
             <p class="modal-subtitle">Masukkan detail transaksi</p>
           </div>
         </div>
@@ -569,7 +573,7 @@
         </p>
         <div class="modal-actions">
           <button class="modal-cancel" onclick={() => showDeleteConfirm = false}>Batal</button>
-          <button class="modal-submit modal-submit--red" onclick={deleteTransaction}>Hapus</button>
+          <button class="modal-submit modal-submit--red" onclick={deleteTransaction}>🗑️ Hapus</button>
         </div>
       </div>
     </div>
@@ -780,6 +784,7 @@
   .tx-info { flex: 1; min-width: 0; }
   .tx-cat { font-weight: 800; color: #1E293B; font-size: 13px; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tx-date { font-size: 11px; color: #94A3B8; margin: 0; }
+  .tx-added-by { font-size: 10px; color: #64748B; margin: 3px 0 0; font-weight: 600; }
   .tx-amount { font-weight: 900; font-size: 13px; flex-shrink: 0; }
   .tx-amount--in { color: #15803D; }
   .tx-amount--out { color: #BE123C; }

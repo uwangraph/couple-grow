@@ -476,7 +476,10 @@ app.get('/transactions', async (c) => {
   const couple_id = [payload.id, user.partner_id].sort().join('_')
   
   const transactions = await c.env.DB.prepare(
-    'SELECT * FROM transactions WHERE couple_id = ? ORDER BY created_at DESC LIMIT 50'
+    `SELECT t.*, u.name as user_name, u.avatar as user_avatar
+     FROM transactions t
+     JOIN users u ON t.user_id = u.id
+     WHERE t.couple_id = ? ORDER BY t.created_at DESC LIMIT 50`
   ).bind(couple_id).all()
   
   return c.json({ transactions: transactions.results })
@@ -745,7 +748,11 @@ app.get('/savings/:id', async (c) => {
 
   try {
     const saving = await c.env.DB.prepare(
-      'SELECT * FROM savings WHERE id = ?'
+      `SELECT s.*, u.name as creator_name, u.avatar as creator_avatar
+       FROM savings s
+       LEFT JOIN saving_activities sa ON sa.saving_id = s.id AND sa.type = 'created'
+       LEFT JOIN users u ON sa.user_id = u.id
+       WHERE s.id = ?`
     ).bind(id).first()
 
     if (!saving) return c.json({ error: 'Saving not found' }, 404)
@@ -768,7 +775,11 @@ app.get('/savings', async (c) => {
   const couple_id = [payload.id, user.partner_id].sort().join('_')
   
   const savings = await c.env.DB.prepare(
-    'SELECT * FROM savings WHERE couple_id = ? ORDER BY created_at DESC'
+    `SELECT s.*, u.name as creator_name, u.avatar as creator_avatar
+     FROM savings s
+     LEFT JOIN saving_activities sa ON sa.saving_id = s.id AND sa.type = 'created'
+     LEFT JOIN users u ON sa.user_id = u.id
+     WHERE s.couple_id = ? ORDER BY s.created_at DESC`
   ).bind(couple_id).all()
   
   return c.json({ savings: savings.results })

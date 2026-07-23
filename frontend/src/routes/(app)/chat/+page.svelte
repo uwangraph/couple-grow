@@ -260,17 +260,19 @@
   }
 
   function sendReaction(msg: any, emoji: string) {
+    const userId = auth.user?.id;
+    if (!userId) return;
     const reactionsObj = msg.reactions ? JSON.parse(msg.reactions) : {};
     // Toggle same reaction off
-    if (reactionsObj[auth.user?.id] === emoji) {
-      delete reactionsObj[auth.user?.id];
+    if (reactionsObj[userId] === emoji) {
+      delete reactionsObj[userId];
     } else {
-      reactionsObj[auth.user?.id] = emoji;
+      reactionsObj[userId] = emoji;
     }
     const reactionsStr = JSON.stringify(reactionsObj);
     messages = messages.map(m => m.id === msg.id ? { ...m, reactions: reactionsStr } : m);
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'react', data: { id: msg.id, emoji: reactionsObj[auth.user?.id] || null } }));
+      ws.send(JSON.stringify({ type: 'react', data: { id: msg.id, emoji: reactionsObj[userId] || null } }));
     }
   }
 
@@ -394,7 +396,7 @@
     <div class="reaction-bar">
       {#each ['❤️','👍','😂','😮','😢','🙏'] as emoji}
         <button
-          class="reaction-btn {(contextMessage.reactions && JSON.parse(contextMessage.reactions)[auth.user?.id] === emoji) ? 'reaction-btn--active' : ''}"
+          class="reaction-btn {(contextMessage.reactions && auth.user?.id && JSON.parse(contextMessage.reactions)[auth.user.id] === emoji) ? 'reaction-btn--active' : ''}"
           onclick={() => { sendReaction(contextMessage, emoji); closeContextMenu(); }}
           aria-label={emoji}
         >{emoji}</button>

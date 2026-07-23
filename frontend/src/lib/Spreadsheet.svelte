@@ -11,7 +11,9 @@
 
   // Internal grid state (raw input values, may contain formulas)
   let grid = $state<string[][]>([]);
-  let hf: InstanceType<typeof HyperFormula>;
+  // HyperFormula's public constructor is protected; infer the type from its
+  // factory method instead of InstanceType<typeof HyperFormula>.
+  let hf: ReturnType<typeof HyperFormula.buildEmpty>;
   const SHEET = 'Sheet1';
 
   // Selection

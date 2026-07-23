@@ -351,6 +351,9 @@
                     {new Date(s.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 {/if}
+                {#if s.creator_name}
+                  <p class="saving-creator">Ditambahkan oleh {s.creator_name}</p>
+                {/if}
               </div>
               <div class="saving-pct-badge {isDone ? 'saving-pct-badge--done' : ''}">
                 {percent}%
@@ -892,6 +895,7 @@
   .saving-meta { flex: 1; min-width: 0; }
   .saving-name { font-size: 15px; font-weight: 900; color: #1E293B; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .saving-deadline { font-size: 11px; color: #94A3B8; margin: 0; font-weight: 700; }
+  .saving-creator { font-size: 10px; color: #64748B; margin: 4px 0 0; font-weight: 700; }
   .swipe-hint { opacity: 0.5; font-size: 10px; animation: pulse 2s ease-in-out infinite; }
   
   @keyframes pulse {

@@ -76,7 +76,7 @@
   }
 
   let isEditingProfile = $state(false);
-  let avatarInput = $state<HTMLInputElement>();
+  let avatarInput = $state<HTMLInputElement | null>(null);
   let editForm = $state({
     name: auth.user?.name || '',
     birthday: auth.user?.birthday || '',
@@ -342,7 +342,7 @@
     <div class="hero-blob blob-2"></div>
     <div class="hero-blob blob-3"></div>
     <div class="hero-content">
-      <button class="avatar-btn" onclick={() => avatarInput.click()} aria-label="Ubah foto profil">
+      <button class="avatar-btn" onclick={() => avatarInput?.click()} aria-label="Ubah foto profil">
         <div class="avatar-ring">
           <div class="avatar-inner" style="background: {avatarColor};">
             {#if auth.user?.avatar}
@@ -566,7 +566,7 @@
           </div>
         </div>
       {:else}
-        <button class="btn btn--outline btn--block" onclick={() => { isChangingPassword = true; pairErrorMsg = ''; successMsg = ''; }}>
+        <button class="btn btn--outline btn--block" onclick={() => { isChangingPassword = true; }}>
           <Icon name="lock" size={16} style="margin-right: 8px;" /> Ganti Password
         </button>
       {/if}
