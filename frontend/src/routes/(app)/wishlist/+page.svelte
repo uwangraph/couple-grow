@@ -173,6 +173,10 @@
     <div class="header-inner">
       <div class="header-top">
         <div>
+          <button class="back-btn" onclick={() => goto('/home')} aria-label="Kembali ke Beranda">
+            <Icon name="back" size={18} />
+            Kembali
+          </button>
           <p class="header-sub">Impian Bersama</p>
           <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
             Wishlist <Icon name="sparkles" size={24} />
@@ -433,7 +437,7 @@
   }
 
   .header {
-    background: linear-gradient(145deg, #EC4899 0%, #DB2777 50%, #BE185D 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
@@ -444,12 +448,14 @@
   .b2 { width: 90px; height: 90px; bottom: -20px; left: -20px; }
   .header-inner { position: relative; z-index: 1; }
   .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: rgba(255,255,255,0.9); padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .back-btn:hover { color: white; }
   .header-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
   .header-title { font-size: 24px; font-weight: 900; color: white; margin: 0; }
 
   .create-btn {
     background: white;
-    color: #EC4899;
+    color: #6BAFF2;
     border: none;
     border-radius: 14px;
     padding: 10px 16px;
@@ -467,7 +473,7 @@
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #EC4899; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #6BAFF2; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .empty-state { text-align: center; padding: 60px 20px; }
@@ -475,7 +481,7 @@
   .empty-title { font-size: 16px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
   .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
   .empty-cta {
-    background: linear-gradient(135deg, #EC4899, #DB2777);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;
@@ -484,7 +490,7 @@
     font-size: 14px;
     font-weight: 900;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(236,72,153,0.3);
+    box-shadow: 0 6px 20px rgba(107,175,242,0.3);
   }
 
   /* Priority Section */
@@ -535,8 +541,8 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #FDF2F8;
-    color: #EC4899;
+    background: #EFF6FF;
+    color: #6BAFF2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -588,7 +594,7 @@
   .wish-price {
     font-size: 13px;
     font-weight: 900;
-    color: #EC4899;
+    color: #6BAFF2;
     margin: 0 0 6px;
   }
 
@@ -597,7 +603,7 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #3B82F6;
+    color: #6BAFF2;
     font-weight: 800;
     background: #EFF6FF;
     padding: 4px 8px;
@@ -636,7 +642,7 @@
   .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
   .modal-icon-circle {
     width: 50px; height: 50px; border-radius: 16px;
-    background: #FDF2F8; color: #EC4899;
+    background: #EFF6FF; color: #6BAFF2;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .modal-title { font-size: 17px; font-weight: 900; color: #1E293B; margin: 0 0 3px; }
@@ -651,7 +657,7 @@
     outline: none; background: #F8FAFC; transition: border-color 0.2s;
     width: 100%; box-sizing: border-box;
   }
-  .form-input:focus { border-color: #EC4899; }
+  .form-input:focus { border-color: #6BAFF2; }
   .form-textarea { resize: none; min-height: 80px; }
   .modal-actions { display: flex; gap: 12px; padding-top: 4px; }
   .modal-cancel {
@@ -660,10 +666,10 @@
   }
   .modal-submit {
     flex: 2; padding: 14px;
-    background: linear-gradient(135deg, #EC4899, #DB2777);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white; border: none; border-radius: 16px;
     font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer;
-    box-shadow: 0 6px 20px rgba(236,72,153,0.3); transition: transform 0.12s;
+    box-shadow: 0 6px 20px rgba(107,175,242,0.3); transition: transform 0.12s;
   }
   .modal-submit:active { transform: scale(0.97); }
 </style>

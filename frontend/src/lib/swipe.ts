@@ -30,12 +30,13 @@ export function swipe(node: HTMLElement, options: SwipeOptions) {
     const deleteEl = parent.querySelector<HTMLElement>('.tx-action--delete');
     const progress = Math.min(Math.abs(deltaX) / threshold, 1);
 
-    if (deltaX > 0 && editEl) {
-      editEl.style.opacity = String(progress);
-      if (deleteEl) deleteEl.style.opacity = '0';
-    } else if (deltaX < 0 && deleteEl) {
+    // Left swipe reveals Edit; right swipe reveals Delete.
+    if (deltaX > 0 && deleteEl) {
       deleteEl.style.opacity = String(progress);
       if (editEl) editEl.style.opacity = '0';
+    } else if (deltaX < 0 && editEl) {
+      editEl.style.opacity = String(progress);
+      if (deleteEl) deleteEl.style.opacity = '0';
     } else {
       if (editEl) editEl.style.opacity = '0';
       if (deleteEl) deleteEl.style.opacity = '0';

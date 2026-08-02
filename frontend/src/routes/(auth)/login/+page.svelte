@@ -97,7 +97,7 @@
 </script>
 
 <form onsubmit={mode === 'login' ? handleLogin : mode === 'forgot' ? handleForgotPassword : handleResetPassword}>
-  <h2 style="font-size: 20px; font-weight: 700; color: #2D3A5E; margin: 0 0 24px 0; font-family: Inter, sans-serif;">
+  <h2 class="auth-title">
     {mode === 'login' ? 'Masuk ke Akunmu' : mode === 'forgot' ? 'Lupa Password' : 'Reset Password'}
   </h2>
 
@@ -134,16 +134,16 @@
     {#if loading}
       <Icon name="loading" class="w-5 h-5 animate-spin invert" /> Memproses...
     {:else if mode === 'forgot'}
-      Buat Kode Reset <Icon name="arrow" class="w-4 h-4 invert" />
+      Buat Kode Reset
     {:else if mode === 'reset'}
-      Simpan Password <Icon name="arrow" class="w-4 h-4 invert" />
+      Simpan Password
     {:else}
-      Masuk <Icon name="arrow" class="w-4 h-4 invert" />
+      Masuk
     {/if}
 
   </button>
 
-  <p style="text-align: center; font-size: 13px; color: #8898c0; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
+  <p style="text-align: center; font-size: 13px; color: #64748B; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
     {#if mode === 'login'}
       Belum punya akun? <a href="/register" class="auth-link">Daftar sekarang</a>
     {:else}
@@ -153,20 +153,21 @@
 </form>
 
 <style>
+  .auth-title { font-size: 22px; font-weight: 900; color: #30435F; margin: 0 0 24px; font-family: 'Nunito', sans-serif; }
   .link-button {
     display: block;
     margin: 0 0 24px auto;
     padding: 0;
     border: none;
     background: transparent;
-    color: #3B82F6;
+    color: #6BAFF2;
     font: 600 13px Inter, sans-serif;
     cursor: pointer;
   }
   .inline-auth-link {
     border: none;
     background: transparent;
-    color: #3B82F6;
+    color: #6BAFF2;
     font: 600 13px Inter, sans-serif;
     cursor: pointer;
     padding: 0;

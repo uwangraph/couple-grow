@@ -321,7 +321,7 @@
   function logout() { auth.logout(); goto('/login'); }
 
   function getAvatarColor(name: string) {
-    const colors = ['#BFDBFE', '#93C5FD', '#A7F3D0', '#FDE68A', '#FECACA'];
+    const colors = ['#BFDBFE', '#CFE7FC', '#A7F3D0', '#FDE68A', '#FECACA'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     return colors[Math.abs(hash) % colors.length];
@@ -660,7 +660,7 @@
   }
 
   .hero {
-    background: linear-gradient(145deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
@@ -805,7 +805,7 @@
     justify-content: center;
     flex-shrink: 0;
   }
-  .card-icon { width: 22px; height: 22px; color: #3B82F6; }
+  .card-icon { width: 22px; height: 22px; color: #6BAFF2; }
   .card-label-group { flex: 1; min-width: 0; }
   .card-label-title { font-size: 14px; font-weight: 800; color: #1E293B; margin: 0 0 2px; }
   .card-label-sub { font-size: 12px; color: #94A3B8; margin: 0; }
@@ -841,7 +841,7 @@
     font-size: 36px;
     font-weight: 900;
     letter-spacing: 0.25em;
-    color: #3B82F6;
+    color: #6BAFF2;
     margin-bottom: 6px;
   }
   .code-hint { font-size: 13px; color: #94A3B8; margin: 0; }
@@ -938,7 +938,7 @@
     gap: 5px;
     background: #EFF6FF;
     border: none;
-    color: #2563EB;
+    color: #4F96E5;
     border-radius: 50px;
     padding: 9px 14px;
     font-size: 13px;
@@ -956,7 +956,7 @@
   }
   .crop-ctrl-reset:hover { background: #E2E8F0; }
   .crop-ctrl-save {
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     padding: 9px 20px;
     font-size: 14px;
@@ -965,7 +965,7 @@
     justify-content: center;
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
   }
-  .crop-ctrl-save:hover { background: linear-gradient(135deg, #60A5FA, #3B82F6); }
+  .crop-ctrl-save:hover { background: linear-gradient(135deg, #9CCCF8, #6BAFF2); }
   .crop-ctrl-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
   .divider {
@@ -1002,7 +1002,7 @@
     font-family: 'Nunito', sans-serif;
     transition: border-color 0.2s;
   }
-  .code-input:focus { border-color: #3B82F6; }
+  .code-input:focus { border-color: #6BAFF2; }
 
   .info-row {
     display: flex;
@@ -1013,7 +1013,7 @@
   .info-emoji { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
   .info-key { font-size: 11px; color: #94A3B8; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
   .info-val { font-size: 14px; color: #1E293B; font-weight: 700; margin: 3px 0 0; }
-  .info-val--accent { color: #3B82F6; }
+  .info-val--accent { color: #6BAFF2; }
   .partner-avatar-sm {
     width: 38px;
     height: 38px;
@@ -1050,7 +1050,7 @@
     transition: border-color 0.2s;
     background: rgba(255, 255, 255, 0.6);
   }
-  .form-input:focus { border-color: #3B82F6; }
+  .form-input:focus { border-color: #6BAFF2; }
   .form-textarea { resize: vertical; min-height: 72px; }
   .form-date-label { font-size: 12px; font-weight: 700; color: #94A3B8; margin: 0; }
   .file-label {
@@ -1062,7 +1062,7 @@
     text-align: center;
     font-size: 14px;
     font-weight: 700;
-    color: #3B82F6;
+    color: #6BAFF2;
     cursor: pointer;
   }
   .btn-row { display: flex; gap: 10px; }
@@ -1079,12 +1079,12 @@
   }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn:active:not(:disabled) { transform: scale(0.97); }
-  .btn--primary { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; }
+  .btn--primary { background: linear-gradient(135deg, #6BAFF2, #4F96E5); color: white; }
   .btn--success { background: linear-gradient(135deg, #22C55E, #16A34A); color: white; }
   .btn--outline {
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.8);
-    color: #3B82F6;
+    color: #6BAFF2;
   }
   .btn--ghost { background: rgba(255, 255, 255, 0.4); color: #64748B; }
   .btn--sm { padding: 8px 14px; font-size: 12px; border-radius: 12px; }

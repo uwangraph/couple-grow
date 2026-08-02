@@ -54,7 +54,10 @@ CREATE TABLE IF NOT EXISTS savings (
   target_amount INTEGER NOT NULL,
   current_amount INTEGER DEFAULT 0,
   deadline DATE,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_by TEXT,
+  updated_by TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS folders (
@@ -65,6 +68,9 @@ CREATE TABLE IF NOT EXISTS folders (
   parent_folder_id INTEGER,
   linked_saving_id INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_by TEXT,
+  updated_by TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (parent_folder_id) REFERENCES folders(id),
   FOREIGN KEY (linked_saving_id) REFERENCES savings(id)
 );
@@ -79,6 +85,8 @@ CREATE TABLE IF NOT EXISTS notes (
   is_done BOOLEAN DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_by TEXT,
+  updated_by TEXT,
   FOREIGN KEY (folder_id) REFERENCES folders(id)
 );
 
@@ -139,6 +147,9 @@ CREATE TABLE IF NOT EXISTS budgets (
   period_month INTEGER NOT NULL, -- 1-12
   period_year INTEGER NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_by TEXT,
+  updated_by TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(couple_id, category, period_month, period_year)
 );
 
@@ -173,8 +184,26 @@ CREATE TABLE IF NOT EXISTS wishlists (
   is_completed BOOLEAN DEFAULT 0,
   linked_saving_id INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_by TEXT,
+  updated_by TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (linked_saving_id) REFERENCES savings(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_wishlists_couple 
 ON wishlists(couple_id, priority DESC, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  actor_id TEXT,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  link TEXT,
+  is_read BOOLEAN DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (actor_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at DESC);

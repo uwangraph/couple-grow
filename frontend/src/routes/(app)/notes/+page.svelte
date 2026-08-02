@@ -84,6 +84,10 @@
     <div class="header-inner">
       <div class="header-row">
         <div>
+          <button class="back-btn" onclick={() => goto('/home')} aria-label="Kembali ke Beranda">
+            <Icon name="back" size={18} />
+            Kembali
+          </button>
           <p class="header-sub">Ruang Tulis</p>
           <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
             Catatan <Icon name="notes" size={24} />
@@ -242,7 +246,7 @@
 
   /* Header */
   .header {
-    background: linear-gradient(145deg, #4F7FE0 0%, #6B93E8 55%, #8DB2F0 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 32px 20px 20px;
     position: relative;
     overflow: hidden;
@@ -252,6 +256,8 @@
   .b2 { width: 90px; height: 90px; bottom: -20px; left: -20px; }
   .header-inner { position: relative; z-index: 1; }
   .header-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: rgba(255,255,255,0.9); padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .back-btn:hover { color: white; }
   .header-sub { font-size: 12px; color: rgba(255,255,255,0.65); margin: 0 0 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
   .header-title { font-size: 24px; font-weight: 900; color: white; margin: 0; }
   .new-folder-btn {
@@ -294,13 +300,13 @@
     white-space: nowrap;
     transition: all 0.15s;
   }
-  .folder-tab--active { background: white; color: #4F7FE0; }
+  .folder-tab--active { background: white; color: #6BAFF2; }
 
   /* Body */
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E6EFFF; border-top-color: #4F7FE0; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E6EFFF; border-top-color: #6BAFF2; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
@@ -310,7 +316,7 @@
   .empty-sub { font-size: 13px; color: #aab4cc; margin: 0 0 22px; }
   .empty-cta {
     display: inline-block;
-    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;
@@ -320,18 +326,18 @@
     font-weight: 900;
     cursor: pointer;
     text-decoration: none;
-    box-shadow: 0 6px 20px rgba(123,110,246,0.3);
+    box-shadow: 0 6px 20px rgba(107,175,242,0.3);
   }
 
   /* Section header */
   .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .section-title-group { display: flex; align-items: center; gap: 10px; }
-  .section-emoji { color: #4F7FE0; }
+  .section-emoji { color: #6BAFF2; }
   .section-title { font-size: 16px; font-weight: 900; color: #2D2A5E; margin: 0 0 2px; }
   .section-sub { font-size: 12px; color: #aab4cc; margin: 0; font-weight: 700; }
   .new-note-btn {
     display: inline-block;
-    background: linear-gradient(135deg, #4F7FE0, #6B93E8);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border-radius: 12px;
     padding: 9px 16px;
@@ -367,7 +373,7 @@
 
   .note-card-top { display: flex; align-items: center; justify-content: space-between; }
   .note-type-badge {
-    color: #4F7FE0;
+    color: #6BAFF2;
     background: #F0F5FF;
     padding: 5px;
     border-radius: 8px;
@@ -417,7 +423,7 @@
   .modal-handle { width: 44px; height: 5px; background: #E0DBFF; border-radius: 99px; margin: 0 auto 20px; }
 
   .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-  .modal-icon-circle { width: 50px; height: 50px; border-radius: 16px; background: #F0F5FF; display: flex; align-items: center; justify-content: center; color: #4F7FE0; flex-shrink: 0; }
+  .modal-icon-circle { width: 50px; height: 50px; border-radius: 16px; background: #F0F5FF; display: flex; align-items: center; justify-content: center; color: #6BAFF2; flex-shrink: 0; }
   .modal-title { font-size: 17px; font-weight: 900; color: #2D2A5E; margin: 0 0 3px; }
   .modal-subtitle { font-size: 13px; color: #aab4cc; margin: 0; font-weight: 700; }
 
@@ -438,8 +444,8 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #4F7FE0; }
+  .form-input:focus { border-color: #6BAFF2; }
   .modal-actions { display: flex; gap: 12px; }
   .modal-cancel { flex: 1; padding: 14px; background: #F5F8FE; color: #aab4cc; border: none; border-radius: 16px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; }
-  .modal-submit { flex: 2; padding: 14px; background: linear-gradient(135deg, #4F7FE0, #6B93E8); color: white; border: none; border-radius: 16px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 20px rgba(123,110,246,0.3); }
+  .modal-submit { flex: 2; padding: 14px; background: linear-gradient(135deg, #6BAFF2, #4F96E5); color: white; border: none; border-radius: 16px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 20px rgba(107,175,242,0.3); }
 </style>

@@ -15,6 +15,25 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings, Variables: { jwtPayload: any } }>()
 
+async function ensureAttributionColumns(db: D1Database) {
+  for (const table of ['savings', 'folders', 'notes', 'budgets', 'wishlists']) {
+    for (const column of ['created_by TEXT', 'updated_by TEXT', 'updated_at DATETIME']) {
+      try { await db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column}`).run() } catch (_) { /* already exists */ }
+    }
+  }
+}
+
+async function notifyPartner(db: D1Database, partnerId: string | undefined, actorId: string, type: string, title: string, message: string, link: string) {
+  if (!partnerId) return
+  await db.prepare(`CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, actor_id TEXT,
+    type TEXT NOT NULL, title TEXT NOT NULL, message TEXT NOT NULL, link TEXT,
+    is_read BOOLEAN DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run()
+  await db.prepare('INSERT INTO notifications (user_id, actor_id, type, title, message, link) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(partnerId, actorId, type, title, message, link).run()
+}
+
 async function hashPassword(password: string) {
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
@@ -133,6 +152,7 @@ app.use('/*', async (c, next) => {
   const method = c.req.method
 
   console.log(`[AUTH] ${method} ${path}`)
+  if (path !== '/auth/login' && path !== '/auth/register') await ensureAttributionColumns(c.env.DB)
 
   if (
     c.req.method === 'OPTIONS' ||
@@ -457,6 +477,7 @@ app.post('/transactions', async (c) => {
     const res = await c.env.DB.prepare(
       'INSERT INTO transactions (user_id, couple_id, amount, type, category, note) VALUES (?, ?, ?, ?, ?, ?) RETURNING id'
     ).bind(payload.id, couple_id, amount, type, category, note || '').first()
+    await notifyPartner(c.env.DB, user.partner_id, payload.id, 'transaction', 'Transaksi baru', `${category} ditambahkan ke dompet`, '/wallet')
     
     return c.json({ message: 'Transaction saved', id: res?.id })
   } catch(e) {
@@ -726,13 +747,14 @@ app.post('/savings', async (c) => {
 
   try {
     const res = await c.env.DB.prepare(
-      'INSERT INTO savings (couple_id, name, target_amount, current_amount, deadline) VALUES (?, ?, ?, 0, ?) RETURNING id'
-    ).bind(couple_id, name, target_amount, deadline || null).first()
+      'INSERT INTO savings (couple_id, name, target_amount, current_amount, deadline, created_by, updated_by) VALUES (?, ?, ?, 0, ?, ?, ?) RETURNING id'
+    ).bind(couple_id, name, target_amount, deadline || null, payload.id, payload.id).first()
     
     // Log activity: created
     await c.env.DB.prepare(
       'INSERT INTO saving_activities (saving_id, user_id, type, amount, note) VALUES (?, ?, ?, ?, ?)'
     ).bind(res?.id, payload.id, 'created', target_amount, `Target: ${name}`).run()
+    await notifyPartner(c.env.DB, user.partner_id, payload.id, 'saving', 'Tabungan baru', `${name} dibuat bersama`, '/savings')
     
     return c.json({ message: 'Saving created', id: res?.id })
   } catch(e) {
@@ -914,6 +936,8 @@ app.put('/savings/:id', async (c) => {
       updates.push('deadline = ?')
       values.push(deadline || null)
     }
+    updates.push('updated_by = ?', 'updated_at = CURRENT_TIMESTAMP')
+    values.push(payload.id)
     
     values.push(id)
     
@@ -1051,8 +1075,9 @@ app.post('/budgets', async (c) => {
 
   try {
     await c.env.DB.prepare(
-      'INSERT OR REPLACE INTO budgets (couple_id, category, amount, period_month, period_year) VALUES (?, ?, ?, ?, ?)'
-    ).bind(couple_id, category, amount, month, year).run()
+      'INSERT OR REPLACE INTO budgets (couple_id, category, amount, period_month, period_year, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(couple_id, category, amount, month, year, payload.id, payload.id).run()
+    await notifyPartner(c.env.DB, user.partner_id, payload.id, 'budget', 'Budget baru', `Budget ${category} telah dibuat`, '/budget')
 
     return c.json({ message: 'Budget set successfully' })
   } catch(e) {
@@ -1181,8 +1206,9 @@ app.post('/wishlists', async (c) => {
 
   try {
     const res = await c.env.DB.prepare(
-      'INSERT INTO wishlists (couple_id, name, description, estimated_price, priority, image_url, linked_saving_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id'
-    ).bind(couple_id, name, description || null, estimated_price || null, priority || 0, image_url || null, linked_saving_id || null).first()
+      'INSERT INTO wishlists (couple_id, name, description, estimated_price, priority, image_url, linked_saving_id, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id'
+    ).bind(couple_id, name, description || null, estimated_price || null, priority || 0, image_url || null, linked_saving_id || null, payload.id, payload.id).first()
+    await notifyPartner(c.env.DB, user.partner_id, payload.id, 'wishlist', 'Wishlist baru', `${name} ditambahkan ke wishlist`, '/wishlist')
 
     return c.json({ message: 'Wishlist created', id: res?.id })
   } catch(e) {
@@ -1209,6 +1235,8 @@ app.put('/wishlists/:id', async (c) => {
     if (is_completed !== undefined) { updates.push('is_completed = ?'); values.push(is_completed ? 1 : 0); }
     
     if (updates.length === 0) return c.json({ error: 'No fields to update' }, 400)
+
+    updates.push('updated_by = ?', 'updated_at = CURRENT_TIMESTAMP'); values.push(payload.id)
     
     values.push(id)
     await c.env.DB.prepare(`UPDATE wishlists SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run()
@@ -1303,7 +1331,8 @@ app.post('/folders', async (c) => {
   if (!name) return c.json({ error: 'Missing folder name' }, 400)
   
   try {
-    const res = await c.env.DB.prepare('INSERT INTO folders (couple_id, name) VALUES (?, ?) RETURNING id').bind(couple_id, name).first()
+    const res = await c.env.DB.prepare('INSERT INTO folders (couple_id, name, created_by, updated_by) VALUES (?, ?, ?, ?) RETURNING id').bind(couple_id, name, payload.id, payload.id).first()
+    await notifyPartner(c.env.DB, user.partner_id, payload.id, 'folder', 'Folder baru', `${name} dibuat di Notes`, '/notes')
     return c.json({ message: 'Folder created', id: res?.id })
   } catch(e) { return c.json({ error: 'Database error' }, 500) }
 })
@@ -1328,9 +1357,13 @@ app.delete('/folders/:id', async (c) => {
 
 // NOTES
 app.post('/notes', async (c) => {
+  const payload = c.get('jwtPayload')
   const { folder_id, title, content } = await c.req.json()
   try {
-    const res = await c.env.DB.prepare('INSERT INTO notes (folder_id, title, content) VALUES (?, ?, ?) RETURNING id').bind(folder_id, title, content || '').first()
+    const res = await c.env.DB.prepare('INSERT INTO notes (folder_id, title, content, created_by, updated_by) VALUES (?, ?, ?, ?, ?) RETURNING id').bind(folder_id, title, content || '', payload.id, payload.id).first()
+    const folder = await c.env.DB.prepare('SELECT couple_id FROM folders WHERE id = ?').bind(folder_id).first() as any
+    const partnerId = folder?.couple_id?.split('_').find((id: string) => id !== payload?.id)
+    await notifyPartner(c.env.DB, partnerId, payload?.id, 'note', 'Catatan baru', `${title || 'Catatan'} telah dibuat`, '/notes')
     return c.json({ message: 'Note created', id: res?.id })
   } catch(e) { return c.json({ error: 'Database error' }, 500) }
 })
@@ -1353,8 +1386,8 @@ app.put('/notes/:id', async (c) => {
   const { title, content, checklist } = await c.req.json()
   const checklistJson = checklist ? JSON.stringify(checklist) : null
   await c.env.DB.prepare(
-    'UPDATE notes SET title = ?, content = ?, checklist = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-  ).bind(title, content, checklistJson, id).run()
+    'UPDATE notes SET title = ?, content = ?, checklist = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).bind(title, content, checklistJson, c.get('jwtPayload').id, id).run()
   return c.json({ message: 'Updated' })
 })
 
@@ -1467,6 +1500,31 @@ app.post('/chat/upload', async (c) => {
   
   const fileUrl = `https://couple-grow.uwangraph.workers.dev/avatars/${filename}`
   return c.json({ url: fileUrl })
+})
+
+// NOTIFICATIONS
+app.get('/notifications', async (c) => {
+  const payload = c.get('jwtPayload')
+  await c.env.DB.prepare(`CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, actor_id TEXT,
+    type TEXT NOT NULL, title TEXT NOT NULL, message TEXT NOT NULL, link TEXT,
+    is_read BOOLEAN DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run()
+  const rows = await c.env.DB.prepare('SELECT n.*, u.name as actor_name FROM notifications n LEFT JOIN users u ON u.id = n.actor_id WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 100').bind(payload.id).all()
+  const unread = await c.env.DB.prepare('SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0').bind(payload.id).first()
+  return c.json({ notifications: rows.results, unread: unread?.count || 0 })
+})
+
+app.put('/notifications/read-all', async (c) => {
+  const payload = c.get('jwtPayload')
+  await c.env.DB.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').bind(payload.id).run()
+  return c.json({ message: 'Notifications marked as read' })
+})
+
+app.put('/notifications/:id/read', async (c) => {
+  const payload = c.get('jwtPayload')
+  await c.env.DB.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').bind(c.req.param('id'), payload.id).run()
+  return c.json({ message: 'Notification marked as read' })
 })
 
 // CHAT WEBSOCKET (Durable Object Endpoint)

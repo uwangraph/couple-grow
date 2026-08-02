@@ -86,7 +86,7 @@
     <div class="p-3 bg-warning/20 text-warning rounded-lg text-sm">{errorMsg}</div>
   {/if}
 
-  <div class="p-4 border border-gray-100 bg-gray-50 rounded-xl">
+  <div class="p-4 border border-white/60 bg-white/50 backdrop-blur-md rounded-xl shadow-[0_4px_16px_rgba(107,175,242,0.08)]">
     <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
       <Icon name="dice" class="w-4 h-4 opacity-70" /> Buat Kode Undangan
     </h3>
@@ -103,9 +103,9 @@
   </div>
 
   <div class="relative flex py-2 items-center">
-    <div class="flex-grow border-t border-gray-200"></div>
+    <div class="flex-grow border-t border-white/60"></div>
     <span class="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase">atau</span>
-    <div class="flex-grow border-t border-gray-200"></div>
+    <div class="flex-grow border-t border-white/60"></div>
   </div>
 
   <div>
@@ -113,7 +113,7 @@
       <Icon name="link" class="w-4 h-4 opacity-70" /> Masukkan Kode Pasangan
     </h3>
     <div class="flex space-x-2">
-      <input type="text" bind:value={inviteCode} placeholder="Kode 6 digit" class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none uppercase text-center tracking-widest transition-all" maxlength="6" />
+      <input type="text" bind:value={inviteCode} placeholder="Kode 6 digit" class="flex-1 px-4 py-2 border border-white/60 bg-white/50 backdrop-blur-md rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none uppercase text-center tracking-widest transition-all" maxlength="6" />
       <button onclick={connectPartner} disabled={loading || inviteCode.length !== 6} class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl font-semibold transition-colors disabled:opacity-50">
         Hubungkan
       </button>

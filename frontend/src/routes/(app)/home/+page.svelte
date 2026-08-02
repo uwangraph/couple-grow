@@ -173,6 +173,9 @@
           </a>
         {/if}
       </div>
+      <button class="notification-btn" onclick={() => goto('/notifications')} aria-label="Buka notifikasi">
+        <Icon name="bell" size={22} />
+      </button>
     </div>
 
     <!-- Balance Card (within header, slightly offset) -->
@@ -242,8 +245,8 @@
       <p class="section-title">Menu Cepat</p>
       <div class="quick-grid">
         {#each [
-          { icon: 'wallet',  label: 'Dompet',   path: '/wallet',  color: '#3B82F6', bg: '#EFF6FF' },
-          { icon: 'savings', label: 'Tabungan',  path: '/savings', color: '#8B5CF6', bg: '#F5F3FF' },
+          { icon: 'wallet',  label: 'Dompet',   path: '/wallet',  color: '#6BAFF2', bg: '#EFF6FF' },
+          { icon: 'savings', label: 'Tabungan',  path: '/savings', color: '#A58BE8', bg: '#F5F3FF' },
           { icon: 'notes',   label: 'Notes',    path: '/notes',   color: '#F59E0B', bg: '#FFFBEB' },
           { icon: 'chat',    label: 'Chat',     path: '/chat',    color: '#F43F5E', bg: '#FFF1F2' },
         ] as q}
@@ -339,7 +342,7 @@
 
   /* Header dengan gradient biru-Ungu */
   .header {
-    background: linear-gradient(145deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
@@ -352,7 +355,8 @@
   .b1 { width: 180px; height: 180px; top: -50px; right: -50px; }
   .b2 { width: 100px; height: 100px; bottom: 20px; left: -20px; }
 
-  .header-top { position: relative; z-index: 1; margin-bottom: 24px; }
+  .header-top { position: relative; z-index: 1; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .notification-btn { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.45); border-radius: 14px; background: rgba(255,255,255,.2); color: white; cursor: pointer; }
   .greeting-sub { font-size: 13px; color: rgba(255,255,255,0.75); margin: 0 0 4px; }
   .greeting-name { font-size: 24px; font-weight: 900; color: white; margin: 0 0 8px; }
   .partner-line { font-size: 13px; color: rgba(255,255,255,0.85); margin: 0; display: flex; align-items: center; gap: 5px; }
@@ -439,7 +443,7 @@
 
   .quick-icon--blue {
     background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
-    color: #3B82F6;
+    color: #6BAFF2;
   }
 
   .quick-icon--pink {
@@ -492,7 +496,7 @@
   .section { margin-bottom: 22px; }
   .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .section-title { font-size: 13px; font-weight: 900; color: #1E293B; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .section-more { font-size: 12px; font-weight: 700; color: #3B82F6; text-decoration: none; }
+  .section-more { font-size: 12px; font-weight: 700; color: #6BAFF2; text-decoration: none; }
 
   /* Quick Actions */
   .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -539,14 +543,14 @@
   .savings-pct-badge {
     font-size: 18px;
     font-weight: 900;
-    color: #8B5CF6;
+    color: #A58BE8;
     background: #F5F3FF;
     padding: 4px 10px;
     border-radius: 10px;
     flex-shrink: 0;
   }
   .progress-track { height: 7px; background: #EDE9FE; border-radius: 99px; overflow: hidden; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, #8B5CF6, #A78BFA); border-radius: 99px; transition: width 0.5s ease; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #A58BE8, #A78BFA); border-radius: 99px; transition: width 0.5s ease; }
 
   /* Transactions */
   .tx-row {
@@ -597,7 +601,7 @@
     font-size: 13px;
     font-weight: 600;
   }
-  .empty-link { color: #3B82F6; font-weight: 700; text-decoration: none; display: block; margin-top: 8px; }
+  .empty-link { color: #6BAFF2; font-weight: 700; text-decoration: none; display: block; margin-top: 8px; }
 
   /* Skeletons */
   .skeleton { border-radius: 14px; background: linear-gradient(90deg, #EFF6FF 25%, #E0E7FF 50%, #EFF6FF 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
@@ -612,17 +616,17 @@
   .pm-handle { width: 44px; height: 5px; background: #E2E8F0; border-radius: 99px; margin: 0 auto 20px; }
   .pm-avatar-wrap { margin-bottom: 14px; }
   .pm-avatar-img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 4px 20px rgba(99,102,241,0.2); }
-  .pm-avatar-placeholder { width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, #EEF2FF, #E0E7FF); color: #6366F1; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
+  .pm-avatar-placeholder { width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, #EEF2FF, #E0E7FF); color: #7FA8EA; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
   .pm-name { font-size: 20px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
   .pm-bio { font-size: 13px; color: #64748B; font-weight: 600; font-style: italic; margin: 0 0 20px; line-height: 1.5; }
   .pm-info-list { display: flex; flex-direction: column; margin-bottom: 24px; background: #F8FAFC; border-radius: 18px; overflow: hidden; text-align: left; }
   .pm-info-row { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid #F1F5F9; }
   .pm-info-row:last-child { border-bottom: none; }
-  .pm-info-icon { width: 34px; height: 34px; border-radius: 10px; background: #EFF6FF; color: #3B82F6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .pm-info-icon { width: 34px; height: 34px; border-radius: 10px; background: #EFF6FF; color: #6BAFF2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .pm-info-label { font-size: 10px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 2px; }
   .pm-info-val { font-size: 14px; font-weight: 700; color: #1E293B; margin: 0; }
   .pm-info-empty { color: #CBD5E1 !important; font-style: italic; font-weight: 600 !important; }
-  .pm-close-btn { width: 100%; padding: 14px; background: #EFF6FF; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; color: #3B82F6; transition: background 0.2s; }
+  .pm-close-btn { width: 100%; padding: 14px; background: #EFF6FF; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; color: #6BAFF2; transition: background 0.2s; }
   .pm-close-btn:hover { background: #DBEAFE; }
 
   @keyframes shimmer {

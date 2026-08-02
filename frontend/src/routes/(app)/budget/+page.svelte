@@ -18,9 +18,9 @@
   // Predefined categories
   const categories = [
     { name: 'Makanan & Minuman', icon: 'food', color: '#F59E0B' },
-    { name: 'Transportasi', icon: 'transport', color: '#3B82F6' },
+    { name: 'Transportasi', icon: 'transport', color: '#6BAFF2' },
     { name: 'Belanja', icon: 'shopping', color: '#EC4899' },
-    { name: 'Hiburan', icon: 'entertainment', color: '#A855F7' },
+    { name: 'Hiburan', icon: 'entertainment', color: '#A58BE8' },
     { name: 'Tagihan', icon: 'bills', color: '#EF4444' },
     { name: 'Kesehatan', icon: 'health', color: '#22C55E' },
     { name: 'Pendidikan', icon: 'education', color: '#0EA5E9' },
@@ -359,7 +359,7 @@
 
   /* Header */
   .header {
-    background: linear-gradient(145deg, #22C55E 0%, #16A34A 50%, #15803D 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
@@ -375,7 +375,7 @@
 
   .create-btn {
     background: white;
-    color: #22C55E;
+    color: #6BAFF2;
     border: none;
     border-radius: 14px;
     padding: 10px 16px;
@@ -411,7 +411,7 @@
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #22C55E; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #6BAFF2; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
@@ -420,7 +420,7 @@
   .empty-title { font-size: 16px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
   .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
   .empty-cta {
-    background: linear-gradient(135deg, #22C55E, #16A34A);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;
@@ -556,11 +556,11 @@
     width: 50px;
     height: 50px;
     border-radius: 16px;
-    background: #F0FDF4;
+    background: #EFF6FF;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #22C55E;
+    color: #6BAFF2;
     flex-shrink: 0;
   }
   .modal-title { font-size: 17px; font-weight: 900; color: #1E293B; margin: 0 0 3px; }
@@ -584,7 +584,7 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #22C55E; }
+  .form-input:focus { border-color: #6BAFF2; }
   .form-input--amount { font-size: 24px; font-weight: 900; }
   .form-input--disabled { background: #E2E8F0; color: #94A3B8; cursor: not-allowed; }
 
@@ -604,7 +604,7 @@
   .modal-submit {
     flex: 2;
     padding: 14px;
-    background: linear-gradient(135deg, #22C55E, #16A34A);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;

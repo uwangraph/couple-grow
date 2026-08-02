@@ -177,14 +177,13 @@ export class ChatRoom extends DurableObject {
         }
       }
 
-      // Broadcast to all other connected sessions
+      // Broadcast to every connected session, including the sender. The sender
+      // uses the persisted message to replace its optimistic placeholder.
       for (const session of this.sessions) {
-        if (session !== ws) {
-          try {
-            session.send(JSON.stringify(broadcastData))
-          } catch (e) {
-            this.sessions.delete(session)
-          }
+        try {
+          session.send(JSON.stringify(broadcastData))
+        } catch (e) {
+          this.sessions.delete(session)
         }
       }
     } catch (e) {

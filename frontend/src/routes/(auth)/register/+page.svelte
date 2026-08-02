@@ -31,7 +31,7 @@
 </script>
 
 <form onsubmit={handleRegister}>
-  <h2 style="font-size: 20px; font-weight: 700; color: #2D3A5E; margin: 0 0 24px 0; font-family: Inter, sans-serif;">Buat Akun Baru</h2>
+  <h2 style="font-size: 20px; font-weight: 700; color: #30435F; margin: 0 0 24px 0; font-family: Inter, sans-serif;">Buat Akun Baru</h2>
 
   {#if errorMsg}
     <div class="auth-error" style="margin-bottom: 16px;">{errorMsg}</div>
@@ -56,12 +56,12 @@
     {#if loading}
       <Icon name="loading" class="w-5 h-5 animate-spin invert" /> Memproses...
     {:else}
-      Daftar Sekarang <Icon name="arrow" class="w-4 h-4 invert" />
+      Daftar Sekarang
     {/if}
 
   </button>
 
-  <p style="text-align: center; font-size: 13px; color: #8898c0; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
+  <p style="text-align: center; font-size: 13px; color: #64748B; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
     Sudah punya akun? <a href="/login" class="auth-link">Masuk di sini</a>
   </p>
 </form>

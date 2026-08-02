@@ -10,37 +10,37 @@
       title: 'Selamat Datang di CoupleGrow! 👋',
       description: 'Aplikasi untuk kelola keuangan dan impian bersama pasangan',
       icon: 'couple',
-      color: '#3B82F6'
+      color: '#6BAFF2'
     },
     {
       title: 'Dompet Bersama 💰',
       description: 'Catat semua pemasukan dan pengeluaran berdua dalam satu tempat',
       icon: 'wallet',
-      color: '#22C55E'
+      color: '#10B981'
     },
     {
       title: 'Tabungan & Target 🎯',
       description: 'Buat target tabungan untuk impian bersama dan pantau progressnya',
       icon: 'savings',
-      color: '#3B82F6'
+      color: '#6BAFF2'
     },
     {
       title: 'Wishlist Impian ✨',
       description: 'Catat semua impian yang pengen diwujudkan bareng',
       icon: 'sparkles',
-      color: '#EC4899'
+      color: '#6BAFF2'
     },
     {
       title: 'Budget & Analytics 📊',
       description: 'Atur budget bulanan dan lihat analisis keuangan kalian',
       icon: 'sparkles',
-      color: '#A855F7'
+      color: '#F59E0B'
     },
     {
       title: 'Siap Mulai! 🚀',
       description: 'Yuk mulai kelola keuangan bersama dengan lebih baik!',
       icon: 'success',
-      color: '#22C55E'
+      color: '#10B981'
     }
   ];
 
@@ -85,6 +85,7 @@
 {#if show}
   <div class="onboarding-overlay">
     <div class="onboarding-content">
+      <img class="onboarding-logo" src="/logo-couplegrow.png" alt="CoupleGrow" />
       <!-- Progress dots -->
       <div class="progress-dots">
         {#each steps as _, i}
@@ -121,8 +122,9 @@
   .onboarding-overlay {
     position: fixed;
     inset: 0;
-    background: linear-gradient(135deg, rgba(59,130,246,0.95), rgba(139,92,246,0.95));
-    backdrop-filter: blur(8px);
+    background: linear-gradient(135deg, rgba(234,245,254,.95), rgba(241,248,254,.95));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 9999;
     display: flex;
     align-items: center;
@@ -137,14 +139,19 @@
   }
 
   .onboarding-content {
-    background: white;
+    background: rgba(255, 255, 255, 0.76);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 32px;
     padding: 40px 32px;
     max-width: 420px;
     width: 100%;
     text-align: center;
+    box-shadow: 0 20px 60px rgba(59,130,246,.15);
     animation: slide-up 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
+  .onboarding-logo { width: 78px; height: 78px; object-fit: contain; margin: -12px auto 14px; display: block; padding: 3px; border: 2px solid rgba(107,175,242,.45); border-radius: 20px; background: linear-gradient(135deg, #EAF5FE, #F5FAFF); box-shadow: 0 0 0 4px rgba(255,255,255,.45), 0 8px 20px rgba(107,175,242,.18); }
 
   @keyframes slide-up {
     from { transform: translateY(40px) scale(0.9); opacity: 0; }
@@ -169,11 +176,11 @@
   .dot--active {
     width: 24px;
     border-radius: 4px;
-    background: #3B82F6;
+    background: #6BAFF2;
   }
 
   .dot--done {
-    background: #22C55E;
+    background: #10B981;
   }
 
   .step-content {
@@ -197,17 +204,17 @@
   }
 
   .step-title {
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 24px;
-    font-weight: 900;
+    font-weight: 800;
     color: #1E293B;
     margin: 0 0 12px;
   }
 
   .step-desc {
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
     color: #64748B;
     line-height: 1.6;
     margin: 0;
@@ -221,13 +228,13 @@
   .btn-skip {
     flex: 1;
     padding: 14px 24px;
-    background: #F1F5F9;
+    background: rgba(241, 245, 249, 0.8);
     color: #64748B;
     border: none;
     border-radius: 16px;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -239,25 +246,25 @@
   .btn-next {
     flex: 2;
     padding: 14px 24px;
-    background: linear-gradient(135deg, #3B82F6, #6366F1);
+    background: linear-gradient(135deg, #5FA8EF, #83BDF5);
     color: white;
     border: none;
     border-radius: 16px;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 15px;
-    font-weight: 900;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 0 8px 24px rgba(59,130,246,0.4);
+    box-shadow: 0 8px 24px rgba(107,175,242,0.35);
     transition: all 0.2s;
   }
 
   .btn-next:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(59,130,246,0.5);
+    box-shadow: 0 12px 32px rgba(107,175,242,0.45);
   }
 
   .btn-next:active {
@@ -267,21 +274,21 @@
   .btn-finish {
     width: 100%;
     padding: 16px 24px;
-    background: linear-gradient(135deg, #22C55E, #16A34A);
+    background: linear-gradient(135deg, #5FA8EF, #83BDF5);
     color: white;
     border: none;
     border-radius: 16px;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 16px;
-    font-weight: 900;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(34,197,94,0.4);
+    box-shadow: 0 8px 24px rgba(107,175,242,.35);
     transition: all 0.2s;
   }
 
   .btn-finish:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(34,197,94,0.5);
+    box-shadow: 0 12px 32px rgba(16,185,129,0.45);
   }
 
   .btn-finish:active {

@@ -101,7 +101,7 @@
   let totalBreakdown = $derived(categoryBreakdown.reduce((sum, c) => sum + c.total, 0));
 
   // Colors for pie chart
-  const colors = ['#3B82F6', '#F59E0B', '#F43F5E', '#22C55E', '#A855F7', '#EC4899', '#14B8A6', '#F97316'];
+  const colors = ['#6BAFF2', '#F59E0B', '#F43F5E', '#22C55E', '#A58BE8', '#EC4899', '#14B8A6', '#F97316'];
 </script>
 
 <div class="analytics-root">
@@ -338,7 +338,7 @@
 
   /* Header */
   .header {
-    background: linear-gradient(145deg, #A855F7 0%, #9333EA 50%, #7C3AED 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
@@ -356,7 +356,7 @@
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #A855F7; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #6BAFF2; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Comparison Card */
@@ -473,8 +473,8 @@
 
   .period-tab--active {
     background: white;
-    color: #A855F7;
-    box-shadow: 0 2px 8px rgba(168,85,247,0.15);
+    color: #6BAFF2;
+    box-shadow: 0 2px 8px rgba(107,175,242,0.15);
   }
 
   .empty-text {
@@ -519,7 +519,7 @@
 
   .bar-fill {
     width: 100%;
-    background: linear-gradient(180deg, #A855F7, #7C3AED);
+    background: linear-gradient(180deg, #6BAFF2, #4F96E5);
     border-radius: 8px 8px 0 0;
     position: relative;
     min-height: 20px;
@@ -613,7 +613,7 @@
   .category-percent {
     font-size: 11px;
     font-weight: 800;
-    color: #A855F7;
+    color: #6BAFF2;
     margin: 0;
   }
 
@@ -679,7 +679,7 @@
 
   .velocity-fill {
     height: 100%;
-    background: linear-gradient(90deg, #A855F7, #7C3AED);
+    background: linear-gradient(90deg, #6BAFF2, #4F96E5);
     border-radius: 99px;
     transition: width 0.6s ease;
   }
@@ -687,7 +687,7 @@
   .velocity-percent {
     font-size: 14px;
     font-weight: 900;
-    color: #A855F7;
+    color: #6BAFF2;
     margin: 0;
     min-width: 45px;
     text-align: right;

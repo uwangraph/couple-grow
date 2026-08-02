@@ -18,6 +18,9 @@
   let roomId = $state<string | null>(null);
   let chatContainer: HTMLElement;
   let connected = $state(false);
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let reconnectAttempts = 0;
+  let isLeaving = false;
   let toast = $state<string | null>(null);
   let fileInput: HTMLInputElement;
   
@@ -42,6 +45,8 @@
   });
 
   onDestroy(() => {
+    isLeaving = true;
+    if (reconnectTimer) clearTimeout(reconnectTimer);
     if (ws) ws.close();
   });
 
@@ -65,8 +70,18 @@
     if (savingId) params.set('saving_id', savingId);
     ws = new WebSocket(`${wsUrl}?${params.toString()}`);
     
-    ws.onopen = () => { connected = true; };
-    ws.onclose = () => { connected = false; };
+    ws.onopen = () => { connected = true; reconnectAttempts = 0; };
+    ws.onclose = () => {
+      connected = false;
+      if (auth.token && !isLeaving && !reconnectTimer) {
+        const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+        reconnectAttempts += 1;
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          connectWebSocket();
+        }, delay);
+      }
+    };
     ws.onerror = () => { connected = false; };
     
     ws.onmessage = (event) => {
@@ -82,10 +97,21 @@
           messages = messages.map(m => m.id === msg.data.id ? { ...m, message: msg.data.message, is_edited: true } : m);
         } else if (msg.type === 'react') {
           messages = messages.map(m => m.id === msg.data.id ? { ...m, reactions: msg.data.reactions } : m);
-        } else if (msg.type === 'chat' && msg.data?.sender_id !== auth.user?.id) {
-          messages = [...messages, msg.data];
+        } else if (msg.type === 'chat' && msg.data) {
+          const optimisticIndex = messages.findIndex(m =>
+            m.id >= 1000000000000 &&
+            m.sender_id === msg.data.sender_id &&
+            m.message === msg.data.message
+          );
+          if (optimisticIndex >= 0) {
+            messages = messages.map((m, index) => index === optimisticIndex ? msg.data : m);
+          } else if (!messages.some(m => m.id === msg.data.id)) {
+            messages = [...messages, msg.data];
+          }
           scrollToBottom();
-          showToast(`Pesan baru${msg.data.type !== 'text' ? ' (' + msg.data.type + ')' : ': "' + msg.data.message + '"'}`);
+          if (msg.data.sender_id !== auth.user?.id) {
+            showToast(`Pesan baru${msg.data.type !== 'text' ? ' (' + msg.data.type + ')' : ': "' + msg.data.message + '"'}`);
+          }
         }
       } catch(e) {}
     };
@@ -132,6 +158,7 @@
     if (!msgText && !attachmentPreview) return;
     
     newMessage = '';
+    const tempCreatedAt = new Date().toISOString();
     const tempMsg = { 
       id: Date.now(), 
       sender_id: auth.user?.id, 
@@ -139,7 +166,7 @@
       type: msgType,
       file_url: fileUrl,
       reply_to_id: replyingTo?.id || null,
-      created_at: new Date().toISOString() 
+      created_at: tempCreatedAt
     };
     
     messages = [...messages, tempMsg];
@@ -169,21 +196,17 @@
     attachment = null;
     attachmentPreview = null;
 
-    try {
-      const res = await fetch(`${API_URL}/chat/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
-        body: JSON.stringify({ room_id: roomId, message: msgText, type: msgType, file_url: uploadedUrl, reply_to_id: replyId })
-      });
-      const data = await res.json();
-      
-      // Update tempMsg with real ID
-      messages = messages.map(m => m.id === tempMsg.id ? data.message : m);
-      
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'chat', data: data.message }));
-      }
-    } catch(e) {}
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'chat', data: {
+        sender_id: auth.user?.id,
+        message: msgText,
+        type: msgType,
+        file_url: uploadedUrl,
+        reply_to_id: replyId
+      }}));
+    } else {
+      showToast('Chat sedang menghubungkan ulang');
+    }
   }
 
   async function deleteMessage(id: number) {
@@ -756,7 +779,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #3B82F6;
+    color: #6BAFF2;
     cursor: pointer;
     transition: background 0.15s;
     flex-shrink: 0;
@@ -773,7 +796,7 @@
     font-size: 22px;
     flex-shrink: 0;
   }
-  .header-avatar--chat { background: #EFF6FF; color: #3B82F6; }
+  .header-avatar--chat { background: #EFF6FF; color: #6BAFF2; }
   .header-avatar--savings { background: #F0F9FF; color: #0EA5E9; }
 
   .header-info { flex: 1; min-width: 0; }
@@ -845,13 +868,13 @@
   @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
   .msg-bubble--mine {
-    background: linear-gradient(135deg, #4aa6ec, #0C8CE9);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border-bottom-right-radius: 4px;
     box-shadow: 0 3px 12px rgba(12,140,233,0.25);
   }
   .msg-bubble--theirs {
-    background: linear-gradient(135deg, #9b69ef, #7C3AED);
+    background: linear-gradient(135deg, #A58BE8, #8970D2);
     color: white;
     border-bottom-left-radius: 4px;
     box-shadow: 0 3px 12px rgba(124,58,237,0.25);
@@ -905,9 +928,9 @@
 
   /* Reply preview bar above input */
   .reply-preview { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #EFF6FF; border-radius: 10px; margin-bottom: 8px; }
-  .reply-preview__bar { width: 3px; height: 36px; background: #3B82F6; border-radius: 3px; flex-shrink: 0; }
+  .reply-preview__bar { width: 3px; height: 36px; background: #6BAFF2; border-radius: 3px; flex-shrink: 0; }
   .reply-preview__content { flex: 1; overflow: hidden; }
-  .reply-preview__author { font-size: 12px; font-weight: 800; color: #3B82F6; display: block; margin-bottom: 2px; }
+  .reply-preview__author { font-size: 12px; font-weight: 800; color: #6BAFF2; display: block; margin-bottom: 2px; }
   .reply-preview__text { margin: 0; font-size: 12px; color: #64748B; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .reply-preview__close { background: none; border: none; cursor: pointer; color: #94A3B8; padding: 4px; display: flex; align-items: center; }
 
@@ -978,18 +1001,18 @@
   @keyframes scale-in-center { from { opacity: 0; transform: translate(-50%,-50%) scale(0.9); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
   .edit-modal__title { font-size: 16px; font-weight: 800; color: #1E293B; margin: 0 0 12px; }
   .edit-modal__input { width: 100%; border: 1.5px solid #E0E7FF; border-radius: 10px; padding: 10px 12px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 600; resize: none; box-sizing: border-box; }
-  .edit-modal__input:focus { outline: none; border-color: #3B82F6; }
+  .edit-modal__input:focus { outline: none; border-color: #6BAFF2; }
   .edit-modal__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
   .edit-modal__btn { padding: 8px 20px; border-radius: 20px; border: none; font-weight: 700; cursor: pointer; font-size: 14px; }
   .edit-modal__btn--cancel { background: #F1F5F9; color: #64748B; }
-  .edit-modal__btn--save { background: linear-gradient(135deg, #4aa6ec, #0C8CE9); color: white; }
+  .edit-modal__btn--save { background: linear-gradient(135deg, #6BAFF2, #4F96E5); color: white; }
 
   /* Pinned Message */
   .pinned-header { padding: 10px 16px; background: white; border-bottom: 1.5px solid #E0E7FF; display: flex; gap: 10px; align-items: center; cursor: pointer; transition: background 0.2s; flex-shrink: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
   .pinned-header:hover { background: #F8FAFC; }
   .pinned-icon { font-size: 16px; }
   .pinned-content { flex: 1; overflow: hidden; }
-  .pinned-content strong { display: block; font-size: 12px; color: #3B82F6; margin-bottom: 2px; }
+  .pinned-content strong { display: block; font-size: 12px; color: #6BAFF2; margin-bottom: 2px; }
   .pinned-content p { margin: 0; font-size: 13px; color: #64748B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* Input */
@@ -1023,7 +1046,7 @@
   }
   .msg-input::placeholder { color: #CBD5E1; }
   .msg-input:focus {
-    border-color: #3B82F6;
+    border-color: #6BAFF2;
     background: white;
     box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
   }
@@ -1044,7 +1067,7 @@
   }
   .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .send-btn--active {
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     box-shadow: 0 4px 14px rgba(59,130,246,0.35);
   }

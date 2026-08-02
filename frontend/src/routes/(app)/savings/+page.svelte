@@ -787,7 +787,7 @@
 
   /* Header */
   .header {
-    background: linear-gradient(145deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 32px 20px 80px;
     position: relative;
     overflow: hidden;
@@ -803,7 +803,7 @@
 
   .create-btn {
     background: white;
-    color: #3B82F6;
+    color: #6BAFF2;
     border: none;
     border-radius: 14px;
     padding: 10px 16px;
@@ -838,7 +838,7 @@
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #6BAFF2; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
@@ -847,7 +847,7 @@
   .empty-title { font-size: 16px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
   .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
   .empty-cta {
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;
@@ -889,7 +889,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: #3B82F6;
+    color: #6BAFF2;
   }
   .saving-emoji-wrap--done { background: #F0FDF4; color: #15803D; }
   .saving-meta { flex: 1; min-width: 0; }
@@ -921,7 +921,7 @@
     height: 32px;
     border-radius: 10px;
     background: #F0F4FF;
-    color: #3B82F6;
+    color: #6BAFF2;
     border: none;
     display: flex;
     align-items: center;
@@ -978,7 +978,7 @@
     transition: transform 0.12s, opacity 0.15s;
   }
   .action-btn:active { transform: scale(0.96); }
-  .action-btn--topup { background: #EFF6FF; color: #3B82F6; }
+  .action-btn--topup { background: #EFF6FF; color: #6BAFF2; }
   .action-btn--topup:hover { background: #DBEAFE; }
   .action-btn--deduct { background: #FFF1F2; color: #F43F5E; }
   .action-btn--deduct:hover { background: #FFE4E6; }
@@ -1025,7 +1025,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #3B82F6;
+    color: #6BAFF2;
     flex-shrink: 0;
   }
   .modal-icon-circle--green { background: #F0FDF4; color: #22C55E; }
@@ -1061,7 +1061,7 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #3B82F6; }
+  .form-input:focus { border-color: #6BAFF2; }
   .form-input--amount { font-size: 24px; font-weight: 900; }
   .form-input--green:focus { border-color: #22C55E; }
   .form-input--red:focus { border-color: #F43F5E; }
@@ -1082,7 +1082,7 @@
   .modal-submit {
     flex: 2;
     padding: 14px;
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;
@@ -1208,7 +1208,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     font-weight: 900;
     font-size: 18px;
@@ -1235,7 +1235,7 @@
   .contrib-percentage {
     font-size: 20px;
     font-weight: 900;
-    color: #3B82F6;
+    color: #6BAFF2;
   }
 
   .contrib-bar-wrap {
@@ -1248,7 +1248,7 @@
 
   .contrib-bar {
     height: 100%;
-    background: linear-gradient(90deg, #3B82F6, #0EA5E9);
+    background: linear-gradient(90deg, #6BAFF2, #0EA5E9);
     border-radius: 99px;
     transition: width 0.6s ease;
   }
@@ -1310,7 +1310,7 @@
 
   .activity-icon--blue {
     background: #EFF6FF;
-    color: #3B82F6;
+    color: #6BAFF2;
   }
 
   .activity-content {
@@ -1400,7 +1400,7 @@
     position: absolute;
     width: 10px;
     height: 10px;
-    background: linear-gradient(135deg, #3B82F6, #F59E0B, #F43F5E, #22C55E);
+    background: linear-gradient(135deg, #6BAFF2, #F59E0B, #F43F5E, #22C55E);
     top: -10px;
     left: calc(var(--i) * 2%);
     animation: confetti-fall 3s ease-out infinite;
@@ -1443,7 +1443,7 @@
   .milestone-percent {
     font-size: 64px;
     font-weight: 900;
-    background: linear-gradient(135deg, #3B82F6, #F59E0B);
+    background: linear-gradient(135deg, #6BAFF2, #F59E0B);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1466,7 +1466,7 @@
   }
 
   .milestone-btn {
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;

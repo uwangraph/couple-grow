@@ -29,6 +29,9 @@
 
   // Edit transaction modal
   let showEditModal = $state(false);
+  let showDetailModal = $state(false);
+  let detailTx = $state<any>(null);
+  let ignoreNextTransactionClick = false;
   let editingTx = $state<any>(null);
   let editAmount = $state('');
   let editType = $state('expense');
@@ -98,6 +101,17 @@
     editCategory = tx.category;
     editNote = tx.note || '';
     showEditModal = true;
+  }
+
+  function openDetail(tx: any) {
+    detailTx = tx;
+    showDetailModal = true;
+  }
+
+  function handleSwipe(action: () => void) {
+    ignoreNextTransactionClick = true;
+    action();
+    setTimeout(() => { ignoreNextTransactionClick = false; }, 350);
   }
 
   function openDelete(tx: any) {
@@ -237,7 +251,7 @@
           </div>
         {/if}
         {#if transactions.length > 0}
-          <p class="swipe-hint">← geser untuk hapus · geser untuk edit →</p>
+          <p class="swipe-hint">← geser untuk edit · geser untuk hapus →</p>
         {/if}
         {#each transactions as t}
           {@const TransactionIcon = t.type === 'income' ? IncomeIcon : ExpenseIcon}
@@ -254,9 +268,14 @@
             <!-- The actual row -->
             <div
               class="tx-row"
+              role="button"
+              tabindex="0"
+              aria-label="Buka transaksi {t.category}"
+              onclick={() => { if (!ignoreNextTransactionClick) openDetail(t); }}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(t); } }}
               use:swipe={{
-                onSwipeLeft: () => openDelete(t),
-                onSwipeRight: () => openEdit(t),
+                onSwipeLeft: () => handleSwipe(() => openEdit(t)),
+                onSwipeRight: () => handleSwipe(() => openDelete(t)),
                 threshold: 72
               }}
             >
@@ -386,7 +405,7 @@
           {:else}
             {@const maxCat = Math.max(...stats.categories.map(c => c.total), 1)}
             {@const totalCat = stats.categories.reduce((sum, c) => sum + c.total, 0)}
-            {@const COLORS = ['#3B82F6','#F43F5E','#22C55E','#F59E0B','#A855F7','#0EA5E9','#EC4899','#14B8A6']}
+            {@const COLORS = ['#6BAFF2','#F43F5E','#22C55E','#F59E0B','#A58BE8','#0EA5E9','#EC4899','#14B8A6']}
             {@const top5 = stats.categories.slice(0, 5)}
 
             <!-- Donut chart -->
@@ -519,6 +538,28 @@
     </div>
   {/if}
 
+  {#if showDetailModal && detailTx}
+    <div class="modal-overlay" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
+      <div class="modal detail-modal">
+        <div class="modal-handle"></div>
+        <div class="modal-icon-header">
+          <div class="modal-icon-circle" style="background:{detailTx.type === 'income' ? '#F0FDF4' : '#FFF1F2'};color:{detailTx.type === 'income' ? '#22C55E' : '#F43F5E'};">
+            {#if detailTx.type === 'income'}<IncomeIcon size={22} />{:else}<ExpenseIcon size={22} />{/if}
+          </div>
+          <div><h3 class="modal-title">Detail Transaksi</h3><p class="modal-subtitle">{detailTx.category}</p></div>
+        </div>
+        <div class="detail-amount {detailTx.type === 'income' ? 'detail-amount--in' : 'detail-amount--out'}">{detailTx.type === 'income' ? '+' : '-'}{formatRp(detailTx.amount)}</div>
+        <div class="detail-list">
+          <div><span>Tanggal</span><strong>{new Date(detailTx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>
+          <div><span>Kategori</span><strong>{detailTx.category}</strong></div>
+          <div><span>Catatan</span><strong>{detailTx.note || 'Tidak ada catatan'}</strong></div>
+          <div><span>Ditambahkan oleh</span><strong>{detailTx.user_name || 'Kamu'}</strong></div>
+        </div>
+        <button class="modal-cancel detail-close" onclick={() => showDetailModal = false}>Tutup</button>
+      </div>
+    </div>
+  {/if}
+
   <!-- Modal Edit Transaksi -->
   {#if showEditModal && editingTx}
     <div class="modal-overlay" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
@@ -573,7 +614,7 @@
         </p>
         <div class="modal-actions">
           <button class="modal-cancel" onclick={() => showDeleteConfirm = false}>Batal</button>
-          <button class="modal-submit modal-submit--red" onclick={deleteTransaction}>🗑️ Hapus</button>
+          <button class="modal-submit modal-submit--red" onclick={deleteTransaction}>Hapus</button>
         </div>
       </div>
     </div>
@@ -595,7 +636,7 @@
 
   /* Header */
   .header {
-    background: linear-gradient(145deg, #3B82F6 0%, #2563EB 50%, #0EA5E9 100%);
+    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
     padding: 28px 22px 32px;
     position: relative;
     overflow: hidden;
@@ -672,12 +713,12 @@
     font-size: 13px;
     font-weight: 800;
     border: 2px solid transparent;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.2s;
     background: rgba(255, 255, 255, 0.4);
     color: #64748B;
   }
-  .tab--active { background: #3B82F6; color: white; border-color: #3B82F6; }
+  .tab--active { background: #6BAFF2; color: white; border-color: #6BAFF2; }
   .add-btn {
     padding: 9px 16px;
     background: #F0FDF4;
@@ -700,7 +741,7 @@
   .spinner {
     width: 28px; height: 28px;
     border: 3px solid #E0E7FF;
-    border-top-color: #3B82F6;
+    border-top-color: #6BAFF2;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
@@ -768,6 +809,7 @@
   .tx-row {
     position: relative;
     z-index: 1;
+    cursor: default;
     display: flex;
     align-items: center;
     background: rgba(255, 255, 255, 0.65);
@@ -778,6 +820,14 @@
     padding: 12px 14px;
     box-shadow: 0 3px 12px rgba(59,130,246,0.06);
   }
+  .detail-amount { margin: 8px 0 20px; font-size: 30px; font-weight: 900; text-align: center; }
+  .detail-amount--in { color: #15803D; }
+  .detail-amount--out { color: #BE123C; }
+  .detail-list { overflow: hidden; margin-bottom: 18px; border-radius: 16px; background: #F8FAFC; text-align: left; }
+  .detail-list > div { display: flex; justify-content: space-between; gap: 16px; padding: 13px 15px; border-bottom: 1px solid #E2E8F0; font-size: 13px; }
+  .detail-list > div:last-child { border-bottom: 0; }
+  .detail-list span { color: #94A3B8; }.detail-list strong { color: #1E293B; text-align: right; }
+  .detail-close { width: 100%; }
   .tx-icon { width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
   .tx-icon--in { background: rgba(34,197,94,0.12); }
   .tx-icon--out { background: rgba(244,63,94,0.12); }
@@ -791,14 +841,14 @@
 
   /* Empty */
   .empty-state { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 20px; padding: 32px; text-align: center; box-shadow: 0 3px 12px rgba(59,130,246,0.06); color: #94A3B8; font-size: 13px; font-weight: 700; }
-  .empty-link { color: #3B82F6; font-weight: 800; background: none; border: none; font-family: 'Nunito', sans-serif; font-size: 13px; cursor: pointer; margin-top: 10px; display: block; }
+  .empty-link { color: #6BAFF2; font-weight: 800; background: none; border: none; font-family: 'Nunito', sans-serif; font-size: 13px; cursor: pointer; margin-top: 10px; display: block; }
 
   /* Stats */
   .stats-list { display: flex; flex-direction: column; gap: 14px; }
   .stat-card { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 22px; padding: 18px; box-shadow: 0 3px 14px rgba(59,130,246,0.07); }
   .stat-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
   .stat-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .stat-card-icon--blue { background: #EFF6FF; color: #3B82F6; }
+  .stat-card-icon--blue { background: #EFF6FF; color: #6BAFF2; }
   .stat-card-icon--rose { background: #FFF1F2; color: #F43F5E; }
   .stat-card-title { font-size: 14px; font-weight: 900; color: #1E293B; margin: 0; }
   .stat-empty { font-size: 13px; color: #94A3B8; text-align: center; padding: 12px 0; margin: 0; }
@@ -880,7 +930,7 @@
   }
   .cat-name { font-size: 13px; font-weight: 800; color: #1E293B; flex: 1; }
   .cat-right { display: flex; align-items: center; gap: 8px; }
-  .cat-pct { font-size: 11px; font-weight: 900; color: #3B82F6; background: #EFF6FF; padding: 2px 7px; border-radius: 6px; }
+  .cat-pct { font-size: 11px; font-weight: 900; color: #6BAFF2; background: #EFF6FF; padding: 2px 7px; border-radius: 6px; }
   .cat-val { font-size: 12px; color: #64748B; font-weight: 700; }
   .cat-track { height: 6px; background: #F1F5F9; border-radius: 99px; overflow: hidden; }
   .cat-fill { height: 100%; border-radius: 99px; transition: width 0.7s cubic-bezier(.34,1.56,.64,1); opacity: 0.85; }
@@ -914,7 +964,7 @@
   .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
   .modal-icon-circle {
     width: 48px; height: 48px; border-radius: 14px;
-    background: #EFF6FF; color: #3B82F6;
+    background: #EFF6FF; color: #6BAFF2;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .modal-title { font-size: 17px; font-weight: 900; color: #1E293B; margin: 0 0 2px; }
@@ -961,7 +1011,7 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #3B82F6; }
+  .form-input:focus { border-color: #6BAFF2; }
   .form-input--amount { font-size: 22px; font-weight: 900; }
 
   .modal-actions { display: flex; gap: 12px; margin-top: 4px; }
@@ -980,7 +1030,7 @@
   .modal-submit {
     flex: 2;
     padding: 14px;
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
     color: white;
     border: none;
     border-radius: 16px;
@@ -1016,7 +1066,7 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .modal-input:focus { border-color: #3B82F6; }
+  .modal-input:focus { border-color: #6BAFF2; }
   .modal-input--amount { font-size: 24px; font-weight: 900; }
 
   /* Delete confirm */

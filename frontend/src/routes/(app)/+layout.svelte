@@ -23,13 +23,14 @@
   });
 
   let currentPath = $derived(page.url.pathname);
+  const hideBottomNav = $derived(currentPath === '/chat' || currentPath === '/notes' || currentPath === '/wishlist');
 </script>
 
 <div class="app-container">
   <!-- Main Content -->
-  <main style="flex: 1; overflow-y: auto; padding-bottom: {currentPath === '/chat' ? '0' : '72px'}; display: flex; flex-direction: column;">
+  <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : '72px'}; display: flex; flex-direction: column;">
     {#if auth.user && !auth.user.partner_id}
-      <div style="background: linear-gradient(90deg, #7DBAF2, #A99BE8); color: white; padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(107,175,242,0.25); z-index: 40; display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <div style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); color: white; padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(107,175,242,0.25); z-index: 40; display: flex; align-items: center; justify-content: center; gap: 10px;">
         <span>🔗 Belum terhubung dengan pasangan.</span>
         <a href="/profile" style="color: white; text-decoration: underline; font-weight: 800; white-space: nowrap;">Hubungkan →</a>
       </div>
@@ -61,7 +62,7 @@
   </div>
 
   <!-- Bottom Tab Bar -->
-  {#if currentPath !== '/chat'}
+  {#if !hideBottomNav}
     <nav class="app-nav glass-nav">
       {#each tabs as tab}
         {@const isActive = currentPath === tab.path || (tab.path !== '/home' && currentPath.startsWith(tab.path))}
@@ -188,7 +189,7 @@
     color: #1E3A8A;
   }
   .toast-item--info .toast-icon {
-    color: #3B82F6;
+    color: #6BAFF2;
     background: #DBEAFE;
   }
 
