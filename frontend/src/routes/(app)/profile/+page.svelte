@@ -338,9 +338,6 @@
 <div class="profile-root">
   <input type="file" bind:this={avatarInput} accept="image/*" onchange={handleAvatarSelect} style="display:none" />
   <div class="hero">
-    <div class="hero-blob blob-1"></div>
-    <div class="hero-blob blob-2"></div>
-    <div class="hero-blob blob-3"></div>
     <div class="hero-content">
       <button class="avatar-btn" onclick={() => avatarInput?.click()} aria-label="Ubah foto profil">
         <div class="avatar-ring">
@@ -660,20 +657,10 @@
   }
 
   .hero {
-    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
-    padding: 32px 20px 80px;
+    padding: 30px 20px 20px;
     position: relative;
-    overflow: hidden;
+    background: transparent;
   }
-
-  .hero-blob {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-  }
-  .blob-1 { width: 200px; height: 200px; top: -60px; right: -60px; }
-  .blob-2 { width: 120px; height: 120px; bottom: -30px; left: -20px; }
-  .blob-3 { width: 60px; height: 60px; top: 40px; left: 40%; background: rgba(255,255,255,0.05); }
 
   .hero-content {
     position: relative;
@@ -695,11 +682,13 @@
     width: 76px;
     height: 76px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.25);
+    background: #ffffff;
+    border: 1px solid rgba(226,232,240,0.8);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 3px;
+    box-shadow: 0 4px 14px -6px rgba(31,41,55,0.18);
   }
   .avatar-inner {
     width: 100%;
@@ -711,27 +700,29 @@
     overflow: hidden;
   }
   .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-  .avatar-initials { font-size: 24px; font-weight: 900; color: white; }
+  .avatar-initials { font-size: 24px; font-weight: 800; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
   .avatar-edit-badge {
     position: absolute;
     bottom: 0;
     right: 0;
     width: 22px;
     height: 22px;
-    background: white;
+    background: #ffffff;
+    border: 1px solid rgba(226,232,240,0.8);
     border-radius: 50%;
     font-size: 11px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 3px rgba(31,41,55,0.12);
+    color: #4772E8;
   }
 
   .hero-text { flex: 1; min-width: 0; }
   .hero-name {
     font-size: 22px;
-    font-weight: 900;
-    color: white;
+    font-weight: 800;
+    color: #1F2937;
     margin: 0 0 3px;
     white-space: nowrap;
     overflow: hidden;
@@ -739,7 +730,7 @@
   }
   .hero-email {
     font-size: 13px;
-    color: rgba(255,255,255,0.75);
+    color: #64748B;
     margin: 0 0 10px;
     white-space: nowrap;
     overflow: hidden;
@@ -753,16 +744,17 @@
     border-radius: 99px;
     padding: 4px 12px;
     font-size: 12px;
-    font-weight: 700;
-    color: white;
+    font-weight: 600;
+    color: #475569;
+    background: #ffffff;
+    border: 1px solid rgba(226,232,240,0.8);
   }
-  .partner-chip--connected { background: rgba(255,255,255,0.22); }
-  .partner-chip--pending { background: rgba(255,200,150,0.3); }
+  .partner-chip--connected { background: #ffffff; }
+  .partner-chip--pending { background: #fff7ed; border-color: rgba(251,191,36,0.4); }
   .partner-chip-img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
 
   .body {
     padding: 20px 16px;
-    margin-top: -24px;
     position: relative;
     z-index: 2;
   }
@@ -781,14 +773,12 @@
   .toast--error { background: #FFF1F2; border: 1.5px solid #FDA4AF; color: #BE123C; }
 
   .card {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 24px;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 16px;
     padding: 18px;
     margin-bottom: 14px;
-    box-shadow: 0 4px 20px rgba(59,130,246,0.08);
+    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
   }
   .card-row {
     display: flex;
@@ -798,30 +788,30 @@
   .card-icon-wrap {
     width: 46px;
     height: 46px;
-    border-radius: 14px;
-    background: rgba(59,130,246,0.10);
+    border-radius: 12px;
+    background: rgba(91, 141, 239,0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
-  .card-icon { width: 22px; height: 22px; color: #6BAFF2; }
+  .card-icon { width: 22px; height: 22px; color: #4772E8; }
   .card-label-group { flex: 1; min-width: 0; }
-  .card-label-title { font-size: 14px; font-weight: 800; color: #1E293B; margin: 0 0 2px; }
-  .card-label-sub { font-size: 12px; color: #94A3B8; margin: 0; }
+  .card-label-title { font-size: 14px; font-weight: 700; color: #1F2937; margin: 0 0 2px; }
+  .card-label-sub { font-size: 12px; color: #64748B; margin: 0; }
   .badge-check {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #DCFCE7;
-    color: #15803D;
+    background: rgba(16,185,129,0.12);
+    color: #059669;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 900;
+    font-weight: 800;
     font-size: 14px;
   }
-  .card-divider { height: 1px; background: #E0E7FF; margin: 14px 0; }
+  .card-divider { height: 1px; background: #E2E8F0; margin: 14px 0; }
 
   .pairing-panel {
     margin-top: 18px;
@@ -839,9 +829,9 @@
   .code-text {
     display: block;
     font-size: 36px;
-    font-weight: 900;
+    font-weight: 800;
     letter-spacing: 0.25em;
-    color: #6BAFF2;
+    color: #4772E8;
     margin-bottom: 6px;
   }
   .code-hint { font-size: 13px; color: #94A3B8; margin: 0; }
@@ -1010,21 +1000,22 @@
     gap: 14px;
     padding: 10px 0;
   }
-  .info-emoji { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
-  .info-key { font-size: 11px; color: #94A3B8; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-  .info-val { font-size: 14px; color: #1E293B; font-weight: 700; margin: 3px 0 0; }
-  .info-val--accent { color: #6BAFF2; }
+  .info-emoji { font-size: 20px; width: 36px; text-align: center; flex-shrink: 0; }
+  .info-key { font-size: 11px; color: #94A3B8; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .info-val { font-size: 14px; color: #1F2937; font-weight: 600; margin: 3px 0 0; }
+  .info-val--accent { color: #4772E8; }
   .partner-avatar-sm {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: #E0E7FF;
+    background: rgba(91, 141, 239,0.12);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     flex-shrink: 0;
     overflow: hidden;
+    color: #4772E8;
   }
 
   .section-label {
@@ -1040,17 +1031,17 @@
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
   .form-input {
     padding: 11px 14px;
-    border: 2px solid #E0E7FF;
-    border-radius: 14px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 12px;
     font-size: 14px;
-    color: #1E293B;
+    color: #1F2937;
     font-family: 'Nunito', sans-serif;
     font-weight: 600;
     outline: none;
     transition: border-color 0.2s;
-    background: rgba(255, 255, 255, 0.6);
+    background: #ffffff;
   }
-  .form-input:focus { border-color: #6BAFF2; }
+  .form-input:focus { border-color: #5B8DEF; }
   .form-textarea { resize: vertical; min-height: 72px; }
   .form-date-label { font-size: 12px; font-weight: 700; color: #94A3B8; margin: 0; }
   .file-label {
@@ -1069,9 +1060,9 @@
 
   .btn {
     border: none;
-    border-radius: 14px;
+    border-radius: 12px;
     font-family: 'Nunito', sans-serif;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
     transition: opacity 0.2s, transform 0.1s;
     font-size: 13px;
@@ -1079,28 +1070,28 @@
   }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn:active:not(:disabled) { transform: scale(0.97); }
-  .btn--primary { background: linear-gradient(135deg, #6BAFF2, #4F96E5); color: white; }
-  .btn--success { background: linear-gradient(135deg, #22C55E, #16A34A); color: white; }
+  .btn--primary { background: #5B8DEF; color: white; }
+  .btn--primary:hover { background: #4772E8; }
+  .btn--success { background: #10B981; color: white; }
+  .btn--success:hover { background: #059669; }
   .btn--outline {
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    color: #6BAFF2;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    color: #4772E8;
   }
-  .btn--ghost { background: rgba(255, 255, 255, 0.4); color: #64748B; }
-  .btn--sm { padding: 8px 14px; font-size: 12px; border-radius: 12px; }
+  .btn--ghost { background: #F1F5F9; color: #64748B; }
+  .btn--sm { padding: 8px 14px; font-size: 12px; border-radius: 10px; }
   .btn--block { width: 100%; }
 
   .logout-btn {
     width: 100%;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #F43F5E;
-    border: 1px solid rgba(244, 63, 94, 0.3);
-    border-radius: 20px;
+    background: #ffffff;
+    color: #DC2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 16px;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1109,9 +1100,8 @@
     font-family: 'Nunito', sans-serif;
     transition: background 0.2s;
     margin-top: 4px;
-    box-shadow: 0 4px 16px rgba(244,63,94,0.05);
   }
-  .logout-btn:hover { background: rgba(255, 241, 242, 0.8); }
+  .logout-btn:hover { background: rgba(239, 68, 68, 0.08); }
 
   /* Tombol putuskan hubungan */
   .btn-disconnect {

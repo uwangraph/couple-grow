@@ -168,24 +168,22 @@
   
   <!-- Header -->
   <div class="header">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
     <div class="header-inner">
-      <div class="header-top">
-        <div>
-          <button class="back-btn" onclick={() => goto('/home')} aria-label="Kembali ke Beranda">
-            <Icon name="back" size={18} />
-            Kembali
+        <div class="header-top">
+          <div>
+            <button class="back-btn" onclick={() => goto('/home')} aria-label="Kembali ke Beranda">
+              <Icon name="back" size={18} />
+              Kembali
+            </button>
+            <p class="header-sub">Impian Bersama</p>
+            <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
+              Wishlist <Icon name="sparkles" size={24} />
+            </h1>
+          </div>
+          <button class="create-btn" onclick={openCreateModal}>
+            + Tambah
           </button>
-          <p class="header-sub">Impian Bersama</p>
-          <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
-            Wishlist <Icon name="sparkles" size={24} />
-          </h1>
         </div>
-        <button class="create-btn" onclick={openCreateModal}>
-          + Tambah
-        </button>
-      </div>
     </div>
   </div>
 
@@ -437,61 +435,58 @@
   }
 
   .header {
-    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
-    padding: 32px 20px 80px;
+    padding: 26px 18px 18px;
     position: relative;
-    overflow: hidden;
+    flex-shrink: 0;
+    font-family: 'Nunito', sans-serif;
   }
-
-  .blob { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.08); }
-  .b1 { width: 160px; height: 160px; top: -50px; right: -40px; }
-  .b2 { width: 90px; height: 90px; bottom: -20px; left: -20px; }
-  .header-inner { position: relative; z-index: 1; }
-  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: rgba(255,255,255,0.9); padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-  .back-btn:hover { color: white; }
-  .header-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-  .header-title { font-size: 24px; font-weight: 900; color: white; margin: 0; }
+  .header-inner { position: relative; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #4772E8; padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .back-btn:hover { color: #2f5bb0; }
+  .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .header-title { font-size: 24px; font-weight: 800; color: #1F2937; margin: 0; }
 
   .create-btn {
-    background: white;
-    color: #6BAFF2;
-    border: none;
-    border-radius: 14px;
+    background: #0B9E6B;
+    color: #ffffff;
+    border: 1px solid #0B9E6B;
+    border-radius: 12px;
     padding: 10px 16px;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
-    font-weight: 900;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
     white-space: nowrap;
-    transition: transform 0.12s;
+    transition: transform 0.12s, background 0.2s;
     flex-shrink: 0;
   }
+  .create-btn:hover { background: #059669; }
   .create-btn:active { transform: scale(0.96); }
 
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #6BAFF2; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #5B8DEF; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .empty-state { text-align: center; padding: 60px 20px; }
   .empty-icon { margin-bottom: 14px; color: #94A3B8; display: flex; justify-content: center; }
-  .empty-title { font-size: 16px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
+  .empty-title { font-size: 16px; font-weight: 700; color: #1F2937; margin: 0 0 6px; }
   .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
   .empty-cta {
-    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
+    background: #0B9E6B;
     color: white;
-    border: none;
-    border-radius: 16px;
+    border: 1px solid #0B9E6B;
+    border-radius: 12px;
     padding: 13px 24px;
     font-family: 'Nunito', sans-serif;
     font-size: 14px;
-    font-weight: 900;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(107,175,242,0.3);
+    transition: background 0.2s;
   }
+  .empty-cta:hover { background: #059669; }
 
   /* Priority Section */
   .priority-section { margin-bottom: 20px; }
@@ -503,7 +498,7 @@
     padding: 6px 14px;
     border-radius: 99px;
     font-size: 13px;
-    font-weight: 900;
+    font-weight: 700;
   }
 
   /* Wishlist Grid */
@@ -515,17 +510,16 @@
 
   /* Wish Card */
   .wish-card {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    border-radius: 20px;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 16px;
     padding: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 20px rgba(236,72,153,0.06);
+    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
     transition: transform 0.15s;
   }
   .wish-card--completed {
-    background: rgba(240, 253, 244, 0.7);
-    border-color: rgba(134, 239, 172, 0.4);
+    background: #ffffff;
+    border-color: rgba(16, 185, 129, 0.4);
     opacity: 0.75;
   }
   .wish-card:active { transform: scale(0.98); }
@@ -541,8 +535,8 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #EFF6FF;
-    color: #6BAFF2;
+    background: rgba(91, 141, 239, 0.1);
+    color: #4772E8;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -551,14 +545,14 @@
     flex-shrink: 0;
   }
   .wish-check:active { transform: scale(0.85); }
-  .wish-check--completed { background: #F0FDF4; color: #22C55E; }
+  .wish-check--completed { background: rgba(16,185,129,0.1); color: #059669; }
 
   .wish-menu { display: flex; gap: 4px; }
   .menu-btn {
     width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: #F8FAFC;
+    background: rgba(91, 141, 239,0.08);
     color: #64748B;
     border: none;
     display: flex;
@@ -567,14 +561,14 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .menu-btn:hover { background: #E2E8F0; }
-  .menu-btn--delete { background: #FFF1F2; color: #F43F5E; }
-  .menu-btn--delete:hover { background: #FFE4E6; }
+  .menu-btn:hover { background: rgba(91, 141, 239,0.18); }
+  .menu-btn--delete { background: rgba(239,68,68,0.1); color: #DC2626; }
+  .menu-btn--delete:hover { background: rgba(239,68,68,0.18); }
 
   .wish-name {
     font-size: 13px;
-    font-weight: 900;
-    color: #1E293B;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0 0 4px;
     line-height: 1.3;
   }
@@ -593,8 +587,8 @@
 
   .wish-price {
     font-size: 13px;
-    font-weight: 900;
-    color: #6BAFF2;
+    font-weight: 700;
+    color: #4772E8;
     margin: 0 0 6px;
   }
 
@@ -603,9 +597,9 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #6BAFF2;
-    font-weight: 800;
-    background: #EFF6FF;
+    color: #4772E8;
+    font-weight: 600;
+    background: rgba(91, 141, 239,0.1);
     padding: 4px 8px;
     border-radius: 8px;
     margin-top: 6px;

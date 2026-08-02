@@ -108,17 +108,15 @@
   
   <!-- Header -->
   <div class="header">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
     <div class="header-inner">
-      <div class="header-top">
-        <div>
-          <p class="header-sub">Insights & Trends</p>
-          <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
-            Analytics <Icon name="sparkles" size={24} />
-          </h1>
+        <div class="header-top">
+          <div>
+            <p class="header-sub">Insights & Trends</p>
+            <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
+              Analytics <Icon name="sparkles" size={24} />
+            </h1>
+          </div>
         </div>
-      </div>
     </div>
   </div>
 
@@ -336,37 +334,34 @@
     background: transparent;
   }
 
-  /* Header */
+  /* Header — clean & minimal */
   .header {
-    background: linear-gradient(160deg, #8FC5F7 0%, #6BAFF2 55%, #9CCCF8 100%);
-    padding: 32px 20px 80px;
+    padding: 26px 18px 18px;
     position: relative;
-    overflow: hidden;
+    flex-shrink: 0;
+    font-family: 'Nunito', sans-serif;
   }
 
-  .blob { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.08); }
-  .b1 { width: 160px; height: 160px; top: -50px; right: -40px; }
-  .b2 { width: 90px; height: 90px; bottom: -20px; left: -20px; }
-  .header-inner { position: relative; z-index: 1; }
+  .header-inner { position: relative; }
   .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .header-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-  .header-title { font-size: 24px; font-weight: 900; color: white; margin: 0; }
+  .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .header-title { font-size: 24px; font-weight: 800; color: #1F2937; margin: 0; }
 
   /* Body */
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #6BAFF2; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #5B8DEF; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Comparison Card */
   .comparison-card {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(12px);
-    border-radius: 24px;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 16px;
     padding: 24px;
     margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
     text-align: center;
   }
 
@@ -380,14 +375,14 @@
     margin: 0 auto 16px;
   }
 
-  .comparison-icon--green { background: #F0FDF4; color: #22C55E; }
-  .comparison-icon--red { background: #FFF1F2; color: #F43F5E; }
-  .comparison-icon--gray { background: #F1F5F9; color: #64748B; }
+  .comparison-icon--green { background: rgba(16,185,129,0.1); color: #059669; }
+  .comparison-icon--red { background: rgba(239,68,68,0.1); color: #DC2626; }
+  .comparison-icon--gray { background: rgba(100,116,139,0.1); color: #64748B; }
 
   .comparison-title {
     font-size: 18px;
-    font-weight: 900;
-    color: #1E293B;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0 0 20px;
   }
 
@@ -404,7 +399,7 @@
 
   .comparison-label {
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 600;
     color: #94A3B8;
     text-transform: uppercase;
     margin: 0 0 4px;
@@ -412,26 +407,26 @@
 
   .comparison-amount {
     font-size: 18px;
-    font-weight: 900;
-    color: #1E293B;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0 0 2px;
   }
 
   .comparison-sub {
     font-size: 11px;
     color: #64748B;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0;
   }
 
   /* Section */
   .section {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(12px);
-    border-radius: 24px;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 16px;
     padding: 20px;
     margin-bottom: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
   }
 
   .section-header {
@@ -445,8 +440,8 @@
 
   .section-title {
     font-size: 16px;
-    font-weight: 900;
-    color: #1E293B;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0;
   }
 
@@ -465,7 +460,7 @@
     border-radius: 8px;
     font-family: 'Nunito', sans-serif;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 600;
     color: #64748B;
     cursor: pointer;
     transition: all 0.2s;
@@ -473,8 +468,8 @@
 
   .period-tab--active {
     background: white;
-    color: #6BAFF2;
-    box-shadow: 0 2px 8px rgba(107,175,242,0.15);
+    color: #4772E8;
+    box-shadow: 0 1px 3px rgba(91, 141, 239,0.18);
   }
 
   .empty-text {
@@ -482,7 +477,7 @@
     color: #94A3B8;
     font-size: 13px;
     padding: 20px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   /* Bar Chart */
@@ -519,7 +514,7 @@
 
   .bar-fill {
     width: 100%;
-    background: linear-gradient(180deg, #6BAFF2, #4F96E5);
+    background: linear-gradient(180deg, #8FBCEA, #5B8DEF);
     border-radius: 8px 8px 0 0;
     position: relative;
     min-height: 20px;
@@ -532,14 +527,14 @@
 
   .bar-value {
     font-size: 10px;
-    font-weight: 900;
+    font-weight: 700;
     color: white;
     white-space: nowrap;
   }
 
   .bar-label {
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 600;
     color: #64748B;
     text-align: center;
     margin: 0;
@@ -587,15 +582,15 @@
 
   .category-name {
     font-size: 14px;
-    font-weight: 800;
-    color: #1E293B;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0 0 2px;
   }
 
   .category-count {
     font-size: 11px;
     color: #64748B;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0;
   }
 
@@ -605,15 +600,15 @@
 
   .category-total {
     font-size: 14px;
-    font-weight: 900;
-    color: #1E293B;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0 0 2px;
   }
 
   .category-percent {
     font-size: 11px;
-    font-weight: 800;
-    color: #6BAFF2;
+    font-weight: 600;
+    color: #4772E8;
     margin: 0;
   }
 
@@ -640,8 +635,8 @@
 
   .velocity-name {
     font-size: 15px;
-    font-weight: 900;
-    color: #1E293B;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0;
   }
 
@@ -649,12 +644,12 @@
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   .velocity-badge--green {
-    background: #F0FDF4;
-    color: #22C55E;
+    background: rgba(16,185,129,0.1);
+    color: #059669;
   }
 
   .velocity-badge--gray {
@@ -679,15 +674,15 @@
 
   .velocity-fill {
     height: 100%;
-    background: linear-gradient(90deg, #6BAFF2, #4F96E5);
+    background: linear-gradient(90deg, #10B981, #34D399);
     border-radius: 99px;
     transition: width 0.6s ease;
   }
 
   .velocity-percent {
     font-size: 14px;
-    font-weight: 900;
-    color: #6BAFF2;
+    font-weight: 700;
+    color: #059669;
     margin: 0;
     min-width: 45px;
     text-align: right;

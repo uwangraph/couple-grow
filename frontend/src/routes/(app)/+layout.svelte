@@ -30,9 +30,9 @@
   <!-- Main Content -->
   <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : '72px'}; display: flex; flex-direction: column;">
     {#if auth.user && !auth.user.partner_id}
-      <div style="background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); color: white; padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(107,175,242,0.25); z-index: 40; display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <div style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(91, 141, 239,0.2); color: #475569; padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <span>🔗 Belum terhubung dengan pasangan.</span>
-        <a href="/profile" style="color: white; text-decoration: underline; font-weight: 800; white-space: nowrap;">Hubungkan →</a>
+        <a href="/profile" style="color: #4772E8; text-decoration: none; font-weight: 700; white-space: nowrap;">Hubungkan →</a>
       </div>
     {/if}
 
@@ -66,9 +66,9 @@
     <nav class="app-nav glass-nav">
       {#each tabs as tab}
         {@const isActive = currentPath === tab.path || (tab.path !== '/home' && currentPath.startsWith(tab.path))}
-        <a href={tab.path} style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; text-decoration: none; position: relative; transition: all 0.2s ease; color: {isActive ? '#5B9FE8' : '#94A3B8'};">
+        <a href={tab.path} style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; text-decoration: none; position: relative; transition: all 0.2s ease; color: {isActive ? '#5B8DEF' : '#94A3B8'};">
           {#if isActive}
-            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 32px; height: 3px; background: linear-gradient(90deg, #6BAFF2, #A58BE8); border-radius: 0 0 4px 4px;"></div>
+            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 32px; height: 3px; background: linear-gradient(90deg, #5B8DEF, #8E7BF0); border-radius: 0 0 4px 4px;"></div>
           {:else}
             <div style="height: 3px;"></div>
           {/if}
@@ -118,7 +118,8 @@
     .app-container {
       max-width: 480px;
       box-shadow: 0 0 40px rgba(0,0,0,0.1);
-      background: rgba(255, 255, 255, 0.4);
+      /* Keep mostly transparent so the colorful ambient body shows through */
+      background: rgba(255, 255, 255, 0.18);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
@@ -189,8 +190,8 @@
     color: #1E3A8A;
   }
   .toast-item--info .toast-icon {
-    color: #6BAFF2;
-    background: #DBEAFE;
+    color: #5B8DEF;
+    background: #EFF4FE;
   }
 
   .toast-icon {

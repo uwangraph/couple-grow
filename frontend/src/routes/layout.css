@@ -1,23 +1,24 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-primary: #6BAFF2;       /* Soft sky blue - dominant */
-  --color-primary-dark: #4F96E5;
-  --color-primary-light: #9CCCF8;
-  --color-primary-lighter: #CFE7FC;
-  --color-primary-bg: #EFF7FE;
+  --color-primary: #5B8DEF;       /* Logo blue - dominant */
+  --color-primary-dark: #4772E8;
+  --color-primary-light: #8FB2F5;
+  --color-primary-lighter: #DCE7FC;
+  --color-primary-bg: #EFF4FE;
   
-  --color-secondary: #A58BE8;     /* Soft lavender accent */
-  --color-secondary-dark: #8970D2;
-  --color-secondary-light: #C5B5F2;
-  --color-secondary-bg: #F6F2FD;
+  --color-secondary: #8E7BF0;     /* Logo purple - accent */
+  --color-secondary-dark: #7A63E6;
+  --color-secondary-light: #B3A6F6;
+  --color-secondary-bg: #F4F1FE;
   
-  --color-accent: #C5B5F2;
-  --color-background: #F3F8FD;
-  --color-text-navy: #30435F;
+  --color-accent: #10B981;        /* Emerald - money / success */
+  --color-background: #F4F6FE;
+  --color-text-navy: #1F2937;
   --color-text-secondary: #64748B;
   --color-success: #10B981;
-  --color-warning: #F43F5E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
   --color-gold: #F59E0B;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
@@ -37,10 +38,15 @@
     height: 100%;
     margin: 0;
     font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-    /* Soft Blue-Purple gradient for glass background */
-    background: linear-gradient(135deg, #EAF5FE 0%, #F4F0FD 100%);
+    /* Soft blue-purple gradient inspired by the app logo — gives the frosted
+       glass a subtle color to refract while staying calm. */
+    background:
+      radial-gradient(110% 85% at 85% 0%, rgba(91, 141, 239, 0.28) 0%, transparent 55%),
+      radial-gradient(100% 80% at 0% 100%, rgba(142, 123, 240, 0.22) 0%, transparent 55%),
+      linear-gradient(160deg, #EEF2FE 0%, #E9EEFE 45%, #F1EFFE 100%);
     background-attachment: fixed;
-    color: #30435F;
+    background-size: 100% 100%, 100% 100%, cover;
+    color: #1F2937;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -66,28 +72,28 @@
     overflow: hidden;
   }
 
-  /* Liquid Glass Utilities */
+  /* Card + Glass Utilities — clean & refined */
   .glass-panel {
-    background: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.72);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04), 0 8px 24px rgba(31, 41, 55, 0.06);
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.78);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04), 0 6px 18px rgba(31, 41, 55, 0.06);
   }
 
   .glass-nav {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.03);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 -4px 20px rgba(31, 41, 55, 0.06);
   }
 }

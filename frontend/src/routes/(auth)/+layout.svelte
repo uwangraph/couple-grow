@@ -5,8 +5,8 @@
 
 <div class="auth-shell min-h-screen relative overflow-hidden flex items-center justify-center p-6">
   <!-- Decorative blobs -->
-  <div class="absolute top-[-80px] right-[-80px] w-64 h-64 rounded-full opacity-40" style="background: rgba(107,175,242,0.35); filter: blur(50px);"></div>
-  <div class="absolute bottom-[-60px] left-[-60px] w-80 h-80 rounded-full opacity-40" style="background: rgba(107,175,242,0.28); filter: blur(60px);"></div>
+  <div class="absolute top-[-80px] right-[-80px] w-64 h-64 rounded-full opacity-40" style="background: rgba(91,141,239,0.35); filter: blur(50px);"></div>
+  <div class="absolute bottom-[-60px] left-[-60px] w-80 h-80 rounded-full opacity-40" style="background: rgba(142,123,240,0.30); filter: blur(60px);"></div>
 
   <!-- Card -->
   <div class="auth-card relative w-full max-w-sm z-10">
@@ -24,9 +24,9 @@
 </div>
 
 <style>
-  .auth-shell { background: linear-gradient(135deg, #EAF5FE 0%, #F1F8FE 100%); font-family: 'Nunito', sans-serif; }
-  .auth-card { background: rgba(255,255,255,.72); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); border: 1px solid rgba(255,255,255,.9); border-radius: 28px; padding: 36px 32px; box-shadow: 0 25px 60px rgba(59,130,246,.14); }
-  .logo-mark { width: 78px; height: 78px; background: linear-gradient(135deg, #EAF5FE, #F5FAFF); border: 2px solid rgba(107,175,242,.45); box-shadow: 0 8px 24px rgba(107,175,242,.25), 0 0 0 4px rgba(255,255,255,.45); overflow: hidden; }
+  .auth-shell { background: linear-gradient(135deg, #EEF2FE 0%, #F2F0FE 100%); font-family: 'Nunito', sans-serif; }
+  .auth-card { background: rgba(255,255,255,.72); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); border: 1px solid rgba(255,255,255,.9); border-radius: 28px; padding: 36px 32px; box-shadow: 0 25px 60px rgba(91,141,239,.16); }
+  .logo-mark { width: 78px; height: 78px; background: linear-gradient(135deg, #EEF2FE, #F6F4FE); border: 2px solid rgba(91,141,239,.4); box-shadow: 0 8px 24px rgba(91,141,239,.22), 0 0 0 4px rgba(255,255,255,.45); overflow: hidden; }
   .logo-mark img { width: 76px; height: 76px; object-fit: contain; }
   :global(body) {
     margin: 0;
@@ -47,9 +47,9 @@
     transition: all 0.2s ease;
   }
   :global(.auth-input:focus) {
-    border-color: #6BAFF2;
+    border-color: #5B8DEF;
     background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0 0 4px rgba(107, 175, 242, 0.15);
+    box-shadow: 0 0 0 4px rgba(91, 141, 239, 0.15);
   }
   :global(.auth-label) {
     display: block;
@@ -72,12 +72,12 @@
     color: white;
     cursor: pointer;
     transition: all 0.2s ease;
-    background: linear-gradient(135deg, #5FA8EF, #83BDF5);
-    box-shadow: 0 6px 20px rgba(107, 175, 242, 0.35);
+    background: linear-gradient(135deg, #5B8DEF, #4772E8);
+    box-shadow: 0 6px 20px rgba(91, 141, 239, 0.35);
   }
   :global(.auth-btn:hover:not(:disabled)) {
     transform: translateY(-1px);
-    box-shadow: 0 8px 25px rgba(107, 175, 242, 0.45);
+    box-shadow: 0 8px 25px rgba(91, 141, 239, 0.45);
   }
   :global(.auth-btn:active:not(:disabled)) {
     transform: translateY(0);
@@ -104,8 +104,34 @@
     font-size: 13px;
     font-family: 'Inter', sans-serif;
   }
+  :global(.password-wrap) {
+    position: relative;
+    width: 100%;
+  }
+  :global(.password-wrap .auth-input) {
+    width: 100%;
+    padding-right: 46px;
+  }
+  :global(.password-toggle) {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: #94A3B8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    transition: background 0.15s, color 0.15s;
+  }
+  :global(.password-toggle:hover) { background: rgba(91, 141, 239, 0.1); color: #5B8DEF; }
   :global(.auth-link) {
-    color: #6BAFF2;
+    color: #5B8DEF;
     font-weight: 600;
     text-decoration: none;
   }
