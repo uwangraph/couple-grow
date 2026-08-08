@@ -58,7 +58,11 @@ jobs:
 
       - name: Prepare Android signing
         run: |
-          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '[:space:]' | base64 --decode > android/app/couplegrow-release.keystore
+          KEYSTORE_B64='${{ secrets.ANDROID_KEYSTORE_BASE64 }}'
+          KEYSTORE_B64="${KEYSTORE_B64#*=}"
+          KEYSTORE_B64="${KEYSTORE_B64#\"}"
+          KEYSTORE_B64="${KEYSTORE_B64%\"}"
+          printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | base64 --decode > android/app/couplegrow-release.keystore
           cat > android/app/keystore.properties <<EOF
           storeFile=couplegrow-release.keystore
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
