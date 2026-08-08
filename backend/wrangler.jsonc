@@ -3,6 +3,12 @@
   "name": "couple-grow",
   "main": "src/index.ts",
   "compatibility_date": "2026-06-05",
+  "assets": {
+    "directory": "../frontend/build",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],

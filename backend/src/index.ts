@@ -8,6 +8,7 @@ type Bindings = {
   JWT_SECRET: string
   MEDIA: R2Bucket
   CHAT_ROOM: DurableObjectNamespace
+  ASSETS: Fetcher
   RESEND_API_KEY: string
   RESET_EMAIL_FROM?: string
   RESET_EMAIL_FROM_NAME?: string
@@ -1561,4 +1562,19 @@ app.get('/chat/ws', async (c) => {
   return stub.fetch(newReq)
 })
 
-export default app
+const workerRoutes = [
+  '/auth/', '/partner/', '/transactions', '/savings', '/budgets', '/analytics/',
+  '/wishlists', '/folders', '/notes', '/chat/', '/notifications', '/profile', '/r2/'
+]
+
+function isWorkerRoute(pathname: string) {
+  return workerRoutes.some((route) => pathname === route.slice(0, -1) || pathname.startsWith(route))
+}
+
+export default {
+  async fetch(request: Request, env: Bindings, ctx: ExecutionContext) {
+    const url = new URL(request.url)
+    if (isWorkerRoute(url.pathname)) return app.fetch(request, env, ctx)
+    return env.ASSETS.fetch(request)
+  }
+}
