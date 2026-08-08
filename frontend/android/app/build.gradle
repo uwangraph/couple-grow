@@ -16,9 +16,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            def signingPropertiesFile = rootProject.file('app/keystore.properties')
+            if (signingPropertiesFile.exists()) {
+                def signingProperties = new Properties()
+                signingProperties.load(new FileInputStream(signingPropertiesFile))
+                storeFile rootProject.file("app/${signingProperties['storeFile']}")
+                storePassword signingProperties['storePassword']
+                keyAlias signingProperties['keyAlias']
+                keyPassword signingProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

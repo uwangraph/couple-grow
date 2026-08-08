@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
+  import { Capacitor } from '@capacitor/core';
 
   import { toast } from '$lib/toast.svelte';
 
@@ -20,13 +21,50 @@
   onMount(() => {
     if (!auth.token) goto('/login');
     else if (page.url.pathname === '/') goto('/home');
+    checkForAppUpdate();
   });
 
   let currentPath = $derived(page.url.pathname);
   const hideBottomNav = $derived(currentPath === '/chat' || currentPath === '/notes' || currentPath === '/wishlist');
+  let showUpdateModal = $state(false);
+  let latestVersionName = $state('');
+  let latestVersionUrl = $state('');
+
+  async function checkForAppUpdate() {
+    if (!Capacitor.isNativePlatform()) return;
+    try {
+      const installed = await (window as any).Capacitor?.Plugins?.App?.getInfo();
+      if (!installed) return;
+      const response = await fetch('https://couple-grow.pages.dev/app-version.json?t=' + Date.now());
+      if (!response.ok) return;
+      const latest = await response.json();
+      if (Number(latest.versionCode) > Number(installed.build)) {
+        latestVersionName = latest.versionName || `Versi ${latest.versionCode}`;
+        latestVersionUrl = latest.downloadUrl || '';
+        showUpdateModal = true;
+      }
+    } catch (_) { /* update check is non-blocking */ }
+  }
 </script>
 
 <div class="app-container">
+  {#if showUpdateModal}
+    <div class="update-overlay" role="dialog" aria-modal="true">
+      <div class="update-card">
+        <div class="update-icon"><Icon name="savings" size={28} /></div>
+        <h2>Update tersedia</h2>
+        <p>Versi terbaru CoupleGrow ({latestVersionName}) sudah tersedia. Update sekarang untuk mendapatkan fitur terbaru.</p>
+        <div class="update-actions">
+          {#if latestVersionUrl}
+            <a class="update-primary" href={latestVersionUrl} target="_blank" rel="noreferrer">Update Sekarang</a>
+          {:else}
+            <button class="update-primary" onclick={() => showUpdateModal = false}>Update Sekarang</button>
+          {/if}
+          <button class="update-secondary" onclick={() => showUpdateModal = false}>Nanti</button>
+        </div>
+      </div>
+    </div>
+  {/if}
   <!-- Main Content -->
   <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : '72px'}; display: flex; flex-direction: column;">
     {#if auth.user && !auth.user.partner_id}
@@ -98,6 +136,16 @@
     max-width: 100%; /* Full width for mobile and tablet */
     background: transparent; /* Use body background */
   }
+
+  .update-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: rgba(30,41,59,.42); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .update-card { width: min(100%, 360px); padding: 28px 22px 22px; border: 1px solid rgba(255,255,255,.8); border-radius: 28px; background: rgba(255,255,255,.86); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 20px 60px rgba(43,117,190,.2); text-align: center; }
+  .update-icon { width: 58px; height: 58px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 18px; color: #5FA8EF; background: #EAF5FE; }
+  .update-card h2 { margin: 0 0 8px; color: #1E293B; font-size: 20px; font-weight: 900; }
+  .update-card p { margin: 0 0 22px; color: #64748B; font-size: 13px; line-height: 1.55; }
+  .update-actions { display: flex; flex-direction: column; gap: 8px; }
+  .update-primary, .update-secondary { display: block; width: 100%; padding: 13px; border: 0; border-radius: 14px; font: inherit; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
+  .update-primary { color: white; background: linear-gradient(135deg,#5FA8EF,#83BDF5); box-shadow: 0 8px 20px rgba(107,175,242,.3); }
+  .update-secondary { color: #64748B; background: rgba(226,232,240,.7); }
 
   .app-nav {
     position: fixed;
