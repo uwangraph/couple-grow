@@ -1350,9 +1350,16 @@ app.get('/folders', async (c) => {
 })
 
 app.delete('/folders/:id', async (c) => {
+  const payload = c.get('jwtPayload')
   const id = c.req.param('id')
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const folder = await c.env.DB.prepare('SELECT id FROM folders WHERE id = ? AND couple_id = ?').bind(id, couple_id).first()
+  if (!folder) return c.json({ error: 'Folder not found' }, 404)
+
   await c.env.DB.prepare('DELETE FROM notes WHERE folder_id = ?').bind(id).run()
-  await c.env.DB.prepare('DELETE FROM folders WHERE id = ?').bind(id).run()
+  await c.env.DB.prepare('DELETE FROM folders WHERE id = ? AND couple_id = ?').bind(id, couple_id).run()
   return c.json({ message: 'Deleted' })
 })
 
@@ -1361,8 +1368,13 @@ app.post('/notes', async (c) => {
   const payload = c.get('jwtPayload')
   const { folder_id, title, content } = await c.req.json()
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
+    const folder = await c.env.DB.prepare('SELECT id, couple_id FROM folders WHERE id = ? AND couple_id = ?').bind(folder_id, couple_id).first()
+    if (!folder) return c.json({ error: 'Folder not found' }, 404)
+
     const res = await c.env.DB.prepare('INSERT INTO notes (folder_id, title, content, created_by, updated_by) VALUES (?, ?, ?, ?, ?) RETURNING id').bind(folder_id, title, content || '', payload.id, payload.id).first()
-    const folder = await c.env.DB.prepare('SELECT couple_id FROM folders WHERE id = ?').bind(folder_id).first() as any
     const partnerId = folder?.couple_id?.split('_').find((id: string) => id !== payload?.id)
     await notifyPartner(c.env.DB, partnerId, payload?.id, 'note', 'Catatan baru', `${title || 'Catatan'} telah dibuat`, '/notes')
     return c.json({ message: 'Note created', id: res?.id })
@@ -1370,30 +1382,59 @@ app.post('/notes', async (c) => {
 })
 
 app.get('/notes', async (c) => {
+  const payload = c.get('jwtPayload')
   const folder_id = c.req.query('folder_id')
   if (!folder_id) return c.json({ notes: [] })
-  const notes = await c.env.DB.prepare('SELECT * FROM notes WHERE folder_id = ? ORDER BY updated_at DESC').bind(folder_id).all()
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ notes: [] })
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const notes = await c.env.DB.prepare(
+    'SELECT n.* FROM notes n JOIN folders f ON f.id = n.folder_id WHERE n.folder_id = ? AND f.couple_id = ? ORDER BY n.updated_at DESC'
+  ).bind(folder_id, couple_id).all()
   return c.json({ notes: notes.results })
 })
 
 app.get('/notes/:id', async (c) => {
+  const payload = c.get('jwtPayload')
   const id = c.req.param('id')
-  const note = await c.env.DB.prepare('SELECT * FROM notes WHERE id = ?').bind(id).first()
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const note = await c.env.DB.prepare(
+    'SELECT n.* FROM notes n JOIN folders f ON f.id = n.folder_id WHERE n.id = ? AND f.couple_id = ?'
+  ).bind(id, couple_id).first()
+  if (!note) return c.json({ error: 'Note not found' }, 404)
   return c.json({ note })
 })
 
 app.put('/notes/:id', async (c) => {
+  const payload = c.get('jwtPayload')
   const id = c.req.param('id')
   const { title, content, checklist } = await c.req.json()
   const checklistJson = checklist ? JSON.stringify(checklist) : null
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const note = await c.env.DB.prepare(
+    'SELECT n.id FROM notes n JOIN folders f ON f.id = n.folder_id WHERE n.id = ? AND f.couple_id = ?'
+  ).bind(id, couple_id).first()
+  if (!note) return c.json({ error: 'Note not found' }, 404)
   await c.env.DB.prepare(
     'UPDATE notes SET title = ?, content = ?, checklist = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-  ).bind(title, content, checklistJson, c.get('jwtPayload').id, id).run()
+  ).bind(title, content, checklistJson, payload.id, id).run()
   return c.json({ message: 'Updated' })
 })
 
 app.delete('/notes/:id', async (c) => {
+  const payload = c.get('jwtPayload')
   const id = c.req.param('id')
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const note = await c.env.DB.prepare(
+    'SELECT n.id FROM notes n JOIN folders f ON f.id = n.folder_id WHERE n.id = ? AND f.couple_id = ?'
+  ).bind(id, couple_id).first()
+  if (!note) return c.json({ error: 'Note not found' }, 404)
   await c.env.DB.prepare('DELETE FROM notes WHERE id = ?').bind(id).run()
   return c.json({ message: 'Deleted' })
 })
@@ -1499,7 +1540,7 @@ app.post('/chat/upload', async (c) => {
     httpMetadata: { contentType: file.type }
   })
   
-  const fileUrl = `https://couple-grow.uwangraph.workers.dev/avatars/${filename}`
+  const fileUrl = `https://couple-grow.uwangraph.workers.dev/r2/${filename}`
   return c.json({ url: fileUrl })
 })
 

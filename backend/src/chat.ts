@@ -5,7 +5,7 @@ interface Env {
 }
 
 export class ChatRoom extends DurableObject {
-  private sessions: Set<WebSocket> = new Set()
+  private sessions: Map<WebSocket, string> = new Map()
   private coupleId: string = ''
   private savingId: string = 'global'
 
@@ -34,13 +34,16 @@ export class ChatRoom extends DurableObject {
 
   async handleSession(webSocket: WebSocket, userId: string) {
     this.ctx.acceptWebSocket(webSocket)
-    this.sessions.add(webSocket)
+    this.sessions.set(webSocket, userId)
 
     // Send a welcome message
     webSocket.send(JSON.stringify({ type: 'connected', message: 'Connected to chat room' }))
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    const authenticatedUserId = this.sessions.get(ws)
+    if (!authenticatedUserId) return
+
     let msgData: any
     try {
       msgData = JSON.parse(message as string)
@@ -50,14 +53,16 @@ export class ChatRoom extends DurableObject {
 
     const eventType = msgData.type || 'chat'
     const innerData = msgData.data || msgData
-    const senderId = innerData.sender_id || 'unknown'
+    // The sender is derived from the authenticated WebSocket session. Never
+    // trust sender_id supplied by the client.
+    const senderId = authenticatedUserId
 
     try {
       if (eventType === 'delete') {
         const msgId = innerData.id
         await (this.env as any).DB.prepare('UPDATE messages SET is_deleted = 1 WHERE id = ? AND sender_id = ?').bind(msgId, senderId).run()
         
-        for (const session of this.sessions) {
+        for (const session of this.sessions.keys()) {
           if (session !== ws) {
             try { session.send(JSON.stringify({ type: 'delete', data: { id: msgId } })) } catch (e) { this.sessions.delete(session) }
           }
@@ -70,7 +75,7 @@ export class ChatRoom extends DurableObject {
         const isPinned = innerData.is_pinned ? 1 : 0
         await (this.env as any).DB.prepare('UPDATE messages SET is_pinned = ? WHERE id = ?').bind(isPinned, msgId).run()
         
-        for (const session of this.sessions) {
+        for (const session of this.sessions.keys()) {
           if (session !== ws) {
             try { session.send(JSON.stringify({ type: 'pin', data: { id: msgId, is_pinned: isPinned === 1 } })) } catch (e) { this.sessions.delete(session) }
           }
@@ -83,7 +88,7 @@ export class ChatRoom extends DurableObject {
         const isStarred = innerData.is_starred ? 1 : 0
         await (this.env as any).DB.prepare('UPDATE messages SET is_starred = ? WHERE id = ?').bind(isStarred, msgId).run()
         
-        for (const session of this.sessions) {
+        for (const session of this.sessions.keys()) {
           if (session !== ws) {
             try { session.send(JSON.stringify({ type: 'star', data: { id: msgId, is_starred: isStarred === 1 } })) } catch (e) { this.sessions.delete(session) }
           }
@@ -96,7 +101,7 @@ export class ChatRoom extends DurableObject {
         const newText = innerData.message
         await (this.env as any).DB.prepare('UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND sender_id = ?').bind(newText, msgId, senderId).run()
         
-        for (const session of this.sessions) {
+        for (const session of this.sessions.keys()) {
           if (session !== ws) {
             try { session.send(JSON.stringify({ type: 'edit', data: { id: msgId, message: newText } })) } catch (e) { this.sessions.delete(session) }
           }
@@ -124,7 +129,7 @@ export class ChatRoom extends DurableObject {
         const reactionsStr = JSON.stringify(reactionsObj)
         await (this.env as any).DB.prepare('UPDATE messages SET reactions = ? WHERE id = ?').bind(reactionsStr, msgId).run()
         
-        for (const session of this.sessions) {
+        for (const session of this.sessions.keys()) {
           if (session !== ws) {
             try { session.send(JSON.stringify({ type: 'react', data: { id: msgId, reactions: reactionsStr } })) } catch (e) { this.sessions.delete(session) }
           }
@@ -179,7 +184,7 @@ export class ChatRoom extends DurableObject {
 
       // Broadcast to every connected session, including the sender. The sender
       // uses the persisted message to replace its optimistic placeholder.
-      for (const session of this.sessions) {
+      for (const session of this.sessions.keys()) {
         try {
           session.send(JSON.stringify(broadcastData))
         } catch (e) {
