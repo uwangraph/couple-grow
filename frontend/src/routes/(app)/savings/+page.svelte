@@ -148,7 +148,7 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (resAct.ok) {
-        const dataAct = await resAct.json();
+        const dataAct = await readApiJson<{ activities?: any[] }>(resAct);
         activities = dataAct.activities || [];
       }
       
@@ -157,7 +157,7 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (resCont.ok) {
-        const dataCont = await resCont.json();
+        const dataCont = await readApiJson<{ contributions?: any[] }>(resCont);
         contributions = dataCont.contributions || [];
       }
     } catch(e) {
@@ -185,11 +185,11 @@
         body: JSON.stringify({ amount })
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal mengurangi tabungan');
 
       // Catat ke dompet sebagai pemasukan (uang balik ke dompet)
-      await fetch(`${API_URL}/transactions`, {
+      const transactionRes = await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({
@@ -199,6 +199,7 @@
           note: deductNote || `Tarik tabungan ${selectedDeductSaving.name}`
         })
       });
+      if (!transactionRes.ok) throw new Error('Tabungan sudah berkurang, tetapi transaksi dompet gagal dibuat');
 
       showDeductModal = false; deductAmount = ''; deductNote = '';
       await fetchSavings();
@@ -220,7 +221,7 @@
         })
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal mengupdate tabungan');
 
       showEditModal = false;
@@ -237,7 +238,7 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal menghapus tabungan');
 
       showDeleteConfirm = false;

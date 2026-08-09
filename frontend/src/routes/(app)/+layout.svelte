@@ -7,6 +7,7 @@
   import { Capacitor } from '@capacitor/core';
 
   import { toast } from '$lib/toast.svelte';
+  import { readApiJson } from '$lib/api';
 
   let { children } = $props();
 
@@ -46,7 +47,7 @@
       if (!installed) return;
       const response = await fetch('https://couple-grow.pages.dev/app-version.json?t=' + Date.now());
       if (!response.ok) return;
-      const latest = await response.json();
+      const latest = await readApiJson<{ versionCode?: string; versionName?: string; downloadUrl?: string }>(response);
       if (Number(latest.versionCode) > Number(installed.build)) {
         latestVersionName = latest.versionName || `Versi ${latest.versionCode}`;
         latestVersionUrl = latest.downloadUrl || '';

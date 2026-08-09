@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
+  import { readApiJson } from '$lib/api';
   let { children } = $props();
   let apkVersion = $state('');
   let apkDownloadUrl = $state('');
@@ -10,7 +11,7 @@
     try {
       const response = await fetch(`/app-version.json?t=${Date.now()}`, { cache: 'no-store' });
       if (!response.ok) return;
-      const latest = await response.json();
+      const latest = await readApiJson<{ versionName?: string; downloadUrl?: string }>(response);
       apkVersion = latest.versionName || '';
       if (latest.downloadUrl) apkDownloadUrl = latest.downloadUrl;
     } catch (_) {
