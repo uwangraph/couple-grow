@@ -1578,6 +1578,8 @@ app.get('/chat/history', async (c) => {
   // Find or create the room (global or per-saving)
   let room
   if (saving_id) {
+    const saving = await c.env.DB.prepare('SELECT id FROM savings WHERE id = ? AND couple_id = ?').bind(saving_id, couple_id).first()
+    if (!saving) return c.json({ error: 'Saving not found' }, 404)
     room = await c.env.DB.prepare('SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id = ?').bind(couple_id, saving_id).first()
     if (!room) {
       room = await c.env.DB.prepare('INSERT INTO chat_rooms (couple_id, saving_id, name) VALUES (?, ?, ?) RETURNING id').bind(couple_id, saving_id, 'Saving Chat').first()
@@ -1596,6 +1598,16 @@ app.get('/chat/history', async (c) => {
 app.post('/chat/send', async (c) => {
   const payload = c.get('jwtPayload')
   const { room_id, message, type = 'text', file_url = null, reply_to_id = null } = await c.req.json()
+  if (!room_id || typeof message !== 'string' || !message.trim()) return c.json({ error: 'Room dan message wajib diisi' }, 400)
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const room = await c.env.DB.prepare('SELECT id FROM chat_rooms WHERE id = ? AND couple_id = ?').bind(room_id, couple_id).first()
+  if (!room) return c.json({ error: 'Chat room not found' }, 404)
+  if (reply_to_id) {
+    const reply = await c.env.DB.prepare('SELECT id FROM messages WHERE id = ? AND room_id = ?').bind(reply_to_id, room_id).first()
+    if (!reply) return c.json({ error: 'Reply message not found' }, 400)
+  }
   const res = await c.env.DB.prepare(
     'INSERT INTO messages (room_id, sender_id, message, type, file_url, reply_to_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING *'
   ).bind(room_id, payload.id, message, type, file_url, reply_to_id).first()
@@ -1605,8 +1617,12 @@ app.post('/chat/send', async (c) => {
 app.delete('/chat/:id', async (c) => {
   const payload = c.get('jwtPayload')
   const id = c.req.param('id')
-  
-  const msg = await c.env.DB.prepare('SELECT sender_id FROM messages WHERE id = ?').bind(id).first()
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const msg = await c.env.DB.prepare(
+    'SELECT m.sender_id FROM messages m JOIN chat_rooms r ON r.id = m.room_id WHERE m.id = ? AND r.couple_id = ?'
+  ).bind(id, couple_id).first()
   if (!msg) return c.json({ error: 'Message not found' }, 404)
   if (msg.sender_id !== payload.id) return c.json({ error: 'Unauthorized' }, 403)
   
