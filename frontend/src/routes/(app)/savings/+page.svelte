@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -56,7 +56,7 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
+      const data = await readApiJson<{ savings?: any[] }>(res);
       if (res.ok) savings = data.savings || [];
     } catch(e) {} finally { loading = false; }
   }
@@ -90,14 +90,14 @@
       
       if (!resTopup.ok) throw new Error('Gagal melakukan top up tabungan');
       
-      const topupData = await resTopup.json();
+      const topupData = await readApiJson<{ milestone?: number; error?: string }>(resTopup);
 
-      await fetch(`${API_URL}/transactions`, {
+      const transactionRes = await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({ amount: parseInt(topupAmount), type: 'expense', category: 'Tabungan', note: 'Top up ' + selectedSaving.name })
       });
-      
+      if (!transactionRes.ok) throw new Error('Tabungan sudah bertambah, tetapi transaksi dompet gagal dibuat');
       showTopupModal = false; topupAmount = '';
       await fetchSavings();
       

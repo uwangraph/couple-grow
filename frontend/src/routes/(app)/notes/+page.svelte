@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -23,7 +23,8 @@
     loading = true;
     try {
       const res = await fetch(`${API_URL}/folders`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
-      const data = await res.json();
+      if (!res.ok) throw new Error('Gagal memuat folder');
+      const data = await readApiJson<{ folders?: any[] }>(res);
       folders = data.folders || [];
       if (folders.length > 0 && !selectedFolder) {
         selectedFolder = folders[0].id;
@@ -37,7 +38,8 @@
     notesLoading = true;
     try {
       const res = await fetch(`${API_URL}/notes?folder_id=${folderId}`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
-      const data = await res.json();
+      if (!res.ok) throw new Error('Gagal memuat catatan');
+      const data = await readApiJson<{ notes?: any[] }>(res);
       notes = data.notes || [];
     } catch(e) {} finally { notesLoading = false; loading = false; }
   }
@@ -45,11 +47,12 @@
   async function createFolder(e: Event) {
     e.preventDefault();
     try {
-      await fetch(`${API_URL}/folders`, {
+      const res = await fetch(`${API_URL}/folders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({ name: folderName, emoji: 'folder' })
       });
+      if (!res.ok) throw new Error('Gagal membuat folder');
       showFolderModal = false;
       folderName = '';
       await fetchFolders();

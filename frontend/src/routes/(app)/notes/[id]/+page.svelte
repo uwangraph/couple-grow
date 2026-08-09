@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -28,7 +28,7 @@
     loading = true;
     try {
       const res = await fetch(`${API_URL}/notes/${id}`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
-      const data = await res.json();
+      const data = await readApiJson<{ note?: any; error?: string }>(res);
       if (res.ok && data.note) {
         title = data.note.title || '';
         content = data.note.content || '';
@@ -66,14 +66,17 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify(body)
       });
-      if (res.ok) { saved = true; setTimeout(() => goto('/notes'), 600); }
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || 'Gagal menyimpan catatan');
+      saved = true; setTimeout(() => goto('/notes'), 600);
     } catch(e) {} finally { loading = false; }
   }
 
   async function deleteNote() {
     if (!confirm('Hapus catatan ini?')) return;
     try {
-      await fetch(`${API_URL}/notes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${auth.token}` } });
+      const res = await fetch(`${API_URL}/notes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${auth.token}` } });
+      if (!res.ok) throw new Error('Gagal menghapus catatan');
       goto('/notes');
     } catch(e) {}
   }
