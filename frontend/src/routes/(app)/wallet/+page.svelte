@@ -135,7 +135,8 @@
         })
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      if (!res.ok) throw new Error((await res.json()).error || 'Gagal mengupdate transaksi');
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || 'Gagal mengupdate transaksi');
       showEditModal = false;
       await Promise.all([fetchTransactions(), fetchStats()]);
       toast.success('Transaksi berhasil diupdate!');
@@ -150,7 +151,8 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      if (!res.ok) throw new Error((await res.json()).error || 'Gagal menghapus transaksi');
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || 'Gagal menghapus transaksi');
       showDeleteConfirm = false;
       await Promise.all([fetchTransactions(), fetchStats()]);
       toast.success('Transaksi berhasil dihapus!');

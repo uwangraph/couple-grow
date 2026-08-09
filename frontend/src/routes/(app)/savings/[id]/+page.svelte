@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -41,7 +41,7 @@
       });
       if (res.status === 401) { auth.logout(); goto('/login'); return; }
       if (res.ok) {
-        const data = await res.json();
+        const data = await readApiJson<{ saving?: any }>(res);
         saving = data.saving;
       }
     } catch(e) { console.error('fetchSaving error:', e); }
@@ -52,7 +52,7 @@
       const res = await fetch(`${API_URL}/savings/${id}/activities`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
-      if (res.ok) activities = (await res.json()).activities || [];
+      if (res.ok) activities = (await readApiJson<{ activities?: any[] }>(res)).activities || [];
     } catch(e) { console.error('fetchActivities error:', e); }
   }
 
@@ -61,7 +61,7 @@
       const res = await fetch(`${API_URL}/savings/${id}/contributions`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
-      if (res.ok) contributions = (await res.json()).contributions || [];
+      if (res.ok) contributions = (await readApiJson<{ contributions?: any[] }>(res)).contributions || [];
     } catch(e) { console.error('fetchContributions error:', e); }
   }
 
@@ -74,7 +74,7 @@
         body: JSON.stringify({ amount: parseInt(topupAmount) })
       });
       if (!res.ok) throw new Error('Gagal top up');
-      const data = await res.json();
+      const data = await readApiJson<{ milestone?: number }>(res);
       await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
@@ -102,7 +102,8 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({ amount, note: deductNote || null })
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Gagal tarik');
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || 'Gagal tarik');
       await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },

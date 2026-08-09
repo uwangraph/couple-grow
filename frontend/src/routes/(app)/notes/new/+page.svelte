@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -33,11 +33,10 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify(body)
       });
-      if (res.ok) {
-        const data = await res.json();
-        saved = true;
-        setTimeout(() => goto(`/notes/${data.id}`), 300);
-      }
+      const data = await readApiJson<{ id?: number; error?: string }>(res);
+      if (!res.ok || !data.id) throw new Error(data.error || 'Gagal menyimpan catatan');
+      saved = true;
+      setTimeout(() => goto(`/notes/${data.id}`), 300);
     } catch(e) {} finally { loading = false; }
   }
 
