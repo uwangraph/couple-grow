@@ -54,7 +54,7 @@ jobs:
           {
             "versionCode": ${VERSION_CODE},
             "versionName": "${VERSION_NAME}",
-            "downloadUrl": "https://github.com/${{ github.repository }}/releases/download/v${VERSION_NAME}/couplegrow-v${VERSION_NAME}.apk"
+            "downloadUrl": "https://couple-grow.pages.dev/download-apk?version=${VERSION_NAME}"
           }
           EOF
 
