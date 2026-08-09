@@ -3,7 +3,8 @@
   import { onMount } from 'svelte';
   let { children } = $props();
   let apkVersion = $state('');
-  let apkDownloadUrl = $state('https://github.com/uwangraph/couple-grow/releases/latest');
+  let apkDownloadUrl = $state('');
+  let apkLoading = $state(true);
 
   onMount(async () => {
     try {
@@ -12,7 +13,11 @@
       const latest = await response.json();
       apkVersion = latest.versionName || '';
       if (latest.downloadUrl) apkDownloadUrl = latest.downloadUrl;
-    } catch (_) { /* keep latest-release fallback */ }
+    } catch (_) {
+      apkDownloadUrl = '';
+    } finally {
+      apkLoading = false;
+    }
   });
 </script>
 
@@ -37,9 +42,15 @@
 
   {#if page.url.pathname === '/login'}
     <div class="apk-download-section z-10">
-      <a class="apk-download-btn" href={apkDownloadUrl} target="_blank" rel="noreferrer">
-        Download APK{apkVersion ? ` v${apkVersion}` : ''}
-      </a>
+      {#if apkDownloadUrl}
+        <a class="apk-download-btn" href={apkDownloadUrl} target="_blank" rel="noreferrer" download>
+          Download APK{apkVersion ? ` v${apkVersion}` : ''}
+        </a>
+      {:else}
+        <button class="apk-download-btn" type="button" disabled>
+          {apkLoading ? 'Menyiapkan APK...' : 'APK belum tersedia'}
+        </button>
+      {/if}
       <p>Tersedia untuk perangkat Android</p>
     </div>
   {/if}
@@ -54,6 +65,7 @@
   .apk-download-btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 16px; box-sizing: border-box; border: 1.5px solid rgba(107,175,242,.45); border-radius: 16px; background: rgba(255,255,255,.62); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); color: #4F96E5; box-shadow: 0 8px 24px rgba(91,141,239,.12); font: 800 14px 'Nunito', sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease; }
   .apk-download-btn:hover { background: rgba(255,255,255,.82); transform: translateY(-1px); }
   .apk-download-btn:active { transform: scale(.98); }
+  .apk-download-btn:disabled { cursor: wait; opacity: .65; }
   .apk-download-section p { margin: 7px 0 0; color: #94A3B8; font: 600 10px 'Nunito', sans-serif; }
   :global(body) {
     margin: 0;
