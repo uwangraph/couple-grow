@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -38,7 +38,8 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
+      if (!res.ok) throw new Error('Gagal memuat transaksi');
+      const data = await readApiJson<{ transactions?: any[] }>(res);
       if (res.ok) transactions = (data.transactions || []).slice(0, 5);
     } catch(e) {}
   }
@@ -50,7 +51,8 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
+      if (!res.ok) throw new Error('Gagal memuat tabungan');
+      const data = await readApiJson<{ savings?: any[] }>(res);
       if (res.ok) savings = data.savings || [];
     } catch(e) {}
   }

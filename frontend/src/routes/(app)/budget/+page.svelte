@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -46,7 +46,7 @@
       });
       if (budgetRes.status === 401) { handleUnauthorized(); return; }
       if (budgetRes.ok) {
-        const data = await budgetRes.json();
+        const data = await readApiJson<{ budgets?: any[] }>(budgetRes);
         budgets = data.budgets || [];
       }
 
@@ -55,7 +55,7 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (txnRes.ok) {
-        const data = await txnRes.json();
+        const data = await readApiJson<{ transactions?: any[] }>(txnRes);
         const now = new Date();
         const currentMonth = now.getMonth() + 1;
         const currentYear = now.getFullYear();
