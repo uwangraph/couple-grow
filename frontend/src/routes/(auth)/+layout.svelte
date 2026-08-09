@@ -1,6 +1,19 @@
 <script lang="ts">
-  import Icon from '$lib/Icon.svelte';
+  import { page } from '$app/state';
+  import { onMount } from 'svelte';
   let { children } = $props();
+  let apkVersion = $state('');
+  let apkDownloadUrl = $state('https://github.com/uwangraph/couple-grow/releases/latest');
+
+  onMount(async () => {
+    try {
+      const response = await fetch(`/app-version.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) return;
+      const latest = await response.json();
+      apkVersion = latest.versionName || '';
+      if (latest.downloadUrl) apkDownloadUrl = latest.downloadUrl;
+    } catch (_) { /* keep latest-release fallback */ }
+  });
 </script>
 
 <div class="auth-shell min-h-screen relative overflow-hidden flex items-center justify-center p-6">
@@ -21,13 +34,27 @@
 
     {@render children()}
   </div>
+
+  {#if page.url.pathname === '/login'}
+    <div class="apk-download-section z-10">
+      <a class="apk-download-btn" href={apkDownloadUrl} target="_blank" rel="noreferrer">
+        Download APK{apkVersion ? ` v${apkVersion}` : ''}
+      </a>
+      <p>Versi Android terbaru, langsung dari GitHub Release</p>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .auth-shell { background: linear-gradient(135deg, #EEF2FE 0%, #F2F0FE 100%); font-family: 'Nunito', sans-serif; }
+  .auth-shell { flex-direction: column; gap: 14px; background: linear-gradient(135deg, #EEF2FE 0%, #F2F0FE 100%); font-family: 'Nunito', sans-serif; }
   .auth-card { background: rgba(255,255,255,.72); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); border: 1px solid rgba(255,255,255,.9); border-radius: 28px; padding: 36px 32px; box-shadow: 0 25px 60px rgba(91,141,239,.16); }
   .logo-mark { width: 78px; height: 78px; background: linear-gradient(135deg, #EEF2FE, #F6F4FE); border: 2px solid rgba(91,141,239,.4); box-shadow: 0 8px 24px rgba(91,141,239,.22), 0 0 0 4px rgba(255,255,255,.45); overflow: hidden; }
   .logo-mark img { width: 76px; height: 76px; object-fit: contain; }
+  .apk-download-section { width: 100%; max-width: 384px; text-align: center; }
+  .apk-download-btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 16px; box-sizing: border-box; border: 1.5px solid rgba(107,175,242,.45); border-radius: 16px; background: rgba(255,255,255,.62); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); color: #4F96E5; box-shadow: 0 8px 24px rgba(91,141,239,.12); font: 800 14px 'Nunito', sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease; }
+  .apk-download-btn:hover { background: rgba(255,255,255,.82); transform: translateY(-1px); }
+  .apk-download-btn:active { transform: scale(.98); }
+  .apk-download-section p { margin: 7px 0 0; color: #94A3B8; font: 600 10px 'Nunito', sans-serif; }
   :global(body) {
     margin: 0;
     font-family: 'Nunito', sans-serif;
