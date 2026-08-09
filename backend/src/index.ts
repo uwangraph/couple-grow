@@ -768,6 +768,9 @@ app.get('/savings/:id', async (c) => {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
 
   const id = c.req.param('id')
+  const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
 
   try {
     const saving = await c.env.DB.prepare(
@@ -775,8 +778,8 @@ app.get('/savings/:id', async (c) => {
        FROM savings s
        LEFT JOIN saving_activities sa ON sa.saving_id = s.id AND sa.type = 'created'
        LEFT JOIN users u ON sa.user_id = u.id
-       WHERE s.id = ?`
-    ).bind(id).first()
+       WHERE s.id = ? AND s.couple_id = ?`
+    ).bind(id, couple_id).first()
 
     if (!saving) return c.json({ error: 'Saving not found' }, 404)
 
@@ -817,10 +820,13 @@ app.post('/savings/:id/topup', async (c) => {
   if (!amount) return c.json({ error: 'Missing amount' }, 400)
 
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
     // Get saving info before update
     const saving = await c.env.DB.prepare(
-      'SELECT current_amount, target_amount FROM savings WHERE id = ?'
-    ).bind(id).first()
+      'SELECT current_amount, target_amount FROM savings WHERE id = ? AND couple_id = ?'
+    ).bind(id, couple_id).first()
     
     if (!saving) return c.json({ error: 'Saving not found' }, 404)
     
@@ -870,10 +876,13 @@ app.post('/savings/:id/deduct', async (c) => {
   if (!amount) return c.json({ error: 'Missing amount' }, 400)
 
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
     // Get current amount first to validate
     const saving = await c.env.DB.prepare(
-      'SELECT current_amount FROM savings WHERE id = ?'
-    ).bind(id).first()
+      'SELECT current_amount FROM savings WHERE id = ? AND couple_id = ?'
+    ).bind(id, couple_id).first()
     
     if (!saving) return c.json({ error: 'Saving not found' }, 404)
     
@@ -992,13 +1001,17 @@ app.get('/savings/:id/activities', async (c) => {
   const id = c.req.param('id')
 
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
     const activities = await c.env.DB.prepare(
       `SELECT sa.*, u.name as user_name 
        FROM saving_activities sa 
        JOIN users u ON sa.user_id = u.id 
-       WHERE sa.saving_id = ? 
+       JOIN savings s ON s.id = sa.saving_id
+       WHERE sa.saving_id = ? AND s.couple_id = ?
        ORDER BY sa.created_at DESC`
-    ).bind(id).all()
+    ).bind(id, couple_id).all()
 
     return c.json({ activities: activities.results })
   } catch(e) {
@@ -1013,6 +1026,9 @@ app.get('/savings/:id/contributions', async (c) => {
   const id = c.req.param('id')
 
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
     const contributions = await c.env.DB.prepare(
       `SELECT u.id, u.name, u.avatar, 
        SUM(CASE WHEN sa.type = 'topup' THEN sa.amount ELSE 0 END) as total_topup,
@@ -1021,9 +1037,10 @@ app.get('/savings/:id/contributions', async (c) => {
        SUM(CASE WHEN sa.type = 'deduct' THEN sa.amount ELSE 0 END) as net_contribution
        FROM saving_activities sa
        JOIN users u ON sa.user_id = u.id
-       WHERE sa.saving_id = ? AND sa.type IN ('topup', 'deduct')
+       JOIN savings s ON s.id = sa.saving_id
+       WHERE sa.saving_id = ? AND s.couple_id = ? AND sa.type IN ('topup', 'deduct')
        GROUP BY u.id, u.name, u.avatar`
-    ).bind(id).all()
+    ).bind(id, couple_id).all()
 
     return c.json({ contributions: contributions.results })
   } catch(e) {
