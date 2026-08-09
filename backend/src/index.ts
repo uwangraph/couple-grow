@@ -1110,7 +1110,12 @@ app.delete('/budgets/:id', async (c) => {
   const id = c.req.param('id')
 
   try {
-    await c.env.DB.prepare('DELETE FROM budgets WHERE id = ?').bind(id).run()
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
+    const budget = await c.env.DB.prepare('SELECT id FROM budgets WHERE id = ? AND couple_id = ?').bind(id, couple_id).first()
+    if (!budget) return c.json({ error: 'Budget not found' }, 404)
+    await c.env.DB.prepare('DELETE FROM budgets WHERE id = ? AND couple_id = ?').bind(id, couple_id).run()
     return c.json({ message: 'Budget deleted successfully' })
   } catch(e) {
     return c.json({ error: 'Database error' }, 500)
@@ -1131,6 +1136,11 @@ app.post('/transactions/split', async (c) => {
   // splits = [{ user_id, amount }, { user_id, amount }]
   if (!amount || !category || !splits || splits.length === 0) {
     return c.json({ error: 'Missing fields' }, 400)
+  }
+  const memberIds = new Set([payload.id, user.partner_id])
+  const splitTotal = splits.reduce((sum: number, split: any) => sum + Number(split.amount || 0), 0)
+  if (splits.some((split: any) => !memberIds.has(split.user_id) || Number(split.amount) <= 0) || Math.abs(splitTotal - Number(amount)) > 0.01) {
+    return c.json({ error: 'Pembagian nominal tidak valid' }, 400)
   }
 
   try {
@@ -1159,12 +1169,16 @@ app.get('/transactions/:id/splits', async (c) => {
   const id = c.req.param('id')
 
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
     const splits = await c.env.DB.prepare(
       `SELECT ts.*, u.name as user_name, u.avatar 
        FROM transaction_splits ts 
        JOIN users u ON ts.user_id = u.id 
-       WHERE ts.transaction_id = ?`
-    ).bind(id).all()
+       JOIN transactions t ON t.id = ts.transaction_id
+       WHERE ts.transaction_id = ? AND t.couple_id = ?`
+    ).bind(id, couple_id).all()
 
     return c.json({ splits: splits.results })
   } catch(e) {
@@ -1179,9 +1193,13 @@ app.put('/transactions/splits/:id/pay', async (c) => {
   const id = c.req.param('id')
 
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
     await c.env.DB.prepare(
-      'UPDATE transaction_splits SET is_paid = 1 WHERE id = ?'
-    ).bind(id).run()
+      `UPDATE transaction_splits SET is_paid = 1
+       WHERE id = ? AND user_id = ? AND transaction_id IN (SELECT id FROM transactions WHERE couple_id = ?)`
+    ).bind(id, payload.id, couple_id).run()
 
     return c.json({ message: 'Split marked as paid' })
   } catch(e) {
@@ -1242,6 +1260,11 @@ app.put('/wishlists/:id', async (c) => {
   const { name, description, estimated_price, priority, image_url, is_completed } = await c.req.json()
 
   try {
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
+    const wishlist = await c.env.DB.prepare('SELECT id FROM wishlists WHERE id = ? AND couple_id = ?').bind(id, couple_id).first()
+    if (!wishlist) return c.json({ error: 'Wishlist not found' }, 404)
     const updates: string[] = []
     const values: any[] = []
     
@@ -1256,8 +1279,8 @@ app.put('/wishlists/:id', async (c) => {
 
     updates.push('updated_by = ?', 'updated_at = CURRENT_TIMESTAMP'); values.push(payload.id)
     
-    values.push(id)
-    await c.env.DB.prepare(`UPDATE wishlists SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run()
+    values.push(id, couple_id)
+    await c.env.DB.prepare(`UPDATE wishlists SET ${updates.join(', ')} WHERE id = ? AND couple_id = ?`).bind(...values).run()
 
     return c.json({ message: 'Wishlist updated' })
   } catch(e) {
@@ -1272,7 +1295,12 @@ app.delete('/wishlists/:id', async (c) => {
   const id = c.req.param('id')
 
   try {
-    await c.env.DB.prepare('DELETE FROM wishlists WHERE id = ?').bind(id).run()
+    const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
+    if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+    const couple_id = [payload.id, user.partner_id].sort().join('_')
+    const wishlist = await c.env.DB.prepare('SELECT id FROM wishlists WHERE id = ? AND couple_id = ?').bind(id, couple_id).first()
+    if (!wishlist) return c.json({ error: 'Wishlist not found' }, 404)
+    await c.env.DB.prepare('DELETE FROM wishlists WHERE id = ? AND couple_id = ?').bind(id, couple_id).run()
     return c.json({ message: 'Wishlist deleted' })
   } catch(e) {
     return c.json({ error: 'Database error' }, 500)
