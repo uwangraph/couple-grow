@@ -1,7 +1,21 @@
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  partner_id: string | null;
+  avatar: string | null;
+  birthday: string | null;
+  anniversary: string | null;
+  bio: string | null;
+  phone?: string | null;
+};
+
+export type AuthPartner = Omit<AuthUser, 'partner_id'> & { partner_id?: string | null };
+
 export class AuthState {
   token = $state<string | null>(null);
-  user = $state<{ id: string; email: string; name: string; partner_id: string | null; avatar: string | null; birthday: string | null; anniversary: string | null; bio: string | null } | null>(null);
-  partner = $state<{ id: string; email: string; name: string; avatar: string | null; birthday: string | null; anniversary: string | null; bio: string | null } | null>(null);
+  user = $state<AuthUser | null>(null);
+  partner = $state<AuthPartner | null>(null);
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -27,7 +41,7 @@ export class AuthState {
     }
   }
 
-  setUser(u: any, p: any = null) {
+  setUser(u: AuthUser | null, p: AuthPartner | null = null) {
     this.user = u;
     this.partner = p;
     if (typeof window !== 'undefined') {
@@ -41,13 +55,13 @@ export class AuthState {
   async init() {
     if (this.token && typeof window !== 'undefined') {
       try {
-        const { API_URL } = await import('$lib/api');
+        const { API_URL, readApiJson } = await import('$lib/api');
         const res = await fetch(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${this.token}` }
         });
         if (res.ok) {
-          const data = await res.json();
-          this.setUser(data.user, data.partner || null);
+          const data = await readApiJson<{ user?: AuthUser; partner?: AuthPartner }>(res);
+          this.setUser(data.user || null, data.partner || null);
         } else {
           this.logout();
         }

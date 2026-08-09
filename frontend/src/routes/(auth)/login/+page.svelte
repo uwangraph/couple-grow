@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import Icon from '$lib/Icon.svelte';
   import { onMount } from 'svelte';
@@ -37,8 +37,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login gagal');
+      const data = await readApiJson<{ token?: string; user?: any; partner?: any; error?: string }>(res);
+      if (!res.ok || !data.token || !data.user) throw new Error(data.error || 'Login gagal');
       auth.setToken(data.token);
       auth.setUser(data.user, data.partner || null);
       goto('/home');
@@ -60,7 +60,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-      const data = await res.json();
+      const data = await readApiJson<{ message?: string; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal membuat kode reset');
       successMsg = data.message || 'Jika email terdaftar, kode reset akan dikirim.';
       mode = 'reset';
@@ -82,7 +82,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: resetCode, new_password: newPassword })
       });
-      const data = await res.json();
+      const data = await readApiJson<{ message?: string; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal reset password');
       successMsg = data.message || 'Password berhasil diubah.';
       password = '';

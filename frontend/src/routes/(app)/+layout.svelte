@@ -18,14 +18,23 @@
     { name: 'Profil', icon: 'profile', path: '/profile' },
   ];
 
-  onMount(() => {
-    if (!auth.token) goto('/login');
-    else if (page.url.pathname === '/') goto('/home');
+  onMount(async () => {
+    if (!auth.token) {
+      goto('/login');
+      return;
+    }
+    await auth.init();
+    if (!auth.token) return;
+    if (page.url.pathname === '/') goto('/home');
     checkForAppUpdate();
   });
 
   let currentPath = $derived(page.url.pathname);
-  const hideBottomNav = $derived(currentPath === '/chat' || currentPath === '/notes' || currentPath === '/wishlist');
+  const hideBottomNav = $derived(
+    currentPath === '/chat' ||
+    currentPath.startsWith('/notes') ||
+    currentPath.startsWith('/wishlist')
+  );
   let showUpdateModal = $state(false);
   let latestVersionName = $state('');
   let latestVersionUrl = $state('');

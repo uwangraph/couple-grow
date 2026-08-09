@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -32,8 +32,8 @@
           'Authorization': `Bearer ${auth.token}`
         }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal membuat kode');
+      const data = await readApiJson<{ code?: string; error?: string }>(res);
+      if (!res.ok || !data.code) throw new Error(data.error || 'Gagal membuat kode');
       generatedCode = data.code;
     } catch (e: any) {
       errorMsg = e.message;
@@ -60,13 +60,11 @@
         },
         body: JSON.stringify({ code: inviteCode })
       });
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal menghubungkan');
       
-      // Update user state to reflect connection
-      if (auth.user) {
-        auth.setUser({ ...auth.user, partner_id: 'connected' });
-      }
+      // Refresh both user and partner data from the server after connecting.
+      await auth.init();
       goto('/wallet');
     } catch (e: any) {
       errorMsg = e.message;
