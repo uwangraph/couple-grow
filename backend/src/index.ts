@@ -593,6 +593,7 @@ app.get('/analytics/spending-pattern', async (c) => {
   
   const couple_id = [payload.id, user.partner_id].sort().join('_')
   const { period = 'week' } = c.req.query() // week or month
+  if (period !== 'week' && period !== 'month') return c.json({ error: 'Period tidak valid' }, 400)
 
   try {
     let groupBy = ''
@@ -624,6 +625,7 @@ app.get('/analytics/category-breakdown', async (c) => {
   
   const couple_id = [payload.id, user.partner_id].sort().join('_')
   const { period = 'month' } = c.req.query() // month, 3months, year
+  if (period !== 'month' && period !== '3months' && period !== 'year') return c.json({ error: 'Period tidak valid' }, 400)
 
   try {
     let dateFilter = ''
@@ -946,7 +948,7 @@ app.put('/savings/:id', async (c) => {
     
     const couple_id = [payload.id, user.partner_id].sort().join('_')
     const saving = await c.env.DB.prepare(
-      'SELECT couple_id FROM savings WHERE id = ?'
+      'SELECT couple_id, current_amount FROM savings WHERE id = ?'
     ).bind(id).first()
     
     if (!saving) return c.json({ error: 'Saving not found' }, 404)
@@ -962,6 +964,7 @@ app.put('/savings/:id', async (c) => {
     }
     if (target_amount !== undefined) {
       if (!Number.isFinite(Number(target_amount)) || Number(target_amount) <= 0) return c.json({ error: 'Target amount tidak valid' }, 400)
+      if (Number(target_amount) < Number(saving.current_amount || 0)) return c.json({ error: 'Target tidak boleh lebih kecil dari saldo saat ini' }, 400)
       updates.push('target_amount = ?')
       values.push(target_amount)
     }
@@ -1008,7 +1011,12 @@ app.delete('/savings/:id', async (c) => {
     if (!saving) return c.json({ error: 'Saving not found' }, 404)
     if (saving.couple_id !== couple_id) return c.json({ error: 'Unauthorized' }, 403)
 
-    await c.env.DB.prepare('DELETE FROM savings WHERE id = ?').bind(id).run()
+    await c.env.DB.batch([
+      c.env.DB.prepare('UPDATE wishlists SET linked_saving_id = NULL WHERE linked_saving_id = ?').bind(id),
+      c.env.DB.prepare('DELETE FROM saving_activities WHERE saving_id = ?').bind(id),
+      c.env.DB.prepare('DELETE FROM chat_rooms WHERE saving_id = ?').bind(id),
+      c.env.DB.prepare('DELETE FROM savings WHERE id = ? AND couple_id = ?').bind(id, couple_id),
+    ])
 
     return c.json({ message: 'Saving deleted successfully' })
   } catch(e) {
