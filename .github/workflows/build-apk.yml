@@ -59,7 +59,9 @@ jobs:
       - name: Prepare Android signing
         run: |
           KEYSTORE_B64='${{ secrets.ANDROID_KEYSTORE_BASE64 }}'
-          KEYSTORE_B64="${KEYSTORE_B64#*=}"
+          case "$KEYSTORE_B64" in
+            ANDROID_KEYSTORE_BASE64=*) KEYSTORE_B64="${KEYSTORE_B64#ANDROID_KEYSTORE_BASE64=}" ;;
+          esac
           KEYSTORE_B64="${KEYSTORE_B64#\"}"
           KEYSTORE_B64="${KEYSTORE_B64%\"}"
           printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]' | base64 --decode > android/app/couplegrow-release.keystore
