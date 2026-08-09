@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import Icon from '$lib/Icon.svelte';
   import { toast } from '$lib/toast.svelte';
@@ -24,9 +24,9 @@
         method: 'POST',
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
-      const data = await res.json();
+      const data = await readApiJson<{ code?: string; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal membuat kode');
-      generatedCode = data.code;
+      generatedCode = data.code || null;
       toast.success('Kode undangan berhasil dibuat!');
     } catch (e: any) {
       toast.error(e.message);
@@ -44,7 +44,7 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
         body: JSON.stringify({ code: inviteCode })
       });
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal menghubungkan');
       await auth.init();
       toast.success('Pasangan berhasil terhubung!');
@@ -65,7 +65,7 @@
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
-      const data = await res.json();
+      const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal memutuskan hubungan');
       await auth.init();
       showDisconnectConfirm = false;
@@ -278,8 +278,8 @@
           headers: { 'Authorization': `Bearer ${auth.token}` },
           body: formData
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error('Gagal upload');
+        const data = await readApiJson<{ avatarUrl?: string; error?: string }>(res);
+        if (!res.ok || !data.avatarUrl) throw new Error(data.error || 'Gagal upload');
         if (auth.user) auth.setUser({ ...auth.user, avatar: data.avatarUrl }, auth.partner);
         toast.success('Foto profil berhasil diubah!');
         cropModalVisible = false;
@@ -306,7 +306,7 @@
           new_password: passwordForm.new_password
         })
       });
-      const data = await res.json();
+      const data = await readApiJson<{ message?: string; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal mengganti password');
       toast.success(data.message || 'Password berhasil diubah!');
       passwordForm = { current_password: '', new_password: '', confirm_password: '' };

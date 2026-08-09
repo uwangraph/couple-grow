@@ -42,6 +42,12 @@ async function hashPassword(password: string) {
   return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+function generateSixDigitCode() {
+  const bytes = new Uint32Array(1)
+  crypto.getRandomValues(bytes)
+  return String(100000 + (bytes[0] % 900000)).padStart(6, '0')
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -140,7 +146,16 @@ async function sendPasswordResetEmail(c: any, to: string, code: string) {
 
 // Middleware CORS
 app.use('/*', cors({
-  origin: (origin) => origin || '*',
+  origin: (origin) => {
+    const allowed = new Set([
+      'https://couple-grow.pages.dev',
+      'capacitor://localhost',
+      'ionic://localhost',
+      'http://localhost',
+      'https://localhost',
+    ])
+    return origin && allowed.has(origin) ? origin : 'https://couple-grow.pages.dev'
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -201,6 +216,9 @@ app.post('/auth/register', async (c) => {
   // Basic validation
   if (!email || !password || !name) {
     return c.json({ error: 'Missing required fields' }, 400)
+  }
+  if (typeof password !== 'string' || password.length < 8) {
+    return c.json({ error: 'Password minimal 8 karakter' }, 400)
   }
 
   const hashedPassword = await hashPassword(password)
@@ -275,7 +293,7 @@ app.post('/auth/forgot-password', async (c) => {
   }
 
   // Generate 6-digit reset code
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  const code = generateSixDigitCode()
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 minutes
 
   try {
@@ -324,7 +342,7 @@ app.post('/auth/forgot-password', async (c) => {
 app.post('/auth/reset-password', async (c) => {
   const { email, code, new_password } = await c.req.json()
   if (!email || !code || !new_password) return c.json({ error: 'Semua field wajib diisi' }, 400)
-  if (new_password.length < 6) return c.json({ error: 'Password minimal 6 karakter' }, 400)
+  if (typeof new_password !== 'string' || new_password.length < 8) return c.json({ error: 'Password minimal 8 karakter' }, 400)
 
   const user = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()
   if (!user) return c.json({ error: 'Email tidak ditemukan' }, 404)
@@ -350,7 +368,7 @@ app.put('/auth/change-password', async (c) => {
 
   const { current_password, new_password } = await c.req.json()
   if (!current_password || !new_password) return c.json({ error: 'Semua field wajib diisi' }, 400)
-  if (new_password.length < 6) return c.json({ error: 'Password baru minimal 6 karakter' }, 400)
+  if (typeof new_password !== 'string' || new_password.length < 8) return c.json({ error: 'Password baru minimal 8 karakter' }, 400)
 
   const currentHashed = await hashPassword(current_password)
 
@@ -369,7 +387,7 @@ app.post('/partner/invite', async (c) => {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
 
   // Generate 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  const code = generateSixDigitCode()
   const id = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
 
@@ -472,7 +490,9 @@ app.post('/transactions', async (c) => {
   const couple_id = [payload.id, user.partner_id].sort().join('_')
   
   const { amount, type, category, note } = await c.req.json()
-  if (!amount || !type || !category) return c.json({ error: 'Missing fields' }, 400)
+  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0 || !['income', 'expense'].includes(type) || !category) {
+    return c.json({ error: 'Amount, type, dan category tidak valid' }, 400)
+  }
 
   try {
     const res = await c.env.DB.prepare(
@@ -523,8 +543,14 @@ app.put('/transactions/:id', async (c) => {
 
     const updates: string[] = []
     const values: any[] = []
-    if (amount !== undefined) { updates.push('amount = ?'); values.push(amount); }
-    if (type !== undefined) { updates.push('type = ?'); values.push(type); }
+    if (amount !== undefined) {
+      if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return c.json({ error: 'Amount tidak valid' }, 400)
+      updates.push('amount = ?'); values.push(amount)
+    }
+    if (type !== undefined) {
+      if (!['income', 'expense'].includes(type)) return c.json({ error: 'Type tidak valid' }, 400)
+      updates.push('type = ?'); values.push(type)
+    }
     if (category !== undefined) { updates.push('category = ?'); values.push(category); }
     if (note !== undefined) { updates.push('note = ?'); values.push(note); }
 
@@ -744,7 +770,7 @@ app.post('/savings', async (c) => {
   const couple_id = [payload.id, user.partner_id].sort().join('_')
   
   const { name, target_amount, deadline } = await c.req.json()
-  if (!name || !target_amount) return c.json({ error: 'Missing fields' }, 400)
+  if (!name || !Number.isFinite(Number(target_amount)) || Number(target_amount) <= 0) return c.json({ error: 'Nama dan target amount tidak valid' }, 400)
 
   try {
     const res = await c.env.DB.prepare(
@@ -817,7 +843,7 @@ app.post('/savings/:id/topup', async (c) => {
 
   const id = c.req.param('id')
   const { amount, note } = await c.req.json()
-  if (!amount) return c.json({ error: 'Missing amount' }, 400)
+  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return c.json({ error: 'Amount harus lebih dari 0' }, 400)
 
   try {
     const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
@@ -873,7 +899,7 @@ app.post('/savings/:id/deduct', async (c) => {
 
   const id = c.req.param('id')
   const { amount, note } = await c.req.json()
-  if (!amount) return c.json({ error: 'Missing amount' }, 400)
+  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return c.json({ error: 'Amount harus lebih dari 0' }, 400)
 
   try {
     const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
@@ -938,7 +964,8 @@ app.put('/savings/:id', async (c) => {
       updates.push('name = ?')
       values.push(name)
     }
-    if (target_amount) {
+    if (target_amount !== undefined) {
+      if (!Number.isFinite(Number(target_amount)) || Number(target_amount) <= 0) return c.json({ error: 'Target amount tidak valid' }, 400)
       updates.push('target_amount = ?')
       values.push(target_amount)
     }
@@ -1084,7 +1111,7 @@ app.post('/budgets', async (c) => {
   const couple_id = [payload.id, user.partner_id].sort().join('_')
   
   const { category, amount, period_month, period_year } = await c.req.json()
-  if (!category || !amount) return c.json({ error: 'Missing fields' }, 400)
+  if (!category || !Number.isFinite(Number(amount)) || Number(amount) <= 0) return c.json({ error: 'Category dan amount tidak valid' }, 400)
 
   // Default to current period if not specified
   const now = new Date()
@@ -1239,6 +1266,16 @@ app.post('/wishlists', async (c) => {
   
   const { name, description, estimated_price, priority, image_url, linked_saving_id } = await c.req.json()
   if (!name) return c.json({ error: 'Missing name' }, 400)
+  if (estimated_price !== undefined && estimated_price !== null && (!Number.isFinite(Number(estimated_price)) || Number(estimated_price) < 0)) {
+    return c.json({ error: 'Estimated price tidak valid' }, 400)
+  }
+  if (priority !== undefined && (!Number.isInteger(Number(priority)) || Number(priority) < 1 || Number(priority) > 3)) {
+    return c.json({ error: 'Priority tidak valid' }, 400)
+  }
+  if (linked_saving_id !== undefined && linked_saving_id !== null && linked_saving_id !== '') {
+    const linkedSaving = await c.env.DB.prepare('SELECT id FROM savings WHERE id = ? AND couple_id = ?').bind(linked_saving_id, couple_id).first()
+    if (!linkedSaving) return c.json({ error: 'Tabungan terkait tidak ditemukan' }, 400)
+  }
 
   try {
     const res = await c.env.DB.prepare(
@@ -1262,9 +1299,15 @@ app.put('/wishlists/:id', async (c) => {
   try {
     const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
     if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
-    const couple_id = [payload.id, user.partner_id].sort().join('_')
-    const wishlist = await c.env.DB.prepare('SELECT id FROM wishlists WHERE id = ? AND couple_id = ?').bind(id, couple_id).first()
-    if (!wishlist) return c.json({ error: 'Wishlist not found' }, 404)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  const wishlist = await c.env.DB.prepare('SELECT id FROM wishlists WHERE id = ? AND couple_id = ?').bind(id, couple_id).first()
+  if (!wishlist) return c.json({ error: 'Wishlist not found' }, 404)
+    if (estimated_price !== undefined && estimated_price !== null && (!Number.isFinite(Number(estimated_price)) || Number(estimated_price) < 0)) {
+      return c.json({ error: 'Estimated price tidak valid' }, 400)
+    }
+    if (priority !== undefined && (!Number.isInteger(Number(priority)) || Number(priority) < 1 || Number(priority) > 3)) {
+      return c.json({ error: 'Priority tidak valid' }, 400)
+    }
     const updates: string[] = []
     const values: any[] = []
     
@@ -1324,6 +1367,7 @@ app.put('/profile', async (c) => {
   const payload = c.get('jwtPayload')
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
   const { name, birthday, anniversary, bio, phone } = await c.req.json()
+  if (typeof name !== 'string' || !name.trim()) return c.json({ error: 'Nama wajib diisi' }, 400)
   
   try {
     await c.env.DB.prepare('UPDATE users SET name = ?, birthday = ?, anniversary = ?, bio = ?, phone = ? WHERE id = ?')
@@ -1341,6 +1385,8 @@ app.post('/profile/avatar', async (c) => {
   const file = body['file']
   
   if (!(file instanceof File)) return c.json({ error: 'No file uploaded' }, 400)
+  if (!file.type.startsWith('image/')) return c.json({ error: 'File harus berupa gambar' }, 400)
+  if (file.size > 5 * 1024 * 1024) return c.json({ error: 'Ukuran gambar maksimal 5 MB' }, 400)
   
   const fileName = `avatars/${payload.id}/${Date.now()}-${file.name}`
   await c.env.MEDIA.put(fileName, file)

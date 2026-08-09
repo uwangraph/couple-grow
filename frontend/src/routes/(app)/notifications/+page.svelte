@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -10,15 +10,23 @@
 
   onMount(async () => {
     if (!auth.token) return goto('/login');
-    const res = await fetch(`${API_URL}/notifications`, { headers: { Authorization: `Bearer ${auth.token}` } });
-    const data = await res.json();
-    notifications = data.notifications || [];
-    loading = false;
-    await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: { Authorization: `Bearer ${auth.token}` } });
+    try {
+      const res = await fetch(`${API_URL}/notifications`, { headers: { Authorization: `Bearer ${auth.token}` } });
+      if (res.status === 401) { auth.logout(); return goto('/login'); }
+      const data = await readApiJson<{ notifications?: any[] }>(res);
+      if (!res.ok) throw new Error('Gagal memuat notifikasi');
+      notifications = data.notifications || [];
+      await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: { Authorization: `Bearer ${auth.token}` } });
+    } catch (error) {
+      console.error('Failed to load notifications', error);
+      notifications = [];
+    } finally {
+      loading = false;
+    }
   });
 
   function openNotification(item: any) {
-    if (!item.is_read) fetch(`${API_URL}/notifications/${item.id}/read`, { method: 'PUT', headers: { Authorization: `Bearer ${auth.token}` } });
+    if (!item.is_read) void fetch(`${API_URL}/notifications/${item.id}/read`, { method: 'PUT', headers: { Authorization: `Bearer ${auth.token}` } }).catch(() => {});
     if (item.link) goto(item.link);
   }
 </script>

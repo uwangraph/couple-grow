@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -59,7 +59,7 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
+      const data = await readApiJson<{ transactions?: any[] }>(res);
       if (res.ok) transactions = data.transactions || [];
     } catch(e) {} finally { loading = false; }
   }
@@ -71,8 +71,8 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await res.json();
-      if (res.ok) stats = data;
+      const data = await readApiJson<{ monthly?: any[]; categories?: any[] }>(res);
+      if (res.ok) stats = { monthly: data.monthly || [], categories: data.categories || [] };
     } catch(e) {}
   }
 
@@ -86,7 +86,8 @@
         body: JSON.stringify({ amount: parseInt(amount), type, category, note })
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      if (!res.ok) throw new Error((await res.json()).error);
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || 'Gagal menambahkan transaksi');
       showModal = false;
       amount = ''; category = ''; note = '';
       await Promise.all([fetchTransactions(), fetchStats()]);

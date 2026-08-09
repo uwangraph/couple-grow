@@ -56,6 +56,7 @@
         id="password"
         bind:value={password}
         required
+        minlength="8"
         class="auth-input"
         placeholder="Min. 8 karakter"
       />

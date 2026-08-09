@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -39,22 +39,22 @@
       ]);
 
       if (patternRes.ok) {
-        const data = await patternRes.json();
+        const data = await readApiJson<{ pattern?: any[] }>(patternRes);
         spendingPattern = data.pattern || [];
       }
 
       if (breakdownRes.ok) {
-        const data = await breakdownRes.json();
+        const data = await readApiJson<{ breakdown?: any[] }>(breakdownRes);
         categoryBreakdown = data.breakdown || [];
       }
 
       if (comparisonRes.ok) {
-        const data = await comparisonRes.json();
+        const data = await readApiJson<{ comparison?: any }>(comparisonRes);
         monthComparison = data.comparison;
       }
 
       if (velocityRes.ok) {
-        const data = await velocityRes.json();
+        const data = await readApiJson<{ velocity?: any[] }>(velocityRes);
         savingsVelocity = data.velocity || [];
       }
     } catch(e) {
@@ -70,7 +70,7 @@
       headers: { 'Authorization': `Bearer ${auth.token}` }
     });
     if (res.ok) {
-      const data = await res.json();
+      const data = await readApiJson<{ pattern?: any[] }>(res);
       spendingPattern = data.pattern || [];
     }
   }
@@ -81,7 +81,7 @@
       headers: { 'Authorization': `Bearer ${auth.token}` }
     });
     if (res.ok) {
-      const data = await res.json();
+      const data = await readApiJson<{ breakdown?: any[] }>(res);
       categoryBreakdown = data.breakdown || [];
     }
   }

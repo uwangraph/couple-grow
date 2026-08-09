@@ -40,6 +40,17 @@ export class ChatRoom extends DurableObject {
     webSocket.send(JSON.stringify({ type: 'connected', message: 'Connected to chat room' }))
   }
 
+  private async currentRoomId() {
+    const query = this.savingId && this.savingId !== 'global'
+      ? 'SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id = ?'
+      : 'SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id IS NULL'
+    const args = this.savingId && this.savingId !== 'global'
+      ? [this.coupleId, this.savingId]
+      : [this.coupleId]
+    const room = await (this.env as any).DB.prepare(query).bind(...args).first()
+    return room?.id || null
+  }
+
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
     const authenticatedUserId = this.sessions.get(ws)
     if (!authenticatedUserId) return
@@ -60,7 +71,8 @@ export class ChatRoom extends DurableObject {
     try {
       if (eventType === 'delete') {
         const msgId = innerData.id
-        await (this.env as any).DB.prepare('UPDATE messages SET is_deleted = 1 WHERE id = ? AND sender_id = ?').bind(msgId, senderId).run()
+        const roomId = await this.currentRoomId()
+        await (this.env as any).DB.prepare('UPDATE messages SET is_deleted = 1 WHERE id = ? AND room_id = ? AND sender_id = ?').bind(msgId, roomId, senderId).run()
         
         for (const session of this.sessions.keys()) {
           if (session !== ws) {
@@ -73,7 +85,8 @@ export class ChatRoom extends DurableObject {
       if (eventType === 'pin') {
         const msgId = innerData.id
         const isPinned = innerData.is_pinned ? 1 : 0
-        await (this.env as any).DB.prepare('UPDATE messages SET is_pinned = ? WHERE id = ?').bind(isPinned, msgId).run()
+        const roomId = await this.currentRoomId()
+        await (this.env as any).DB.prepare('UPDATE messages SET is_pinned = ? WHERE id = ? AND room_id = ?').bind(isPinned, msgId, roomId).run()
         
         for (const session of this.sessions.keys()) {
           if (session !== ws) {
@@ -86,7 +99,8 @@ export class ChatRoom extends DurableObject {
       if (eventType === 'star') {
         const msgId = innerData.id
         const isStarred = innerData.is_starred ? 1 : 0
-        await (this.env as any).DB.prepare('UPDATE messages SET is_starred = ? WHERE id = ?').bind(isStarred, msgId).run()
+        const roomId = await this.currentRoomId()
+        await (this.env as any).DB.prepare('UPDATE messages SET is_starred = ? WHERE id = ? AND room_id = ?').bind(isStarred, msgId, roomId).run()
         
         for (const session of this.sessions.keys()) {
           if (session !== ws) {
@@ -99,7 +113,8 @@ export class ChatRoom extends DurableObject {
       if (eventType === 'edit') {
         const msgId = innerData.id
         const newText = innerData.message
-        await (this.env as any).DB.prepare('UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND sender_id = ?').bind(newText, msgId, senderId).run()
+        const roomId = await this.currentRoomId()
+        await (this.env as any).DB.prepare('UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND room_id = ? AND sender_id = ?').bind(newText, msgId, roomId, senderId).run()
         
         for (const session of this.sessions.keys()) {
           if (session !== ws) {
@@ -114,7 +129,8 @@ export class ChatRoom extends DurableObject {
         const emoji = innerData.emoji
         
         // Fetch current reactions
-        const msgRec = await (this.env as any).DB.prepare('SELECT reactions FROM messages WHERE id = ?').bind(msgId).first()
+        const roomId = await this.currentRoomId()
+        const msgRec = await (this.env as any).DB.prepare('SELECT reactions FROM messages WHERE id = ? AND room_id = ?').bind(msgId, roomId).first()
         let reactionsObj: Record<string, string> = {}
         if (msgRec && msgRec.reactions) {
           try { reactionsObj = JSON.parse(msgRec.reactions) } catch(e) {}
@@ -127,7 +143,8 @@ export class ChatRoom extends DurableObject {
         }
         
         const reactionsStr = JSON.stringify(reactionsObj)
-        await (this.env as any).DB.prepare('UPDATE messages SET reactions = ? WHERE id = ?').bind(reactionsStr, msgId).run()
+        if (!msgRec) return
+        await (this.env as any).DB.prepare('UPDATE messages SET reactions = ? WHERE id = ? AND room_id = ?').bind(reactionsStr, msgId, roomId).run()
         
         for (const session of this.sessions.keys()) {
           if (session !== ws) {
