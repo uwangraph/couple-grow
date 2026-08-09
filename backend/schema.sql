@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS transactions (
   category TEXT NOT NULL,
   note TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_by TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

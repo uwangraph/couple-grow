@@ -17,7 +17,7 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings, Variables: { jwtPayload: any } }>()
 
 async function ensureAttributionColumns(db: D1Database) {
-  for (const table of ['savings', 'folders', 'notes', 'budgets', 'wishlists']) {
+  for (const table of ['savings', 'folders', 'notes', 'budgets', 'wishlists', 'transactions']) {
     for (const column of ['created_by TEXT', 'updated_by TEXT', 'updated_at DATETIME']) {
       try { await db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column}`).run() } catch (_) { /* already exists */ }
     }
@@ -551,7 +551,8 @@ app.put('/transactions/:id', async (c) => {
     if (note !== undefined) { updates.push('note = ?'); values.push(note); }
 
     if (updates.length === 0) return c.json({ error: 'No fields to update' }, 400)
-    values.push(id)
+    updates.push('updated_by = ?', 'updated_at = CURRENT_TIMESTAMP')
+    values.push(payload.id, id)
 
     await c.env.DB.prepare(
       `UPDATE transactions SET ${updates.join(', ')} WHERE id = ?`
