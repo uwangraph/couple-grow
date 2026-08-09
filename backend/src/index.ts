@@ -195,7 +195,8 @@ app.use('/*', async (c, next) => {
   }
   
   try {
-    const payload = await verify(token, c.env.JWT_SECRET || 'fallback-secret', 'HS256')
+    if (!c.env.JWT_SECRET) return c.json({ error: 'Server authentication is not configured' }, 500)
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256')
     console.log(`[AUTH] Success: User ${payload.id}`)
     c.set('jwtPayload', payload)
     return next() // Use return next() to be safer
@@ -256,9 +257,10 @@ app.post('/auth/login', async (c) => {
     return c.json({ error: 'Invalid credentials' }, 401)
   }
 
+  if (!c.env.JWT_SECRET) return c.json({ error: 'Server authentication is not configured' }, 500)
   const token = await sign(
     { id: user.id, email: user.email, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 }, // 7 days
-    c.env.JWT_SECRET || 'fallback-secret'
+    c.env.JWT_SECRET
   )
 
   let partner = null;
@@ -1686,7 +1688,8 @@ app.get('/chat/ws', async (c) => {
   
   let payload;
   try {
-    payload = await verify(token, c.env.JWT_SECRET || 'fallback-secret')
+    if (!c.env.JWT_SECRET) return c.json({ error: 'Server authentication is not configured' }, 500)
+    payload = await verify(token, c.env.JWT_SECRET)
   } catch(e) { return c.json({ error: 'Unauthorized' }, 401) }
 
   const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
