@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { onMount, onDestroy, tick } from 'svelte';
@@ -55,9 +55,9 @@
       let url = `${API_URL}/chat/history`;
       if (savingId) url += `?saving_id=${savingId}`;
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${auth.token}` } });
-      const data = await res.json();
+      const data = await readApiJson<{ room_id?: string; messages?: any[] }>(res);
       if (res.ok) {
-        roomId = data.room_id;
+        roomId = data.room_id || null;
         messages = data.messages || [];
         scrollToBottom();
       }
@@ -191,7 +191,9 @@
           headers: { 'Authorization': `Bearer ${auth.token}` },
           body: formData
         });
-        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error('Upload gagal');
+        const uploadData = await readApiJson<{ url?: string }>(uploadRes);
+        if (!uploadData.url) throw new Error('Upload gagal');
         uploadedUrl = uploadData.url;
         tempMsg.file_url = uploadedUrl;
       } catch (e) {

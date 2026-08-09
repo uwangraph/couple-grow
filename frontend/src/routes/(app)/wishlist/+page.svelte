@@ -1,6 +1,6 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
-  import { API_URL } from '$lib/api';
+  import { API_URL, readApiJson } from '$lib/api';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
@@ -35,7 +35,7 @@
       });
       if (res.status === 401) { handleUnauthorized(); return; }
       if (res.ok) {
-        const data = await res.json();
+        const data = await readApiJson<{ wishlists?: any[] }>(res);
         wishlists = data.wishlists || [];
       }
     } catch(e) {} finally { loading = false; }
@@ -47,7 +47,7 @@
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await readApiJson<{ savings?: any[] }>(res);
         savings = data.savings || [];
       }
     } catch(e) {}

@@ -1298,7 +1298,7 @@ app.put('/wishlists/:id', async (c) => {
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
 
   const id = c.req.param('id')
-  const { name, description, estimated_price, priority, image_url, is_completed } = await c.req.json()
+  const { name, description, estimated_price, priority, image_url, is_completed, linked_saving_id } = await c.req.json()
 
   try {
     const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
@@ -1321,6 +1321,12 @@ app.put('/wishlists/:id', async (c) => {
     if (priority !== undefined) { updates.push('priority = ?'); values.push(priority); }
     if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
     if (is_completed !== undefined) { updates.push('is_completed = ?'); values.push(is_completed ? 1 : 0); }
+    if (linked_saving_id !== undefined) {
+      if (linked_saving_id !== null && linked_saving_id !== '' && !await c.env.DB.prepare('SELECT id FROM savings WHERE id = ? AND couple_id = ?').bind(linked_saving_id, couple_id).first()) {
+        return c.json({ error: 'Tabungan terkait tidak ditemukan' }, 400)
+      }
+      updates.push('linked_saving_id = ?'); values.push(linked_saving_id || null)
+    }
     
     if (updates.length === 0) return c.json({ error: 'No fields to update' }, 400)
 
