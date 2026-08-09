@@ -1479,7 +1479,8 @@ app.get('/chat/history', async (c) => {
   const payload = c.get('jwtPayload')
   if (!payload) return c.json({ error: 'Unauthorized' }, 401)
   const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
-  const couple_id = [payload.id, user?.partner_id || ''].sort().join('_')
+  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
+  const couple_id = [payload.id, user.partner_id].sort().join('_')
 
   const saving_id = c.req.query('saving_id') || null
 
