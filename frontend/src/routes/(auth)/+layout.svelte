@@ -40,7 +40,7 @@
       <a class="apk-download-btn" href={apkDownloadUrl} target="_blank" rel="noreferrer">
         Download APK{apkVersion ? ` v${apkVersion}` : ''}
       </a>
-      <p>Versi Android terbaru, langsung dari GitHub Release</p>
+      <p>Tersedia untuk perangkat Android</p>
     </div>
   {/if}
 </div>
