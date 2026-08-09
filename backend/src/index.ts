@@ -1382,7 +1382,8 @@ app.post('/profile/avatar', async (c) => {
   if (!file.type.startsWith('image/')) return c.json({ error: 'File harus berupa gambar' }, 400)
   if (file.size > 5 * 1024 * 1024) return c.json({ error: 'Ukuran gambar maksimal 5 MB' }, 400)
   
-  const fileName = `avatars/${payload.id}/${Date.now()}-${file.name}`
+  const avatarExt = file.type.split('/')[1]?.replace(/[^a-z0-9]/gi, '').slice(0, 8) || 'jpg'
+  const fileName = `avatars/${payload.id}/${crypto.randomUUID()}.${avatarExt}`
   await c.env.MEDIA.put(fileName, file)
   
   const workerUrl = `https://couple-grow.uwangraph.workers.dev`
@@ -1634,9 +1635,13 @@ app.post('/chat/upload', async (c) => {
   if (!file || !(file instanceof File)) {
     return c.json({ error: 'File is required' }, 400)
   }
+  if (!file.type.startsWith('image/') && !file.type.startsWith('audio/')) {
+    return c.json({ error: 'File harus berupa gambar atau audio' }, 400)
+  }
+  if (file.size > 15 * 1024 * 1024) return c.json({ error: 'Ukuran file maksimal 15 MB' }, 400)
   
-  const ext = file.name.split('.').pop()
-  const filename = `chat/${payload.id}_${Date.now()}.${ext}`
+  const ext = file.type.split('/')[1]?.replace(/[^a-z0-9]/gi, '').slice(0, 8) || 'bin'
+  const filename = `chat/${payload.id}/${crypto.randomUUID()}.${ext}`
   
   await c.env.MEDIA.put(filename, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type }
