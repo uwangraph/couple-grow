@@ -56,7 +56,7 @@
         <p>Versi terbaru CoupleGrow ({latestVersionName}) sudah tersedia. Update sekarang untuk mendapatkan fitur terbaru.</p>
         <div class="update-actions">
           {#if latestVersionUrl}
-            <a class="update-primary" href={latestVersionUrl} target="_blank" rel="noreferrer">Update Sekarang</a>
+            <a class="update-primary" href={latestVersionUrl} target="_blank" rel="noreferrer" download>Update Sekarang</a>
           {:else}
             <button class="update-primary" onclick={() => showUpdateModal = false}>Update Sekarang</button>
           {/if}
