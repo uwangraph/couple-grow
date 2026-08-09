@@ -16,6 +16,18 @@
   let newPassword = $state('');
   let showPassword = $state(false);
   let showNewPassword = $state(false);
+  let apkVersion = $state('');
+  let apkDownloadUrl = $state('https://github.com/uwangraph/couple-grow/releases/latest');
+
+  async function fetchLatestApk() {
+    try {
+      const response = await fetch(`/app-version.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) return;
+      const latest = await response.json();
+      apkVersion = latest.versionName || '';
+      if (latest.downloadUrl) apkDownloadUrl = latest.downloadUrl;
+    } catch (_) { /* keep the GitHub latest-release fallback */ }
+  }
 
   onMount(() => {
     const qEmail = $page.url.searchParams.get('email');
@@ -25,6 +37,7 @@
       resetCode = qCode;
       mode = 'reset';
     }
+    fetchLatestApk();
   });
 
   async function handleLogin(e: Event) {
@@ -192,6 +205,16 @@
 
   </button>
 
+  {#if mode === 'login'}
+    <div class="apk-download-section">
+      <div class="auth-divider"><span>atau</span></div>
+      <a class="apk-download-btn" href={apkDownloadUrl} target="_blank" rel="noreferrer">
+        Download APK{apkVersion ? ` v${apkVersion}` : ''}
+      </a>
+      <p class="apk-download-note">Versi Android terbaru, langsung dari GitHub Release</p>
+    </div>
+  {/if}
+
   <p style="text-align: center; font-size: 13px; color: #64748B; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
     {#if mode === 'login'}
       Belum punya akun? <a href="/register" class="auth-link">Daftar sekarang</a>
@@ -221,4 +244,11 @@
     cursor: pointer;
     padding: 0;
   }
+  .apk-download-section { margin-top: 18px; text-align: center; }
+  .auth-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; color: #94A3B8; font-size: 11px; font-weight: 700; }
+  .auth-divider::before, .auth-divider::after { content: ''; height: 1px; flex: 1; background: rgba(148,163,184,.28); }
+  .apk-download-btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 16px; box-sizing: border-box; border: 1.5px solid rgba(107,175,242,.45); border-radius: 14px; background: rgba(234,245,254,.72); color: #4F96E5; font: 800 14px 'Nunito', sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease; }
+  .apk-download-btn:hover { background: rgba(219,234,254,.9); transform: translateY(-1px); }
+  .apk-download-btn:active { transform: scale(.98); }
+  .apk-download-note { margin: 8px 0 0; color: #94A3B8; font: 600 10px 'Nunito', sans-serif; }
 </style>
