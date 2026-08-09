@@ -434,13 +434,11 @@ app.post('/partner/connect', async (c) => {
       return c.json({ error: 'The invite sender already has a partner' }, 400)
     }
 
-    // Begin pseudo-transaction to update both users and the invite
-    // D1 batches can be used, but for MVP we run them sequentially
-    await c.env.DB.prepare('UPDATE invites SET is_used = 1 WHERE id = ?').bind(invite.id).run()
-    
-    // Update the partner_id for both users
-    await c.env.DB.prepare('UPDATE users SET partner_id = ? WHERE id = ?').bind(payload.id, invite.from_user_id).run()
-    await c.env.DB.prepare('UPDATE users SET partner_id = ? WHERE id = ?').bind(invite.from_user_id, payload.id).run()
+    await c.env.DB.batch([
+      c.env.DB.prepare('UPDATE invites SET is_used = 1 WHERE id = ?').bind(invite.id),
+      c.env.DB.prepare('UPDATE users SET partner_id = ? WHERE id = ?').bind(payload.id, invite.from_user_id),
+      c.env.DB.prepare('UPDATE users SET partner_id = ? WHERE id = ?').bind(invite.from_user_id, payload.id),
+    ])
 
     return c.json({ message: 'Successfully connected with partner' })
   } catch (e) {
@@ -463,14 +461,10 @@ app.delete('/partner/disconnect', async (c) => {
 
     const partnerId = user.partner_id as string
 
-    // Lepaskan kedua sisi
-    await c.env.DB.prepare(
-      'UPDATE users SET partner_id = NULL WHERE id = ?'
-    ).bind(payload.id).run()
-
-    await c.env.DB.prepare(
-      'UPDATE users SET partner_id = NULL WHERE id = ?'
-    ).bind(partnerId).run()
+    await c.env.DB.batch([
+      c.env.DB.prepare('UPDATE users SET partner_id = NULL WHERE id = ?').bind(payload.id),
+      c.env.DB.prepare('UPDATE users SET partner_id = NULL WHERE id = ?').bind(partnerId),
+    ])
 
     return c.json({ message: 'Partner disconnected successfully' })
   } catch(e) {
