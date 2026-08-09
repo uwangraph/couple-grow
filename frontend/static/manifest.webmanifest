@@ -1,0 +1,17 @@
+{
+  "name": "CoupleGrow",
+  "short_name": "CoupleGrow",
+  "description": "Tumbuh bersama, dari sekarang",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EEF2FE",
+  "theme_color": "#5B8DEF",
+  "icons": [
+    {
+      "src": "/logo-couplegrow.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
