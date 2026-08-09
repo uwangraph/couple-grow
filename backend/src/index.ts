@@ -168,8 +168,6 @@ app.use('/*', async (c, next) => {
   const method = c.req.method
 
   console.log(`[AUTH] ${method} ${path}`)
-  if (path !== '/auth/login' && path !== '/auth/register') await ensureAttributionColumns(c.env.DB)
-
   if (
     c.req.method === 'OPTIONS' ||
     path === '/auth/login' ||
@@ -199,6 +197,9 @@ app.use('/*', async (c, next) => {
     const payload = await verify(token, c.env.JWT_SECRET, 'HS256')
     console.log(`[AUTH] Success: User ${payload.id}`)
     c.set('jwtPayload', payload)
+    // Run compatibility migrations only for authenticated application requests.
+    // Public/invalid requests must not trigger database DDL work.
+    if (path !== '/auth/login' && path !== '/auth/register') await ensureAttributionColumns(c.env.DB)
     return next() // Use return next() to be safer
   } catch (e: any) {
     const msg = e instanceof Error ? e.message : String(e)
