@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "350912974461",
+    "project_id": "couplegrow-f52bd",
+    "storage_bucket": "couplegrow-f52bd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:350912974461:android:9184e943a40672832d6b14",
+        "android_client_info": {
+          "package_name": "com.couplegrow.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhpkikNPIH9BKkTecH8d9hEnigpEXQMpY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
