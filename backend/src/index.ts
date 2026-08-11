@@ -147,12 +147,12 @@ async function sendPasswordResetEmail(c: any, to: string, code: string) {
 // Middleware CORS
 app.use('/*', cors({
   origin: (origin) => {
+    // Izinkan semua origin lokal (dev server SvelteKit di port apa pun)
+    if (origin && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return origin
+    if (origin && origin.startsWith('capacitor://')) return origin
+    if (origin && origin.startsWith('ionic://')) return origin
     const allowed = new Set([
       'https://couple-grow.pages.dev',
-      'capacitor://localhost',
-      'ionic://localhost',
-      'http://localhost',
-      'https://localhost',
     ])
     return origin && allowed.has(origin) ? origin : 'https://couple-grow.pages.dev'
   },
@@ -1705,8 +1705,11 @@ app.get('/chat/ws', async (c) => {
   let payload;
   try {
     if (!c.env.JWT_SECRET) return c.json({ error: 'Server authentication is not configured' }, 500)
-    payload = await verify(token, c.env.JWT_SECRET)
-  } catch(e) { return c.json({ error: 'Unauthorized' }, 401) }
+    payload = await verify(token, c.env.JWT_SECRET, 'HS256')
+  } catch(e: any) {
+    console.log('[CHAT_WS] verify failed:', e instanceof Error ? e.message : String(e))
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
 
   const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
   if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
