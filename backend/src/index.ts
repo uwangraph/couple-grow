@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 export { ChatRoom } from './chat'
 import { sign, verify } from 'hono/jwt'
+import { sendPush } from './fcm'
 
 type Bindings = {
   DB: D1Database
@@ -12,6 +13,7 @@ type Bindings = {
   RESEND_API_KEY: string
   RESET_EMAIL_FROM?: string
   RESET_EMAIL_FROM_NAME?: string
+  FIREBASE_SERVICE_ACCOUNT?: string
 }
 
 const app = new Hono<{ Bindings: Bindings, Variables: { jwtPayload: any } }>()
@@ -33,6 +35,55 @@ async function notifyPartner(db: D1Database, partnerId: string | undefined, acto
   )`).run()
   await db.prepare('INSERT INTO notifications (user_id, actor_id, type, title, message, link) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(partnerId, actorId, type, title, message, link).run()
+
+  // Kirim push notification (FCM) ke semua perangkat pasangan.
+  // Non-blocking — kegagalan push tidak boleh menggagalkan operasi utama.
+  await pushToUser(db, partnerId, actorId, type, title, message, link)
+}
+
+// Simpan env FCM sementara untuk dipakai pushToUser (di-set di entry fetch).
+let cgFirebaseSA: string | undefined
+export function _setFirebaseSA(sa?: string) { cgFirebaseSA = sa }
+
+// Tabel push_tokens dibuat otomatis bila belum ada.
+async function ensurePushTokensTable(db: D1Database) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS push_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`).run()
+}
+
+async function pushToUser(db: D1Database, userId: string, actorId: string, type: string, title: string, message: string, link: string) {
+  try {
+    await ensurePushTokensTable(db)
+    const rows = await db.prepare('SELECT token FROM push_tokens WHERE user_id = ?').bind(userId).all<{ token: string }>()
+    const tokens = (rows.results || []).map(r => r.token)
+    if (tokens.length === 0) return
+
+    if (!cgFirebaseSA) return // FCM belum dikonfigurasi
+
+    for (const token of tokens) {
+      try {
+        await sendPush(cgFirebaseSA, token, {
+          title,
+          body: message,
+          data: { type, link: link || '', actor_id: actorId || '' },
+        })
+      } catch (e: any) {
+        // FCM bukan-notif-notfound → "registration-token-not-registered" = token basi → hapus.
+        const msg = String(e?.message || e)
+        if (msg.includes('registration-token-not-registered') || msg.includes('UNREGISTERED')) {
+          await db.prepare('DELETE FROM push_tokens WHERE user_id = ? AND token = ?').bind(userId, token).run()
+        } else {
+          console.error('FCM push error:', msg)
+        }
+      }
+    }
+  } catch (e) {
+    console.error('pushToUser error:', e)
+  }
 }
 
 async function hashPassword(password: string) {
@@ -1732,9 +1783,34 @@ app.get('/chat/ws', async (c) => {
   return stub.fetch(newReq)
 })
 
+// ─── PUSH NOTIFICATION TOKENS ───
+app.post('/push/token', async (c) => {
+  const payload = c.get('jwtPayload')
+  const body = await c.req.json().catch(() => ({}))
+  const token = typeof body.token === 'string' ? body.token.trim() : ''
+  if (!token) return c.json({ error: 'Token wajib diisi' }, 400)
+
+  await ensurePushTokensTable(c.env.DB)
+  await c.env.DB.prepare(
+    'INSERT INTO push_tokens (user_id, token) VALUES (?, ?) ON CONFLICT(token) DO NOTHING'
+  ).bind(payload.id, token).run()
+  return c.json({ ok: true })
+})
+
+app.delete('/push/token', async (c) => {
+  const payload = c.get('jwtPayload')
+  const body = await c.req.json().catch(() => ({}))
+  const token = typeof body.token === 'string' ? body.token.trim() : ''
+  if (token) {
+    await ensurePushTokensTable(c.env.DB)
+    await c.env.DB.prepare('DELETE FROM push_tokens WHERE user_id = ? AND token = ?').bind(payload.id, token).run()
+  }
+  return c.json({ ok: true })
+})
+
 const workerRoutes = [
   '/auth/', '/partner/', '/transactions', '/savings', '/budgets', '/analytics/',
-  '/wishlists', '/folders', '/notes', '/chat/', '/notifications', '/profile', '/r2/'
+  '/wishlists', '/folders', '/notes', '/chat/', '/notifications', '/profile', '/r2/', '/push/'
 ]
 
 function isWorkerRoute(pathname: string) {
@@ -1743,6 +1819,7 @@ function isWorkerRoute(pathname: string) {
 
 export default {
   async fetch(request: Request, env: Bindings, ctx: ExecutionContext) {
+    _setFirebaseSA(env.FIREBASE_SERVICE_ACCOUNT)
     const url = new URL(request.url)
     if (isWorkerRoute(url.pathname)) return app.fetch(request, env, ctx)
     return env.ASSETS.fetch(request)
