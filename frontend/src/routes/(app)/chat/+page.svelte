@@ -68,22 +68,27 @@
     const wsUrl = API_URL.replace(/^http/, 'ws') + '/chat/ws';
     const params = new URLSearchParams({ token: auth.token || '' });
     if (savingId) params.set('saving_id', savingId);
-    ws = new WebSocket(`${wsUrl}?${params.toString()}`);
+    try {
+      ws = new WebSocket(`${wsUrl}?${params.toString()}`);
+    } catch (e) { ws = null; }
+    if (!ws) return;
     
     ws.onopen = () => { connected = true; reconnectAttempts = 0; };
-    ws.onclose = () => {
+    ws.onclose = async () => {
       connected = false;
-      if (!auth.token) return;              // sudah logout
-      if (isLeaving) return;                // sedang meninggalkan halaman
-      // Berhenti setelah beberapa kali gagal tanpa pernah terhubung
-      // → kemungkinan token tidak valid/kadaluarsa. Jangan reconnect selamanya.
-      if (reconnectAttempts >= 5) {
-        auth.logout();
-        goto('/login');
-        return;
+      if (!auth.token) return;
+      if (isLeaving) return;
+      // Verifikasi token lewat REST sebelum memutuskan reconnect
+      // (jika token invalid/expired untuk WebSocket, cek juga ke REST)
+      if (reconnectAttempts >= 3) {
+        try {
+          const check = await fetch(`${API_URL}/auth/me`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
+          if (!check.ok) { auth.logout(); goto('/login'); return; }
+        } catch (_) { /* network error — coba lagi */ }
+        // REST ok tapi WebSocket ditolak → mungkin masalah routing, coba lagi
       }
       if (!reconnectTimer) {
-        const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+        const delay = Math.min(1000 * 2 ** reconnectAttempts, 8000);
         reconnectAttempts += 1;
         reconnectTimer = setTimeout(() => {
           reconnectTimer = null;
