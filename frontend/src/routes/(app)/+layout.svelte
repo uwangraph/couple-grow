@@ -8,6 +8,7 @@
 
   import { toast } from '$lib/toast.svelte';
   import { readApiJson } from '$lib/api';
+  import { initPushNotifications } from '$lib/push.svelte';
 
   let { children } = $props();
 
@@ -28,6 +29,7 @@
     if (!auth.token) return;
     if (page.url.pathname === '/') goto('/home');
     checkForAppUpdate();
+    void initPushNotifications();
   });
 
   let currentPath = $derived(page.url.pathname);
