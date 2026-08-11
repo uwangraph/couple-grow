@@ -1,1 +1,4 @@
 .private-secrets/
+
+# Build artifacts
+/release/
