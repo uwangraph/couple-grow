@@ -1,2 +1,7 @@
 /build/*
 !/build/.npmkeep
+
+# Release keystore & signing credentials (RAHASIA — jangan commit)
+*.jks
+*.keystore
+keystore.properties
