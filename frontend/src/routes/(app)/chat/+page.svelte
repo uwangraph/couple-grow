@@ -41,6 +41,18 @@
   let longPressTimer: any = null;
   let pinnedMessage = $derived(messages.find(m => m.is_pinned));
 
+  // Posisi dinamis context-menu dekat bubble (tidak menutupi chat)
+  let menuStyle = $derived.by(() => {
+    if (!contextMenuVisible) return '';
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 480;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const cw = Math.min(300, vw - 16);
+    const ch = Math.min(430, vh - 16);
+    const mLeft = Math.max(8, Math.min(contextMenuPos.x, vw - cw - 8));
+    const mTop = Math.max(8, Math.min(contextMenuPos.y, vh - ch - 8));
+    return `left:${mLeft}px;top:${mTop}px;max-width:${cw}px;max-height:${ch}px;`;
+  });
+
   // Swipe-to-reply state
   let swipeMsgId = $state<number | null>(null);
   let swipeStartX = $state(0);
@@ -630,7 +642,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if contextMenuVisible && contextMessage}
   <div class="context-overlay" onclick={closeContextMenu}></div>
-  <div class="context-menu">
+  <div class="context-menu" style={menuStyle}>
     <!-- Emoji reactions bar -->
     <div class="reaction-bar">
       {#each ['❤️','👍','😂','😮','😢','🙏'] as emoji}
@@ -1296,24 +1308,22 @@
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
   /* Context Menu */
-  .context-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.2); z-index: 100; }
-  /* Context Menu — WhatsApp style centered bottom sheet */
+  .context-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: transparent; z-index: 100; }
+  /* Context Menu — posisi dinamis dekat bubble */
   .context-menu {
     position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
     background: white;
     border-radius: 16px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-    width: min(340px, 90vw);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    width: min(300px, 90vw);
     z-index: 101;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    animation: scale-in 0.18s cubic-bezier(0.34,1.56,0.64,1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: menu-in 0.16s cubic-bezier(0.34,1.56,0.64,1);
   }
-  @keyframes scale-in { from { opacity: 0; transform: translate(-50%,-50%) scale(0.92); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+  @keyframes menu-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
 
   /* Reaction Bar */
   .reaction-bar { display: flex; align-items: center; justify-content: space-around; padding: 14px 12px 10px; gap: 4px; }
