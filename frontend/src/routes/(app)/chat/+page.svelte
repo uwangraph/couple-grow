@@ -4,9 +4,11 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { onMount, onDestroy, tick } from 'svelte';
-  import { MessageSquare, ChevronRight, PiggyBank } from '@lucide/svelte';
+  import { MessageSquare, ChevronRight } from '@lucide/svelte';
   import Icon from '$lib/Icon.svelte';
   import MediaPreview from '$lib/components/MediaPreview.svelte';
+  import ForwardModal from '$lib/components/chat/ForwardModal.svelte';
+  import RoomInfoPanel from '$lib/components/chat/RoomInfoPanel.svelte';
   import { Capacitor } from '@capacitor/core';
 
   let savingId = $derived(page.url.searchParams.get('saving_id'));
@@ -27,19 +29,20 @@
   let reconnectAttempts = 0;
   let isLeaving = false;
   let toast = $state<string | null>(null);
-  let fileInput: HTMLInputElement;
+  let imageInput: HTMLInputElement;
+  let docInput: HTMLInputElement;
   let cameraInput: HTMLInputElement;
-  
+
   let replyingTo = $state<any | null>(null);
-  let attachment = $state<File | null>(null);
-  let attachmentPreview = $state<string | null>(null);
-  
-  let isRecording = $state(false);
-  let mediaRecorder = $state<MediaRecorder | null>(null);
-  let audioChunks = $state<Blob[]>([]);
-  
+
+  // Lampiran bisa lebih dari satu; teks yang diketik jadi caption lampiran pertama.
+  type PendingFile = { file: File; previewUrl: string; type: 'image' | 'audio' | 'file' };
+  let pendingFiles = $state<PendingFile[]>([]);
+
+  let isSending = $state(false);
+  let isUploading = $state(false);
+
   let contextMenuVisible = $state(false);
-  let contextMenuPos = $state({ x: 0, y: 0 });
   let contextMessage = $state<any | null>(null);
   let longPressTimer: any = null;
   // Sematan yang sudah lewat masa berlakunya tidak ditampilkan.
@@ -51,9 +54,8 @@
   // Context menu membuka ke atas atau bawah dari bubble (konsep khwarizmi)
   let menuDirection = $state<'up' | 'down'>('down');
 
-
   // Swipe-to-reply state
-  let swipeMsgId = $state<number | null>(null);
+  let swipeMsgId = $state<number | string | null>(null);
   let swipeStartX = $state(0);
   let swipeStartY = $state(0);
   let swipeCurrentX = $state(0);
@@ -108,31 +110,65 @@
   // Media preview state
   let mediaPreview = $state<{ type: 'image'|'file'|'audio'; url: string; name?: string; caption?: string|null } | null>(null);
 
-  // Emoji picker state
+  // ── Emoji picker berkategori ───────────────────────────────────
   let showEmojiPicker = $state(false);
-  const emojiList = ['😀','😄','😁','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😎','🥳','🤩','😏','😢','😭','😤','😡','🤯','😳','🥺','🤗','🤔','🤭','😐','🙄','😴','🤤','🤢','🤠','👻','👽','🤖','💀','👋','👍','👎','👌','✌️','🤞','🤝','🙏','💪','🫶','❤️','💔','💯','✨','🔥','🎉','🎊','🎁','🌈','⭐','🌙','☀️','☕','🍕','🍔','🍩','🍺','⚽','🏆','🎮','🎵','🎶','📚','💡','💰','📅','📍','🚀','✈️','🌍','🍀'];
+  type EmojiCategory = 'wajah' | 'hewan' | 'makanan' | 'aktivitas' | 'perjalanan' | 'benda' | 'simbol';
+  let emojiCategory = $state<EmojiCategory>('wajah');
+  const emojiGroups: Record<EmojiCategory, string[]> = {
+    wajah: ['😀','😄','😁','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😛','😜','🤪','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','😢','😭','😤','😠','😡','🤯','😳','🥵','🥶','😱','😨','😰','😥','🥺','🤗','🤔','🤭','🤫','😐','😑','🙄','😮','😲','🥱','😴','🤤','😪','🤐','🤢','🤮','🤧','😷','🤒','🤕','🤠','🤡','👻','👽','🤖','💀','👋','✋','👍','👎','👌','🤌','✌️','🤞','🤟','🤙','👏','🙌','🤝','🙏','💪','🫶'],
+    hewan: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🐤','🦄','🐝','🐛','🦋','🐌','🐞','🐢','🐍','🦖','🐙','🦑','🦀','🐠','🐬','🐳','🦈','🌸','🌹','🌻','🌲','🌵','🍀','🌈','☀️','🌙','⭐','🌍'],
+    makanan: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🍆','🥔','🥕','🌽','🥦','🥗','🍞','🥐','🧀','🥚','🍳','🥞','🍔','🍟','🍕','🌭','🍿','🍣','🍜','🍝','🍩','🍪','🍫','🍬','🍭','☕','🍰','🎂','🧋','🍺'],
+    aktivitas: ['⚽','🏀','🏈','⚾','🎾','🏐','🎱','🏓','🏸','🥊','🥋','🛹','🎿','🏆','🥇','🥈','🥉','🎯','🎮','🕹️','🎲','🧩','🎭','🎨','🎬','🎤','🎧','🎹','🥁','🎺','🎸','🎻','🎉','🎊','🎁','🎈','🧸','🎳','🎣','🏹'],
+    perjalanan: ['🚗','🚕','🚌','🏎️','🚓','🚑','🚒','🚚','🛵','🚲','🚏','✈️','🛫','🛬','🚀','🛸','🚁','⛵','🚤','⚓','🏠','🏢','🏫','🏰','🗼','🌋','🏖️','🏝️','🌅','🌃','🗺️','🧭','📍'],
+    benda: ['⌚','📱','💻','⌨️','🖥️','🖨️','📷','📸','📹','🎥','📺','📻','🔋','🔌','💡','🔦','📚','📖','📝','📌','📎','📁','📂','📅','⏰','🔒','🔑','🔨','🛠️','🧰','💊','💰','💳','📦','🔍','🔬','🔭','📡'],
+    simbol: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💯','✨','🔥','🌟','⚡','💥','💫','✅','❌','❓','❗','⭕','🔔','🔕','♻️','🔞','🆗','🆕','🔣','#️⃣','✔️'],
+  };
+  const emojiTabs: [EmojiCategory, string][] = [
+    ['wajah', '😀'], ['hewan', '🐶'], ['makanan', '🍔'], ['aktivitas', '⚽'],
+    ['perjalanan', '🚗'], ['benda', '💡'], ['simbol', '❤️'],
+  ];
 
-  // Camera (web) state — getUserMedia untuk desktop
+  // ── Menu lampiran ──────────────────────────────────────────────
+  let showAttachMenu = $state(false);
+
+  function toggleEmojiPicker() {
+    showEmojiPicker = !showEmojiPicker;
+    if (showEmojiPicker) showAttachMenu = false;
+  }
+
+  function toggleAttachMenu() {
+    showAttachMenu = !showAttachMenu;
+    if (showAttachMenu) showEmojiPicker = false;
+  }
+
+  // ── Kamera ─────────────────────────────────────────────────────
   let showCameraModal = $state(false);
   let cameraStream = $state<MediaStream | null>(null);
   let cameraError = $state('');
   let cameraMode = $state<'viewfinder' | 'preview'>('viewfinder');
   let capturedPhoto = $state<string | null>(null);
+  let cameraFacing = $state<'environment' | 'user'>('environment');
 
   async function openCamera() {
+    showAttachMenu = false;
+    showEmojiPicker = false;
     // Di platform native (Capacitor/Android), pakai input capture → buka kamera native.
     if (Capacitor.isNativePlatform()) {
       cameraInput.click();
       return;
     }
-    // Di web/desktop: buka kamera via getUserMedia.
     cameraMode = 'viewfinder';
     capturedPhoto = null;
-    cameraError = '';
     showCameraModal = true;
+    await startCameraStream();
+  }
+
+  async function startCameraStream() {
+    cameraError = '';
     try {
+      cameraStream?.getTracks().forEach(t => t.stop());
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+        video: { facingMode: { ideal: cameraFacing } },
         audio: false,
       });
       cameraStream = stream;
@@ -150,6 +186,11 @@
     }
   }
 
+  async function switchCamera() {
+    cameraFacing = cameraFacing === 'environment' ? 'user' : 'environment';
+    await startCameraStream();
+  }
+
   function capturePhotoFromCamera() {
     const video = document.getElementById('camera-video') as HTMLVideoElement | null;
     if (!video || !video.videoWidth) return;
@@ -158,18 +199,23 @@
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    // Kamera depan tampil dicermin, jadi hasil jepretan ikut dicermin.
+    if (cameraFacing === 'user') {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
+    capturedPhoto = canvas.toDataURL('image/jpeg', 0.9);
     cameraMode = 'preview';
   }
 
   function useCapturedPhoto() {
     if (!capturedPhoto) return;
-    // Konversi dataURL ke File, lalu set sebagai attachment.
+    // Konversi dataURL ke File, lalu tambahkan ke daftar lampiran.
     fetch(capturedPhoto)
       .then(res => res.blob())
       .then((blob) => {
-        setAttachment(new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' }));
+        addPendingFile(new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' }));
         closeCameraModal();
       })
       .catch(() => closeCameraModal());
@@ -198,32 +244,250 @@
     cameraMode = 'viewfinder';
   }
 
-  /** Pasang file sebagai lampiran; caption tetap diketik pengguna sendiri. */
-  function setAttachment(file: File) {
-    if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
-    attachment = file;
-    attachmentPreview = URL.createObjectURL(file);
-  }
-
-  /** Tipe pesan dari MIME lampiran (audio wajib 'audio' agar tampil sbg VN). */
-  function messageTypeOf(file: File | null): string {
-    if (!file) return 'text';
+  // ── Lampiran ───────────────────────────────────────────────────
+  function fileKind(file: File): 'image' | 'audio' | 'file' {
     if (file.type.startsWith('image/')) return 'image';
     if (file.type.startsWith('audio/')) return 'audio';
     return 'file';
   }
 
+  function addPendingFile(file: File) {
+    if (file.size > MAX_UPLOAD_BYTES) return showToast('Ukuran file maksimal 15 MB');
+    if (pendingFiles.length >= 10) return showToast('Maksimal 10 lampiran sekaligus');
+    pendingFiles = [...pendingFiles, { file, previewUrl: URL.createObjectURL(file), type: fileKind(file) }];
+  }
+
+  function removePendingFile(index: number) {
+    const item = pendingFiles[index];
+    if (item) URL.revokeObjectURL(item.previewUrl);
+    pendingFiles = pendingFiles.filter((_, i) => i !== index);
+  }
+
+  function clearPendingFiles() {
+    for (const item of pendingFiles) URL.revokeObjectURL(item.previewUrl);
+    pendingFiles = [];
+  }
+
+  function handleFileSelect(e: any) {
+    const files: File[] = Array.from(e.target.files || []);
+    e.target.value = '';
+    for (const file of files) addPendingFile(file);
+    showAttachMenu = false;
+  }
+
+  /** metadata pesan (caption, nama file, durasi VN, waveform). */
+  function parseMeta(msg: any): Record<string, any> {
+    if (!msg?.metadata) return {};
+    if (typeof msg.metadata === 'object') return msg.metadata;
+    try {
+      const obj = JSON.parse(msg.metadata);
+      return obj && typeof obj === 'object' ? obj : {};
+    } catch (e) { return {}; }
+  }
+
+  function fileLabel(msg: any): string {
+    const meta = parseMeta(msg);
+    if (meta.name) return meta.name;
+    return msg.message && msg.message !== VOICE_NOTE_LABEL ? msg.message : 'File';
+  }
+
+  function formatBytes(bytes: number): string {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
   function openMediaPreview(msg: any) {
     if (!msg.file_url) return;
     const type = (msg.type === 'image' || msg.type === 'audio') ? msg.type : 'file';
-    const caption = msg.message && msg.message !== VOICE_NOTE_LABEL ? msg.message : null;
+    const meta = parseMeta(msg);
+    const caption = meta.caption ?? (msg.message && msg.message !== VOICE_NOTE_LABEL && msg.message !== meta.name ? msg.message : null);
     mediaPreview = {
       type,
       url: msg.file_url,
-      name: caption || undefined,
+      name: meta.name || caption || undefined,
       caption,
     };
   }
+
+  // ── Voice note ─────────────────────────────────────────────────
+  let isRecording = $state(false);
+  let mediaRecorder: MediaRecorder | null = null;
+  let audioChunks: Blob[] = [];
+  let recordingSeconds = $state(0);
+  let recordingWaveform = $state<number[]>([]);
+  let recordingTimer: ReturnType<typeof setInterval> | null = null;
+  let pendingVoiceNote = $state<{ blob: Blob; url: string; duration: number; waveform: number[] } | null>(null);
+  let voiceNotePlaying = $state(false);
+  let voiceNotePlayer: HTMLAudioElement | null = null;
+
+  function formatRecordingTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  async function startRecording() {
+    if (pendingVoiceNote) cancelPendingVoiceNote();
+    showAttachMenu = false;
+    showEmojiPicker = false;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Pilih MIME yang didukung browser (webm/opus di Chrome, mp4/aac di Safari)
+      const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+      const mimeType = typeof MediaRecorder !== 'undefined'
+        ? candidates.find(t => MediaRecorder.isTypeSupported(t)) || ''
+        : '';
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      audioChunks = [];
+
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const blobType = recorder.mimeType || mimeType || 'audio/webm';
+
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
+      recorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        audioCtx.close().catch(() => {});
+        const blob = new Blob(audioChunks, { type: blobType });
+        // Simpan sebagai pratinjau, jangan langsung kirim (pola WhatsApp).
+        pendingVoiceNote = { blob, url: URL.createObjectURL(blob), duration: recordingSeconds, waveform: [...recordingWaveform] };
+        voiceNotePlaying = false;
+        if (voiceNotePlayer) { voiceNotePlayer.pause(); voiceNotePlayer = null; }
+      };
+
+      mediaRecorder = recorder;
+      isRecording = true;
+      recordingSeconds = 0;
+      recordingWaveform = [];
+      recorder.start();
+      recordingTimer = setInterval(() => {
+        recordingSeconds++;
+        analyser.getByteFrequencyData(dataArray);
+        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        recordingWaveform = [...recordingWaveform.slice(-29), Math.min(100, Math.max(12, (avg / 128) * 100))];
+      }, 1000);
+    } catch (e) {
+      showToast('Gagal mengakses mikrofon');
+    }
+  }
+
+  function stopRecording() {
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+    if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+    try { if (mediaRecorder.state === 'recording') mediaRecorder.requestData(); } catch (e) {}
+    mediaRecorder.stop();
+    isRecording = false;
+  }
+
+  function toggleVoiceNotePlay() {
+    if (!pendingVoiceNote) return;
+    if (voiceNotePlaying && voiceNotePlayer) {
+      voiceNotePlayer.pause();
+      voiceNotePlaying = false;
+      return;
+    }
+    if (!voiceNotePlayer) {
+      voiceNotePlayer = new Audio(pendingVoiceNote.url);
+      voiceNotePlayer.onended = () => { voiceNotePlaying = false; voiceNotePlayer = null; };
+      voiceNotePlayer.onerror = () => { voiceNotePlaying = false; voiceNotePlayer = null; };
+    }
+    voiceNotePlayer.play().catch(() => { voiceNotePlaying = false; });
+    voiceNotePlaying = true;
+  }
+
+  function cancelPendingVoiceNote() {
+    if (voiceNotePlayer) { voiceNotePlayer.pause(); voiceNotePlayer = null; }
+    voiceNotePlaying = false;
+    if (pendingVoiceNote) URL.revokeObjectURL(pendingVoiceNote.url);
+    pendingVoiceNote = null;
+  }
+
+  async function sendPendingVoiceNote() {
+    const vn = pendingVoiceNote;
+    if (!vn) return;
+    const ext = vn.blob.type.includes('mp4') ? 'm4a' : vn.blob.type.includes('ogg') ? 'ogg' : 'webm';
+    const file = new File([vn.blob], `vn_${Date.now()}.${ext}`, { type: vn.blob.type || 'audio/webm' });
+    const meta = { duration: vn.duration, waveform: vn.waveform };
+    cancelPendingVoiceNote();
+    await sendOne(file, VOICE_NOTE_LABEL, 'audio', meta);
+  }
+
+  // ── Pemutar voice note di bubble ───────────────────────────────
+  let playingAudioId = $state<number | string | null>(null);
+  let audioProgress = $state(0);
+  let audioPlayer: HTMLAudioElement | null = null;
+
+  function toggleAudio(msg: any) {
+    if (playingAudioId === msg.id) {
+      audioPlayer?.pause();
+      playingAudioId = null;
+      return;
+    }
+    audioPlayer?.pause();
+    playingAudioId = msg.id;
+    audioProgress = 0;
+    audioPlayer = new Audio(msg.file_url);
+    audioPlayer.onended = () => { playingAudioId = null; audioProgress = 0; };
+    audioPlayer.onerror = () => { playingAudioId = null; showToast('Gagal memutar voice note'); };
+    audioPlayer.ontimeupdate = () => {
+      if (audioPlayer?.duration) audioProgress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+    };
+    audioPlayer.play().catch(() => { playingAudioId = null; });
+  }
+
+  /** Waveform stabil per pesan: dari metadata bila ada, kalau tidak dari id. */
+  function waveformFor(msg: any): number[] {
+    const meta = parseMeta(msg);
+    if (Array.isArray(meta.waveform) && meta.waveform.length > 0) return meta.waveform;
+    const seed = String(msg.id).split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return Array.from({ length: 24 }, (_, i) => 20 + ((seed * (i + 3)) % 70));
+  }
+
+  function audioDurationLabel(msg: any): string {
+    const meta = parseMeta(msg);
+    const duration = Number(meta.duration);
+    return Number.isFinite(duration) && duration > 0 ? formatRecordingTime(duration) : '';
+  }
+
+  // ── Indikator mengetik ─────────────────────────────────────────
+  let partnerTyping = $state(false);
+  let typingSentAt = 0;
+  let typingStopTimer: ReturnType<typeof setTimeout> | null = null;
+  let partnerTypingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function handleTyping() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    // Kirim ulang paling cepat tiap 2 detik supaya tidak membanjiri koneksi.
+    const now = Date.now();
+    if (now - typingSentAt > 2000) {
+      typingSentAt = now;
+      ws.send(JSON.stringify({ type: 'typing', data: { is_typing: true } }));
+    }
+    if (typingStopTimer) clearTimeout(typingStopTimer);
+    typingStopTimer = setTimeout(() => {
+      typingSentAt = 0;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'typing', data: { is_typing: false } }));
+      }
+    }, 2500);
+  }
+
+  function stopTypingSignal() {
+    if (typingStopTimer) { clearTimeout(typingStopTimer); typingStopTimer = null; }
+    typingSentAt = 0;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'typing', data: { is_typing: false } }));
+    }
+  }
+
+  // ── Riwayat & pagination ───────────────────────────────────────
+  let hasMore = $state(false);
+  let isLoadingMore = $state(false);
 
   onMount(async () => {
     if (!auth.token) return goto('/login');
@@ -245,10 +509,15 @@
   onDestroy(() => {
     isLeaving = true;
     if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (recordingTimer) clearInterval(recordingTimer);
+    if (typingStopTimer) clearTimeout(typingStopTimer);
+    if (partnerTypingTimer) clearTimeout(partnerTypingTimer);
     if (ws) ws.close();
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(t => t.stop());
-    }
+    audioPlayer?.pause();
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    cancelPendingVoiceNote();
+    clearPendingFiles();
+    if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
     if (documentDownListener) {
       window.removeEventListener('mousedown', documentDownListener);
       window.removeEventListener('touchstart', documentDownListener);
@@ -257,12 +526,13 @@
 
   async function fetchHistory() {
     try {
-      let url = `${API_URL}/chat/history`;
-      if (savingId) url += `?saving_id=${savingId}`;
+      let url = `${API_URL}/chat/history?limit=40`;
+      if (savingId) url += `&saving_id=${savingId}`;
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${auth.token}` } });
-      const data = await readApiJson<{ room_id?: string; messages?: any[]; error?: string }>(res);
+      const data = await readApiJson<{ room_id?: string; messages?: any[]; has_more?: boolean; error?: string }>(res);
       if (res.ok) {
         roomId = data.room_id || null;
+        hasMore = !!data.has_more;
         // Pesan optimistik yang belum di-ack dipertahankan di akhir daftar.
         const pending = messages.filter(m => m._pending);
         messages = [...(data.messages || []), ...pending];
@@ -273,6 +543,37 @@
     } catch (e) {
       showToast('Gagal memuat riwayat chat');
     }
+  }
+
+  /** Muat pesan yang lebih lama, pertahankan posisi baca. */
+  async function loadOlderMessages() {
+    if (isLoadingMore || !hasMore) return;
+    const oldest = messages.find(m => typeof m.id === 'number');
+    if (!oldest) return;
+    isLoadingMore = true;
+    const previousHeight = chatContainer?.scrollHeight ?? 0;
+    try {
+      let url = `${API_URL}/chat/history?limit=40&before=${oldest.id}`;
+      if (savingId) url += `&saving_id=${savingId}`;
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${auth.token}` } });
+      const data = await readApiJson<{ messages?: any[]; has_more?: boolean; error?: string }>(res);
+      if (!res.ok) throw new Error(data?.error || 'Gagal memuat pesan lama');
+      const older = data.messages || [];
+      hasMore = !!data.has_more;
+      if (older.length > 0) {
+        messages = [...older, ...messages];
+        await tick();
+        if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight - previousHeight;
+      }
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal memuat pesan lama');
+    } finally {
+      isLoadingMore = false;
+    }
+  }
+
+  function handleScroll() {
+    if (chatContainer && chatContainer.scrollTop < 60) loadOlderMessages();
   }
 
   function sendReadReceipt() {
@@ -297,7 +598,7 @@
       ws = new WebSocket(`${wsUrl}?${params.toString()}`);
     } catch (e) { ws = null; }
     if (!ws) return;
-    
+
     ws.onopen = async () => {
       connected = true;
       const wasReconnect = reconnectAttempts > 0;
@@ -308,6 +609,7 @@
     };
     ws.onclose = async () => {
       connected = false;
+      partnerTyping = false;
       if (!auth.token) return;
       if (isLeaving) return;
       // Verifikasi token lewat REST sebelum memutuskan reconnect
@@ -329,7 +631,7 @@
       }
     };
     ws.onerror = () => { connected = false; };
-    
+
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
@@ -347,6 +649,11 @@
           messages = messages.map(m => m.id === msg.data.id ? { ...m, message: msg.data.message, is_edited: true } : m);
         } else if (msg.type === 'react') {
           messages = messages.map(m => m.id === msg.data.id ? { ...m, reactions: msg.data.reactions } : m);
+        } else if (msg.type === 'typing') {
+          partnerTyping = !!msg.data?.is_typing;
+          if (partnerTypingTimer) clearTimeout(partnerTypingTimer);
+          // Jaring pengaman bila sinyal "berhenti mengetik" tidak pernah sampai.
+          if (partnerTyping) partnerTypingTimer = setTimeout(() => { partnerTyping = false; }, 6000);
         } else if (msg.type === 'read') {
           // Pesan dari kita yang sudah dibaca pasangan → 2 centang biru
           const lastId = msg.data?.last_id;
@@ -374,6 +681,7 @@
           }
           if (isMine || wasAtBottom) scrollToBottom();
           if (!isMine) {
+            partnerTyping = false;
             showToast(`Pesan baru${incoming.type !== 'text' ? ' (' + incoming.type + ')' : ': "' + incoming.message + '"'}`);
             // Beri tahu pasangan bahwa pesan mereka sudah terbaca
             sendReadReceipt();
@@ -387,7 +695,6 @@
     if (msg.is_deleted) return;
     longPressTimer = setTimeout(() => {
       const touch = e.touches ? e.touches[0] : e;
-      contextMenuPos = { x: touch.clientX, y: touch.clientY };
       // Tentukan arah buka menu: jika bubble dekat bawah, buka ke atas
       const el = document.getElementById('msg-' + msg.id);
       if (el && typeof window !== 'undefined') {
@@ -415,43 +722,32 @@
     setTimeout(() => { toast = null; }, 3000);
   }
 
-  async function sendMessage(e?: Event) {
-    if (e) e.preventDefault();
+  // ── Kirim pesan ────────────────────────────────────────────────
 
-    const pendingFile = attachment;
-    const msgType = pendingFile ? messageTypeOf(pendingFile) : 'text';
-    // Teks yang diketik menjadi caption lampiran; bila kosong pakai nama file
-    // (voice note memakai labelnya sendiri).
-    let msgText = newMessage.trim();
-    if (!msgText && pendingFile) {
-      msgText = msgType === 'audio' ? VOICE_NOTE_LABEL : pendingFile.name;
-    }
-    if (!msgText && !pendingFile) return;
-
+  /** Unggah satu file (bila ada) lalu kirim satu pesan lewat WebSocket. */
+  async function sendOne(file: File | null, text: string, type: string, extraMeta: Record<string, any> = {}, replyId: number | null = null) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       showToast('Chat sedang menghubungkan ulang, coba lagi sebentar');
-      return;
+      return false;
     }
 
     const clientId = `c${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const replyId = replyingTo?.id ?? null;
-    const localPreview = attachmentPreview;
-    const draftText = newMessage;
-    const draftReply = replyingTo;
-
-    newMessage = '';
-    replyingTo = null;
-    // Preview lokal masih dipakai bubble optimistik, jadi jangan di-revoke di sini.
-    attachment = null;
-    attachmentPreview = null;
+    const localPreview = file ? URL.createObjectURL(file) : null;
+    const meta: Record<string, any> = { ...extraMeta };
+    if (file) {
+      meta.name = file.name;
+      meta.size = file.size;
+    }
+    if (text && type !== 'text') meta.caption = text;
 
     messages = [...messages, {
       id: clientId,
       client_id: clientId,
       sender_id: auth.user?.id,
-      message: msgText,
-      type: msgType,
+      message: text,
+      type,
       file_url: localPreview,
+      metadata: meta,
       reply_to_id: replyId,
       created_at: new Date().toISOString(),
       _pending: true // belum ada ack dari server → 1 centang
@@ -459,9 +755,10 @@
     scrollToBottom();
 
     let uploadedUrl: string | null = null;
-    if (pendingFile) {
+    if (file) {
+      isUploading = true;
       const formData = new FormData();
-      formData.append('file', pendingFile);
+      formData.append('file', file);
       try {
         const uploadRes = await fetch(`${API_URL}/chat/upload`, {
           method: 'POST',
@@ -472,15 +769,12 @@
         if (!uploadRes.ok || !uploadData.url) throw new Error(uploadData?.error || 'Upload gagal');
         uploadedUrl = uploadData.url;
       } catch (err: any) {
-        // Gagal: buang placeholder dan kembalikan draft agar bisa dikirim ulang.
         messages = messages.filter(m => m.client_id !== clientId);
         if (localPreview) URL.revokeObjectURL(localPreview);
-        attachment = pendingFile;
-        attachmentPreview = URL.createObjectURL(pendingFile);
-        newMessage = draftText;
-        replyingTo = draftReply;
         showToast(err?.message || 'Gagal mengunggah file');
-        return;
+        return false;
+      } finally {
+        isUploading = false;
       }
     }
 
@@ -488,16 +782,59 @@
       messages = messages.filter(m => m.client_id !== clientId);
       if (localPreview) URL.revokeObjectURL(localPreview);
       showToast('Koneksi terputus, pesan tidak terkirim');
-      return;
+      return false;
     }
 
     ws.send(JSON.stringify({ type: 'chat', data: {
       client_id: clientId,
-      message: msgText,
-      type: msgType,
+      message: text,
+      type,
       file_url: uploadedUrl,
+      metadata: meta,
       reply_to_id: replyId
     }}));
+    return true;
+  }
+
+  async function sendMessage(e?: Event) {
+    if (e) e.preventDefault();
+    if (isSending) return;
+
+    // Voice note pratinjau punya alur kirimnya sendiri.
+    if (pendingVoiceNote) return sendPendingVoiceNote();
+
+    const files = [...pendingFiles];
+    const text = newMessage.trim();
+    if (!text && files.length === 0) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      showToast('Chat sedang menghubungkan ulang, coba lagi sebentar');
+      return;
+    }
+
+    const replyId = replyingTo?.id ?? null;
+    isSending = true;
+    newMessage = '';
+    replyingTo = null;
+    pendingFiles = [];
+    stopTypingSignal();
+
+    try {
+      if (files.length === 0) {
+        const ok = await sendOne(null, text, 'text', {}, replyId);
+        if (!ok) newMessage = text;
+        return;
+      }
+      // Teks yang diketik menjadi caption lampiran pertama (pola khwarizmi).
+      for (let i = 0; i < files.length; i++) {
+        const item = files[i];
+        const caption = i === 0 ? text : '';
+        const label = caption || (item.type === 'audio' ? VOICE_NOTE_LABEL : item.file.name);
+        await sendOne(item.file, label, item.type, {}, i === 0 ? replyId : null);
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    } finally {
+      isSending = false;
+    }
   }
 
   async function deleteMessage(id: number | string) {
@@ -620,6 +957,102 @@
       .catch(() => showToast('Gagal menyalin pesan'));
   }
 
+  // ── Teruskan pesan ─────────────────────────────────────────────
+  let showForwardModal = $state(false);
+  let forwardSource = $state<any | null>(null);
+  let forwardRooms = $state<any[]>([]);
+  let isForwarding = $state(false);
+
+  async function openForward(msg: any) {
+    if (typeof msg.id !== 'number' || msg.is_deleted) return;
+    forwardSource = msg;
+    showForwardModal = true;
+    try {
+      const res = await fetch(`${API_URL}/chat/rooms`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
+      const data = await readApiJson<{ rooms?: any[] }>(res);
+      // Room yang sedang dibuka tidak perlu jadi tujuan.
+      forwardRooms = (data.rooms || []).filter(r => String(r.saving_id ?? '') !== String(savingId ?? ''));
+    } catch (e) {
+      forwardRooms = [];
+      showToast('Gagal memuat daftar chat');
+    }
+  }
+
+  async function submitForward(targets: any[]) {
+    if (!forwardSource || targets.length === 0) return;
+    isForwarding = true;
+    try {
+      const res = await fetch(`${API_URL}/chat/forward`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message_id: forwardSource.id,
+          targets: targets.map(t => ({ saving_id: t.saving_id })),
+        }),
+      });
+      const data = await readApiJson<{ forwarded?: any[]; error?: string }>(res);
+      if (!res.ok) throw new Error(data?.error || 'Gagal meneruskan pesan');
+      showToast(`Pesan diteruskan ke ${data.forwarded?.length ?? 0} chat`);
+      showForwardModal = false;
+      forwardSource = null;
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal meneruskan pesan');
+    } finally {
+      isForwarding = false;
+    }
+  }
+
+  // ── Panel info & aksi room ─────────────────────────────────────
+  let showRoomInfo = $state(false);
+
+  let starredMessages = $derived(messages.filter(m => m.is_starred && !m.is_deleted));
+  let mediaMessages = $derived(messages.filter(m => m.type === 'image' && m.file_url && !m.is_deleted));
+  let fileMessages = $derived(messages.filter(m => (m.type === 'file' || m.type === 'audio') && m.file_url && !m.is_deleted));
+
+  async function clearChat(includeStarred: boolean) {
+    try {
+      const res = await fetch(`${API_URL}/chat/clear`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ saving_id: savingId, include_starred: includeStarred }),
+      });
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data?.error || 'Gagal membersihkan chat');
+      // Pesan berbintang tetap ada kecuali diminta ikut dibersihkan.
+      messages = includeStarred ? [] : messages.filter(m => m.is_starred && !m.is_deleted);
+      hasMore = false;
+      showRoomInfo = false;
+      showToast('Chat dibersihkan untuk kamu');
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal membersihkan chat');
+    }
+  }
+
+  async function unstarAll() {
+    try {
+      const res = await fetch(`${API_URL}/chat/unstar-all`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ saving_id: savingId }),
+      });
+      const data = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data?.error || 'Gagal melepas bintang');
+      messages = messages.map(m => m.is_starred ? { ...m, is_starred: 0 } : m);
+      showToast('Semua bintang dilepas');
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal melepas bintang');
+    }
+  }
+
+  function jumpToMessage(id: number | string) {
+    showRoomInfo = false;
+    setTimeout(() => {
+      const el = document.getElementById('msg-' + id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      else showToast('Pesan ada di riwayat lama, gulir ke atas untuk memuatnya');
+    }, 60);
+  }
+
   function getReactionSummary(reactionsStr: string | null): {emoji: string, count: number}[] {
     if (!reactionsStr) return [];
     const obj = parseReactions(reactionsStr);
@@ -638,7 +1071,7 @@
 
     const isToday = d.toDateString() === today.toDateString();
     const isYesterday = d.toDateString() === yesterday.toDateString();
-    
+
     if (isToday) return 'Hari ini';
     if (isYesterday) return 'Kemarin';
 
@@ -664,46 +1097,10 @@
     return result;
   });
 
-  function handleFileSelect(e: any) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (file.size > MAX_UPLOAD_BYTES) return showToast('Ukuran file maksimal 15 MB');
-    setAttachment(file);
-  }
-
   function handleCameraSelect(e: any) {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file) return;
-    if (file.size > MAX_UPLOAD_BYTES) return showToast('Ukuran file maksimal 15 MB');
-    setAttachment(file);
-  }
-
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const file = new File([audioBlob], `voice_note_${Date.now()}.webm`, { type: 'audio/webm' });
-        setAttachment(file);
-      };
-      mediaRecorder.start();
-      isRecording = true;
-    } catch (e) {
-      showToast('Gagal mengakses mikrofon');
-    }
-  }
-
-  function stopRecording() {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      isRecording = false;
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
-    }
+    if (file) addPendingFile(file);
   }
 
   function handleReply(msg: any) {
@@ -712,7 +1109,7 @@
 
   function addEmoji(emoji: string) {
     newMessage += emoji;
-    showEmojiPicker = false;
+    handleTyping();
   }
 
   async function scrollToBottom() {
@@ -807,7 +1204,7 @@
       {:else if cameraMode === 'preview' && capturedPhoto}
         <img src={capturedPhoto} alt="Foto" class="cam-photo" />
       {:else}
-        <video id="camera-video" class="cam-video" autoplay playsinline></video>
+        <video id="camera-video" class="cam-video {cameraFacing === 'user' ? 'cam-video--mirror' : ''}" autoplay playsinline></video>
         <div class="cam-loading">
           <p>Menyiapkan kamera...</p>
         </div>
@@ -819,6 +1216,10 @@
         <button type="button" class="cam-btn cam-btn--ghost" onclick={retakePhoto}>Ulangi</button>
         <button type="button" class="cam-btn cam-btn--primary" onclick={useCapturedPhoto}>Gunakan Foto</button>
       {:else if !cameraError}
+        <button type="button" class="cam-btn cam-btn--ghost" onclick={switchCamera} aria-label="Ganti kamera depan/belakang">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+          {cameraFacing === 'user' ? 'Belakang' : 'Depan'}
+        </button>
         <button type="button" class="cam-btn cam-btn--primary" onclick={capturePhotoFromCamera}>
           <span class="cam-shutter"></span> Jepret
         </button>
@@ -849,19 +1250,27 @@
 
       <div class="header-info">
         <h2 class="header-title">{chatTitle}</h2>
-        <p class="header-status {connected ? 'header-status--online' : 'header-status--offline'}">
-          <span class="status-dot"></span>
-          {chatSubtitle} • {connected ? 'Terhubung' : 'Offline'}
-        </p>
+        {#if partnerTyping}
+          <p class="header-status header-status--typing">
+            <span class="typing-dots"><span></span><span></span><span></span></span>
+            sedang mengetik...
+          </p>
+        {:else}
+          <p class="header-status {connected ? 'header-status--online' : 'header-status--offline'}">
+            <span class="status-dot"></span>
+            {chatSubtitle} • {connected ? 'Terhubung' : 'Offline'}
+          </p>
+        {/if}
       </div>
+
+      <button class="header-action" onclick={() => (showRoomInfo = true)} aria-label="Info chat">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>
+      </button>
     </div>
   </div>
   
   {#if pinnedMessage && !pinnedMessage.is_deleted}
-    <div class="pinned-header" onclick={() => {
-      const el = document.getElementById('msg-' + pinnedMessage.id);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }}>
+    <button type="button" class="pinned-header" onclick={() => jumpToMessage(pinnedMessage.id)}>
       <div class="pinned-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17H19M12 17V3M9 3h6"/></svg>
       </div>
@@ -869,11 +1278,19 @@
         <strong>Pesan Disematkan</strong>
         <p>{pinnedMessage.message || 'Media'}</p>
       </div>
-    </div>
+    </button>
   {/if}
 
   <!-- Messages -->
-  <div class="messages-area" bind:this={chatContainer} role="log" aria-label="Riwayat chat" aria-live="polite">
+  <div class="messages-area" bind:this={chatContainer} onscroll={handleScroll} role="log" aria-label="Riwayat chat" aria-live="polite">
+    {#if hasMore}
+      <div class="load-more">
+        <button type="button" class="load-more__btn" onclick={loadOlderMessages} disabled={isLoadingMore}>
+          {isLoadingMore ? 'Memuat...' : 'Muat pesan sebelumnya'}
+        </button>
+      </div>
+    {/if}
+
     {#if messages.length === 0}
       <div class="empty-chat">
         <div class="empty-icon">
@@ -934,38 +1351,59 @@
                 {/if}
               {/if}
               
+              {#if msg.is_forwarded}
+                <div class="msg-forwarded">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                  Diteruskan
+                </div>
+              {/if}
+
               {#if msg.type === 'image' && msg.file_url}
                 <button type="button" class="msg-image-btn" onclick={(e) => { e.stopPropagation(); openMediaPreview(msg); }} aria-label="Pratinjau gambar">
                   <img src={msg.file_url} alt="Attachment" class="msg-image" />
                 </button>
               {/if}
               {#if msg.type === 'file' && msg.file_url}
+                {@const meta = parseMeta(msg)}
                 <button type="button" class="msg-file-card" onclick={(e) => { e.stopPropagation(); openMediaPreview(msg); }} style="width:100%; text-align:left; background:none; border:none; padding:0; cursor:pointer;">
                   <div class="msg-file-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
                   </div>
-                  <span class="msg-file-name">{msg.message && msg.message !== VOICE_NOTE_LABEL ? msg.message : 'File'}</span>
+                  <span class="msg-file-info">
+                    <span class="msg-file-name">{fileLabel(msg)}</span>
+                    {#if meta.size}<span class="msg-file-size">{formatBytes(meta.size)}</span>{/if}
+                  </span>
                 </button>
               {/if}
               {#if msg.type === 'audio' && msg.file_url}
+                {@const bars = waveformFor(msg)}
+                {@const duration = audioDurationLabel(msg)}
                 <div class="msg-vn">
-                  <button class="msg-vn-play" onclick={(e) => { e.stopPropagation(); const audio = e.currentTarget.parentElement?.querySelector('audio'); if(audio) { audio.paused ? audio.play() : audio.pause(); } }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  </button>
-                  <button type="button" class="msg-vn-open" onclick={(e) => { e.stopPropagation(); openMediaPreview(msg); }} aria-label="Preview audio">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <button type="button" class="msg-vn-play" onclick={(e) => { e.stopPropagation(); toggleAudio(msg); }} aria-label={playingAudioId === msg.id ? 'Jeda' : 'Putar'}>
+                    {#if playingAudioId === msg.id}
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+                    {:else}
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    {/if}
                   </button>
                   <div class="msg-vn-wave">
-                    {#each Array(12) as _, i}
-                      <div class="msg-vn-bar" style="height: {10 + Math.sin(i * 1.2) * 8}px;"></div>
+                    {#each bars as height, i}
+                      {@const played = playingAudioId === msg.id && audioProgress >= ((i / bars.length) * 100)}
+                      <div class="msg-vn-bar {played ? 'msg-vn-bar--played' : ''}" style="height: {Math.max(4, (height / 100) * 22)}px;"></div>
                     {/each}
                   </div>
-                  <audio src={msg.file_url} style="display:none"></audio>
+                  {#if duration}<span class="msg-vn-time">{duration}</span>{/if}
+                  <button type="button" class="msg-vn-open" onclick={(e) => { e.stopPropagation(); openMediaPreview(msg); }} aria-label="Buka voice note">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  </button>
                 </div>
               {/if}
-              
-              {#if msg.message}
-                <p class="msg-text">{msg.message}</p>
+
+              {#if msg.type === 'text'}
+                {#if msg.message}<p class="msg-text">{msg.message}</p>{/if}
+              {:else}
+                {@const caption = parseMeta(msg).caption}
+                {#if caption}<p class="msg-text msg-caption">{caption}</p>{/if}
               {/if}
             {/if}
             <div class="msg-meta">
@@ -1021,6 +1459,10 @@
                 Salin
               </button>
               {/if}
+              <button class="context-item" onclick={() => { openForward(contextMessage); closeContextMenu(); }}>
+                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                Teruskan
+              </button>
               <button class="context-item" onclick={() => { openPinMenu(contextMessage); closeContextMenu(); }}>
                 <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17H19M12 17V3M9 3h6"/></svg>
                 {contextMessage.is_pinned ? 'Batal Sematkan' : 'Sematkan'}
@@ -1063,84 +1505,162 @@
         </button>
       </div>
     {/if}
-    {#if attachmentPreview}
-      <div class="attachment-preview">
-        {#if attachment?.type.startsWith('image/')}
-          <img src={attachmentPreview} alt="Preview" class="attachment-thumb" />
-        {:else if attachment?.type.startsWith('audio/')}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          <span style="font-size: 13px; font-weight: 700;">Voice Note siap dikirim</span>
-        {:else}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-          <span style="font-size: 13px; font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{attachment?.name}</span>
-        {/if}
-        <button type="button" class="attachment-close" onclick={() => {attachment = null; attachmentPreview = null}}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+
+    {#if pendingFiles.length > 0}
+      <div class="pending-strip">
+        {#each pendingFiles as item, i (item.previewUrl)}
+          <div class="pending-item">
+            {#if item.type === 'image'}
+              <img src={item.previewUrl} alt="Pratinjau" class="pending-thumb" />
+            {:else}
+              <div class="pending-doc">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                <span class="pending-doc__name">{item.file.name}</span>
+              </div>
+            {/if}
+            <button type="button" class="pending-remove" onclick={() => removePendingFile(i)} aria-label="Hapus lampiran">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        {/each}
+        <button type="button" class="pending-add" onclick={() => imageInput.click()} aria-label="Tambah lampiran">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Tambah</span>
         </button>
       </div>
     {/if}
+
     <form class="input-form" onsubmit={sendMessage}>
-      <input type="file" bind:this={fileInput} onchange={handleFileSelect} style="display: none;" accept="image/*,audio/*,.pdf,.doc,.docx" />
+      <input type="file" bind:this={imageInput} onchange={handleFileSelect} style="display: none;" accept="image/*" multiple />
+      <input type="file" bind:this={docInput} onchange={handleFileSelect} style="display: none;" accept="audio/*,.pdf,.doc,.docx" multiple />
       <input type="file" bind:this={cameraInput} onchange={handleCameraSelect} style="display: none;" accept="image/*" capture="environment" />
 
-      <div class="input-field">
-        <button type="button" class="in-field-btn" onclick={(e) => { e.stopPropagation(); showEmojiPicker = !showEmojiPicker; }} aria-label="Emoji">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-        </button>
-
-        {#if isRecording}
-          <div class="recording-indicator">
-            <span class="rec-dot"></span>
-            Merekam...
+      {#if pendingVoiceNote && !isRecording}
+        <!-- Pratinjau voice note sebelum dikirim (pola WhatsApp) -->
+        <div class="vn-preview">
+          <button type="button" class="vn-preview__delete" onclick={cancelPendingVoiceNote} aria-label="Hapus voice note">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+          <button type="button" class="vn-preview__play" onclick={toggleVoiceNotePlay} aria-label={voiceNotePlaying ? 'Jeda' : 'Putar'}>
+            {#if voiceNotePlaying}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            {:else}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            {/if}
+          </button>
+          <div class="vn-preview__wave">
+            {#each pendingVoiceNote.waveform.length ? pendingVoiceNote.waveform : [30, 55, 40, 70, 45, 60] as height}
+              <div class="vn-preview__bar" style="height: {Math.max(4, (height / 100) * 20)}px;"></div>
+            {/each}
           </div>
-        {:else}
-          <input
-            type="text"
-            bind:value={newMessage}
-            placeholder="Ketik pesan..."
-            class="msg-input"
-            aria-label="Ketik pesan"
-          />
-        {/if}
-
-        <button type="button" class="in-field-btn" onclick={() => fileInput.click()} aria-label="Lampiran">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>
-        </button>
-        <button type="button" class="in-field-btn" onclick={openCamera} aria-label="Ambil foto">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
-        </button>
-      </div>
-
-      {#if isRecording}
-        <button type="button" class="send-btn" onclick={stopRecording} aria-label="Hentikan rekaman">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-        </button>
-      {:else if !newMessage.trim() && !attachmentPreview}
-        <button type="button" class="send-btn" onclick={startRecording} aria-label="Rekam pesan suara">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg>
+          <span class="vn-preview__time">{formatRecordingTime(pendingVoiceNote.duration)}</span>
+        </div>
+        <button type="submit" class="send-btn send-btn--active" disabled={isUploading} aria-label="Kirim voice note">
+          {#if isUploading}
+            <span class="send-spinner"></span>
+          {:else}
+            <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          {/if}
         </button>
       {:else}
-        <button
-          type="submit"
-          disabled={!newMessage.trim() && !attachmentPreview}
-          class="send-btn {(newMessage.trim() || attachmentPreview) ? 'send-btn--active' : ''}"
-          aria-label="Kirim pesan"
-        >
-          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-          </svg>
-        </button>
+        <div class="input-field">
+          <button type="button" class="in-field-btn {showEmojiPicker ? 'in-field-btn--active' : ''}" onclick={(e) => { e.stopPropagation(); toggleEmojiPicker(); }} aria-label="Emoji">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
+
+          {#if isRecording}
+            <div class="recording-indicator">
+              <span class="rec-dot"></span>
+              <span class="rec-time">{formatRecordingTime(recordingSeconds)}</span>
+              <div class="rec-wave">
+                {#each recordingWaveform as height}
+                  <div class="rec-bar" style="height: {Math.max(4, (height / 100) * 20)}px;"></div>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <input
+              type="text"
+              bind:value={newMessage}
+              oninput={handleTyping}
+              placeholder={pendingFiles.length > 0 ? 'Tambah keterangan...' : 'Ketik pesan...'}
+              class="msg-input"
+              aria-label="Ketik pesan"
+            />
+          {/if}
+
+          <button type="button" class="in-field-btn {showAttachMenu ? 'in-field-btn--active' : ''}" onclick={(e) => { e.stopPropagation(); toggleAttachMenu(); }} aria-label="Lampiran">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>
+          </button>
+          <button type="button" class="in-field-btn" onclick={openCamera} aria-label="Ambil foto">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
+          </button>
+        </div>
+
+        {#if isRecording}
+          <button type="button" class="send-btn send-btn--active" onclick={stopRecording} aria-label="Hentikan rekaman">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          </button>
+        {:else if !newMessage.trim() && pendingFiles.length === 0}
+          <button type="button" class="send-btn" onclick={startRecording} aria-label="Rekam pesan suara">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg>
+          </button>
+        {:else}
+          <button type="submit" disabled={isSending || isUploading} class="send-btn send-btn--active" aria-label="Kirim pesan">
+            {#if isSending || isUploading}
+              <span class="send-spinner"></span>
+            {:else}
+              <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+            {/if}
+          </button>
+        {/if}
       {/if}
     </form>
 
+    <!-- Menu lampiran -->
+    {#if showAttachMenu}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="emoji-overlay" onclick={() => showAttachMenu = false}></div>
+      <div class="attach-menu">
+        <button type="button" class="attach-item" onclick={() => imageInput.click()}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+          Foto
+        </button>
+        <button type="button" class="attach-item" onclick={() => docInput.click()}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+          Dokumen
+        </button>
+        <button type="button" class="attach-item" onclick={openCamera}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
+          Kamera
+        </button>
+      </div>
+    {/if}
+
+    <!-- Emoji picker berkategori -->
     {#if showEmojiPicker}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="emoji-overlay" onclick={() => showEmojiPicker = false}></div>
       <div class="emoji-picker">
         <div class="emoji-picker__grid">
-          {#each emojiList as emoji}
+          {#each emojiGroups[emojiCategory] as emoji}
             <button type="button" class="emoji-item" onclick={() => addEmoji(emoji)}>{emoji}</button>
+          {/each}
+        </div>
+        <div class="emoji-picker__tabs">
+          {#each emojiTabs as [category, icon]}
+            <button
+              type="button"
+              class="emoji-tab {emojiCategory === category ? 'emoji-tab--active' : ''}"
+              onclick={() => emojiCategory = category}
+              aria-label="Kategori {category}"
+            >{icon}</button>
           {/each}
         </div>
       </div>
@@ -1148,6 +1668,28 @@
   </div>
 
 </div>
+
+<ForwardModal
+  bind:open={showForwardModal}
+  rooms={forwardRooms}
+  source={forwardSource}
+  busy={isForwarding}
+  onSubmit={submitForward}
+/>
+
+<RoomInfoPanel
+  bind:open={showRoomInfo}
+  title={chatTitle}
+  subtitle={chatSubtitle}
+  isSaving={!!savingId}
+  media={mediaMessages}
+  files={fileMessages}
+  starred={starredMessages}
+  onOpenMedia={openMediaPreview}
+  onJump={jumpToMessage}
+  onUnstarAll={unstarAll}
+  onClearChat={clearChat}
+/>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -1395,15 +1937,11 @@
   .reply-preview__close { background: none; border: none; cursor: pointer; color: #94A3B8; padding: 4px; display: flex; align-items: center; }
 
   /* Attachment preview bar */
-  .attachment-thumb { max-height: 60px; border-radius: 6px; }
-  .attachment-close { background: none; border: none; cursor: pointer; color: #94A3B8; padding: 4px; display: flex; align-items: center; margin-left: auto; }
 
   /* Recording indicator */
   .recording-indicator { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #EF4444; padding: 0 8px; }
   .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #EF4444; animation: pulse 1s infinite; flex-shrink: 0; }
   .msg-reply-bubble { background: rgba(0,0,0,0.1); border-left: 3px solid rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; font-size: 12px; }
-  .attachment-preview { padding: 8px; display: flex; gap: 8px; align-items: center; background: #EFF6FF; border-radius: 8px; margin-bottom: 8px; }
-  .attachment-preview img { max-height: 60px; border-radius: 4px; }
 
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
@@ -1470,7 +2008,7 @@
   .edit-modal__btn--save { background: linear-gradient(135deg, #5B8DEF, #4772E8); color: white; }
 
   /* Pinned Message */
-  .pinned-header { padding: 10px 16px; background: #ffffff; border-bottom: 1px solid rgba(226,232,240,0.8); display: flex; gap: 10px; align-items: center; cursor: pointer; transition: background 0.2s; flex-shrink: 0; z-index: 10; }
+  .pinned-header { width: 100%; text-align: left; font-family: inherit; border: none; border-top: none; padding: 10px 16px; background: #ffffff; border-bottom: 1px solid rgba(226,232,240,0.8); display: flex; gap: 10px; align-items: center; cursor: pointer; transition: background 0.2s; flex-shrink: 0; z-index: 10; }
   .pinned-header:hover { background: #F8FAFC; }
   .pinned-icon { font-size: 16px; color: #4772E8; display: flex; }
   .pinned-content { flex: 1; overflow: hidden; }
@@ -1812,4 +2350,255 @@
     border-radius: 50%;
     background: #fff;
   }
+
+  /* ── Header: indikator mengetik & tombol info ── */
+  .header-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    border: 1px solid rgba(226,232,240,0.9);
+    background: #fff;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .header-action:hover { background: #F1F5F9; color: #4772E8; }
+  .header-status--typing { color: #4772E8; }
+  .typing-dots { display: inline-flex; align-items: center; gap: 3px; }
+  .typing-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: typing-bounce 1.2s infinite ease-in-out;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-3px); opacity: 1; }
+  }
+
+  /* ── Muat pesan lama ── */
+  .load-more { display: flex; justify-content: center; padding: 4px 0 10px; }
+  .load-more__btn {
+    border: 1px solid rgba(226,232,240,0.9);
+    background: #fff;
+    color: #4772E8;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .load-more__btn:disabled { opacity: 0.6; cursor: default; }
+
+  /* ── Bubble: diteruskan, file, voice note ── */
+  .msg-forwarded {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.65;
+    margin-bottom: 5px;
+  }
+  .msg-file-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .msg-file-size { font-size: 10px; opacity: 0.7; }
+  .msg-vn-bar--played { background: #fff; }
+  .msg-vn-time { font-size: 10px; font-weight: 800; opacity: 0.85; flex-shrink: 0; }
+  .msg-caption { margin-top: 6px; }
+
+  /* ── Strip lampiran tertunda ── */
+  .pending-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 0 10px;
+  }
+  .pending-item { position: relative; flex-shrink: 0; }
+  .pending-thumb {
+    width: 68px;
+    height: 68px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 1px solid #E2E8F0;
+    display: block;
+  }
+  .pending-doc {
+    width: 68px;
+    height: 68px;
+    border-radius: 14px;
+    border: 1px solid #E2E8F0;
+    background: #F8FAFC;
+    color: #5B8DEF;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px;
+  }
+  .pending-doc__name {
+    font-size: 8px;
+    font-weight: 800;
+    color: #64748B;
+    text-align: center;
+    line-height: 1.2;
+    max-height: 20px;
+    overflow: hidden;
+    word-break: break-all;
+  }
+  .pending-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: #EF4444;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(239,68,68,0.35);
+  }
+  .pending-add {
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    border: 1px dashed #CBD5E1;
+    background: transparent;
+    color: #94A3B8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .pending-add span { font-size: 9px; font-weight: 800; }
+
+  /* ── Pratinjau voice note ── */
+  .vn-preview {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 42px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(91,141,239,0.25);
+    background: rgba(91,141,239,0.08);
+  }
+  .vn-preview__delete, .vn-preview__play {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .vn-preview__delete { background: transparent; color: #EF4444; }
+  .vn-preview__play { background: #5B8DEF; color: #fff; }
+  .vn-preview__wave { flex: 1; display: flex; align-items: center; gap: 2px; overflow: hidden; height: 22px; }
+  .vn-preview__bar { width: 3px; border-radius: 2px; background: rgba(91,141,239,0.55); flex-shrink: 0; }
+  .vn-preview__time { font-size: 11px; font-weight: 800; color: #4772E8; flex-shrink: 0; }
+
+  /* ── Indikator rekaman ── */
+  .rec-time { font-size: 12px; font-weight: 800; min-width: 34px; }
+  .rec-wave { flex: 1; display: flex; align-items: center; gap: 2px; height: 22px; overflow: hidden; }
+  .rec-bar { width: 3px; border-radius: 2px; background: rgba(239,68,68,0.55); flex-shrink: 0; }
+
+  /* ── Menu lampiran ── */
+  .attach-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 14px;
+    z-index: 41;
+    width: 190px;
+    padding: 6px;
+    border-radius: 16px;
+    border: 1px solid rgba(226,232,240,0.9);
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: 0 20px 50px -12px rgba(31,60,110,0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .attach-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    text-align: left;
+  }
+  .attach-item svg { color: #5B8DEF; flex-shrink: 0; }
+  .attach-item:hover { background: rgba(91,141,239,0.1); }
+
+  /* ── Emoji picker berkategori ── */
+  .emoji-picker { max-height: none; overflow: visible; padding-bottom: 6px; }
+  .emoji-picker__grid { max-height: 190px; overflow-y: auto; }
+  .emoji-picker__tabs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(226,232,240,0.9);
+  }
+  .emoji-tab {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .emoji-tab--active { background: rgba(91,141,239,0.16); }
+
+  .in-field-btn--active { background: #fff; color: #5B8DEF; }
+
+  .send-spinner {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    animation: send-spin 0.7s linear infinite;
+  }
+  @keyframes send-spin { to { transform: rotate(360deg); } }
+
+  .cam-video--mirror { transform: scaleX(-1); }
 </style>

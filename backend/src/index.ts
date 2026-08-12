@@ -28,9 +28,15 @@ async function ensureAttributionColumns(db: D1Database) {
 
 // Kolom chat yang ditambahkan setelah rilis awal.
 async function ensureChatColumns(db: D1Database) {
-  for (const column of ['pin_expires_at DATETIME']) {
+  for (const column of ['pin_expires_at DATETIME', 'metadata TEXT', 'is_forwarded BOOLEAN DEFAULT 0']) {
     try { await db.prepare(`ALTER TABLE messages ADD COLUMN ${column}`).run() } catch (_) { /* already exists */ }
   }
+  await db.prepare(`CREATE TABLE IF NOT EXISTS chat_clears (
+    room_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    cleared_at DATETIME NOT NULL,
+    PRIMARY KEY (room_id, user_id)
+  )`).run()
 }
 
 async function notifyPartner(db: D1Database, partnerId: string | undefined, actorId: string, type: string, title: string, message: string, link: string) {
@@ -1638,39 +1644,175 @@ app.get('/transactions/stats', async (c) => {
 })
 
 // CHAT HTTP (Fallback / Fetch History)
-app.get('/chat/history', async (c) => {
+
+// Konteks pasangan untuk semua endpoint chat.
+async function chatContext(c: any) {
   const payload = c.get('jwtPayload')
-  if (!payload) return c.json({ error: 'Unauthorized' }, 401)
+  if (!payload) return { error: c.json({ error: 'Unauthorized' }, 401) }
   const user = await c.env.DB.prepare('SELECT partner_id FROM users WHERE id = ?').bind(payload.id).first()
-  if (!user?.partner_id) return c.json({ error: 'No partner connected' }, 400)
-  const couple_id = [payload.id, user.partner_id].sort().join('_')
+  if (!user?.partner_id) return { error: c.json({ error: 'No partner connected' }, 400) }
+  return { userId: payload.id as string, partnerId: user.partner_id as string, coupleId: [payload.id, user.partner_id].sort().join('_') }
+}
+
+// Ambil (atau buat) room global / room tabungan milik pasangan.
+async function findOrCreateRoom(db: D1Database, coupleId: string, savingId: string | null) {
+  if (savingId) {
+    const saving = await db.prepare('SELECT id, name FROM savings WHERE id = ? AND couple_id = ?').bind(savingId, coupleId).first()
+    if (!saving) return null
+    let room = await db.prepare('SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id = ?').bind(coupleId, savingId).first()
+    if (!room) {
+      room = await db.prepare('INSERT INTO chat_rooms (couple_id, saving_id, name) VALUES (?, ?, ?) RETURNING id').bind(coupleId, savingId, saving.name || 'Saving Chat').first()
+    }
+    return room
+  }
+  let room = await db.prepare('SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id IS NULL').bind(coupleId).first()
+  if (!room) {
+    room = await db.prepare('INSERT INTO chat_rooms (couple_id, name) VALUES (?, ?) RETURNING id').bind(coupleId, 'Global').first()
+  }
+  return room
+}
+
+// Batas "bersihkan chat" bersifat per-pengguna: pesan lama tetap ada untuk pasangan.
+async function clearedAtFor(db: D1Database, roomId: any, userId: string): Promise<string | null> {
+  const row = await db.prepare('SELECT cleared_at FROM chat_clears WHERE room_id = ? AND user_id = ?').bind(roomId, userId).first()
+  return (row?.cleared_at as string) || null
+}
+
+app.get('/chat/history', async (c) => {
+  const ctx = await chatContext(c)
+  if ('error' in ctx) return ctx.error
 
   const saving_id = c.req.query('saving_id') || null
+  const room = await findOrCreateRoom(c.env.DB, ctx.coupleId, saving_id)
+  if (!room) return c.json({ error: 'Saving not found' }, 404)
 
-  // Find or create the room (global or per-saving)
-  let room
-  if (saving_id) {
-    const saving = await c.env.DB.prepare('SELECT id FROM savings WHERE id = ? AND couple_id = ?').bind(saving_id, couple_id).first()
-    if (!saving) return c.json({ error: 'Saving not found' }, 404)
-    room = await c.env.DB.prepare('SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id = ?').bind(couple_id, saving_id).first()
-    if (!room) {
-      room = await c.env.DB.prepare('INSERT INTO chat_rooms (couple_id, saving_id, name) VALUES (?, ?, ?) RETURNING id').bind(couple_id, saving_id, 'Saving Chat').first()
-    }
-  } else {
-    room = await c.env.DB.prepare('SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id IS NULL').bind(couple_id).first()
-    if (!room) {
-      room = await c.env.DB.prepare('INSERT INTO chat_rooms (couple_id, name) VALUES (?, ?) RETURNING id').bind(couple_id, 'Global').first()
-    }
-  }
+  const limit = Math.min(Math.max(Number(c.req.query('limit')) || 40, 10), 100)
+  const before = Number(c.req.query('before')) || null
 
   // Lepas sematan yang sudah kedaluwarsa sebelum mengirim riwayat.
   await c.env.DB.prepare(
     "UPDATE messages SET is_pinned = 0, pin_expires_at = NULL WHERE room_id = ? AND is_pinned = 1 AND pin_expires_at IS NOT NULL AND pin_expires_at <= ?"
-  ).bind(room?.id, new Date().toISOString()).run()
+  ).bind(room.id, new Date().toISOString()).run()
 
-  // Ambil 100 pesan terbaru, lalu urutkan menaik untuk ditampilkan.
-  const messages = await c.env.DB.prepare('SELECT * FROM messages WHERE room_id = ? ORDER BY id DESC LIMIT 100').bind(room?.id).all()
-  return c.json({ room_id: room?.id, messages: (messages.results || []).slice().reverse() })
+  const clearedAt = await clearedAtFor(c.env.DB, room.id, ctx.userId)
+
+  // Ambil satu baris ekstra untuk mendeteksi apakah masih ada pesan lebih lama.
+  const conditions = ['room_id = ?']
+  const args: any[] = [room.id]
+  if (before) { conditions.push('id < ?'); args.push(before) }
+  if (clearedAt) { conditions.push('(created_at > ? OR is_starred = 1)'); args.push(clearedAt) }
+  const rows = await c.env.DB.prepare(
+    `SELECT * FROM messages WHERE ${conditions.join(' AND ')} ORDER BY id DESC LIMIT ?`
+  ).bind(...args, limit + 1).all()
+
+  const results = rows.results || []
+  const hasMore = results.length > limit
+  const page = hasMore ? results.slice(0, limit) : results
+
+  return c.json({
+    room_id: room.id,
+    messages: page.slice().reverse(),
+    has_more: hasMore,
+    cleared_at: clearedAt,
+  })
+})
+
+// Daftar room pasangan (global + tiap tabungan) — dipakai untuk meneruskan pesan.
+app.get('/chat/rooms', async (c) => {
+  const ctx = await chatContext(c)
+  if ('error' in ctx) return ctx.error
+
+  const global = await findOrCreateRoom(c.env.DB, ctx.coupleId, null)
+  const savings = await c.env.DB.prepare('SELECT id, name FROM savings WHERE couple_id = ? ORDER BY created_at DESC').bind(ctx.coupleId).all()
+  const existing = await c.env.DB.prepare('SELECT id, saving_id FROM chat_rooms WHERE couple_id = ?').bind(ctx.coupleId).all()
+  const roomBySaving = new Map<string, any>()
+  for (const room of (existing.results || []) as any[]) {
+    if (room.saving_id != null) roomBySaving.set(String(room.saving_id), room.id)
+  }
+
+  const rooms: any[] = [{ id: global?.id, saving_id: null, name: 'Chat Global' }]
+  for (const saving of (savings.results || []) as any[]) {
+    rooms.push({
+      // Room tabungan dibuat saat pesan pertama; id null berarti belum ada.
+      id: roomBySaving.get(String(saving.id)) ?? null,
+      saving_id: saving.id,
+      name: saving.name,
+    })
+  }
+  return c.json({ rooms })
+})
+
+// Teruskan satu pesan ke satu atau beberapa room pasangan.
+app.post('/chat/forward', async (c) => {
+  const ctx = await chatContext(c)
+  if ('error' in ctx) return ctx.error
+
+  const body = await c.req.json().catch(() => ({}))
+  const messageId = Number(body.message_id)
+  const targets: any[] = Array.isArray(body.targets) ? body.targets.slice(0, 10) : []
+  if (!messageId || targets.length === 0) return c.json({ error: 'Pesan dan tujuan wajib diisi' }, 400)
+
+  const source = await c.env.DB.prepare(
+    'SELECT m.* FROM messages m JOIN chat_rooms r ON r.id = m.room_id WHERE m.id = ? AND r.couple_id = ?'
+  ).bind(messageId, ctx.coupleId).first()
+  if (!source) return c.json({ error: 'Pesan tidak ditemukan' }, 404)
+  if (source.is_deleted) return c.json({ error: 'Pesan sudah dihapus' }, 400)
+
+  const forwarded: any[] = []
+  for (const target of targets) {
+    const savingId = target?.saving_id != null ? String(target.saving_id) : null
+    const room = await findOrCreateRoom(c.env.DB, ctx.coupleId, savingId)
+    if (!room) continue
+    const saved = await c.env.DB.prepare(
+      'INSERT INTO messages (room_id, sender_id, message, type, file_url, metadata, is_forwarded) VALUES (?, ?, ?, ?, ?, ?, 1) RETURNING *'
+    ).bind(room.id, ctx.userId, source.message, source.type, source.file_url, source.metadata ?? null).first()
+    if (saved) forwarded.push({ room_id: room.id, saving_id: savingId, message: saved })
+  }
+
+  if (forwarded.length === 0) return c.json({ error: 'Tidak ada tujuan yang valid' }, 400)
+  return c.json({ forwarded })
+})
+
+// Bersihkan chat hanya untuk diri sendiri (pasangan tetap punya riwayatnya).
+app.post('/chat/clear', async (c) => {
+  const ctx = await chatContext(c)
+  if ('error' in ctx) return ctx.error
+
+  const body = await c.req.json().catch(() => ({}))
+  const savingId = body.saving_id != null ? String(body.saving_id) : null
+  const includeStarred = !!body.include_starred
+
+  const room = await findOrCreateRoom(c.env.DB, ctx.coupleId, savingId)
+  if (!room) return c.json({ error: 'Room tidak ditemukan' }, 404)
+
+  // Timestamp dibuat oleh SQLite agar formatnya sama persis dengan
+  // messages.created_at (CURRENT_TIMESTAMP) — ISO dari JS tidak bisa
+  // dibandingkan sebagai string dengan format 'YYYY-MM-DD HH:MM:SS'.
+  const inserted = await c.env.DB.prepare(
+    "INSERT INTO chat_clears (room_id, user_id, cleared_at) VALUES (?, ?, datetime('now')) ON CONFLICT(room_id, user_id) DO UPDATE SET cleared_at = datetime('now') RETURNING cleared_at"
+  ).bind(room.id, ctx.userId).first()
+  const clearedAt = (inserted?.cleared_at as string) || null
+
+  // Pesan berbintang dipertahankan kecuali diminta ikut dibersihkan.
+  if (includeStarred && clearedAt) {
+    await c.env.DB.prepare('UPDATE messages SET is_starred = 0 WHERE room_id = ? AND created_at <= ?').bind(room.id, clearedAt).run()
+  }
+
+  return c.json({ cleared_at: clearedAt, include_starred: includeStarred })
+})
+
+// Lepas semua bintang di satu room.
+app.post('/chat/unstar-all', async (c) => {
+  const ctx = await chatContext(c)
+  if ('error' in ctx) return ctx.error
+
+  const body = await c.req.json().catch(() => ({}))
+  const savingId = body.saving_id != null ? String(body.saving_id) : null
+  const room = await findOrCreateRoom(c.env.DB, ctx.coupleId, savingId)
+  if (!room) return c.json({ error: 'Room tidak ditemukan' }, 404)
+
+  const res = await c.env.DB.prepare('UPDATE messages SET is_starred = 0 WHERE room_id = ? AND is_starred = 1').bind(room.id).run()
+  return c.json({ unstarred: res?.meta?.changes || 0 })
 })
 
 app.post('/chat/send', async (c) => {
@@ -1732,13 +1874,13 @@ app.post('/chat/upload', async (c) => {
   const nameExt = file.name.includes('.') ? file.name.split('.').pop()!.replace(/[^a-z0-9]/gi, '').slice(0, 8) : ''
   const ext = nameExt || file.type.split('/')[1]?.replace(/[^a-z0-9]/gi, '').slice(0, 8) || 'bin'
   const filename = `chat/${payload.id}/${crypto.randomUUID()}.${ext}`
-  
+
   await c.env.MEDIA.put(filename, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type }
   })
-  
+
   const fileUrl = `https://couple-grow.uwangraph.workers.dev/r2/${filename}`
-  return c.json({ url: fileUrl })
+  return c.json({ url: fileUrl, name: file.name, size: file.size, mime: file.type })
 })
 
 // NOTIFICATIONS

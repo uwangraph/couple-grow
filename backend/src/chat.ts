@@ -171,6 +171,12 @@ export class ChatRoom extends DurableObject {
         return
       }
 
+      // Indikator "sedang mengetik" — tidak disimpan, hanya diteruskan.
+      if (eventType === 'typing') {
+        this.broadcast({ type: 'typing', data: { user_id: senderId, is_typing: !!innerData.is_typing } }, ws)
+        return
+      }
+
       // Read receipt: pembaca menandai pesan pasangan sebagai sudah dibaca.
       if (eventType === 'read') {
         const upToId = innerData.last_id ?? innerData.id ?? null
@@ -191,6 +197,11 @@ export class ChatRoom extends DurableObject {
       const fileUrl = innerData.file_url || null
       const replyToId = innerData.reply_to_id || null
       const clientId = innerData.client_id || null
+      // metadata JSON: caption, durasi VN, waveform, nama & ukuran file.
+      let metadata: string | null = null
+      if (innerData.metadata && typeof innerData.metadata === 'object') {
+        try { metadata = JSON.stringify(innerData.metadata) } catch (e) { metadata = null }
+      }
       if (!messageText.trim() && !fileUrl) return
 
       const roomId = await this.ensureRoomId(info)
@@ -204,8 +215,8 @@ export class ChatRoom extends DurableObject {
       }
 
       const savedMsg = await (this.env as any).DB.prepare(
-        'INSERT INTO messages (room_id, sender_id, message, type, file_url, reply_to_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING *'
-      ).bind(roomId, senderId, messageText, msgType, fileUrl, safeReplyToId).first()
+        'INSERT INTO messages (room_id, sender_id, message, type, file_url, reply_to_id, metadata) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *'
+      ).bind(roomId, senderId, messageText, msgType, fileUrl, safeReplyToId, metadata).first()
 
       if (!savedMsg) return
 

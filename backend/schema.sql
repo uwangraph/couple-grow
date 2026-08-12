@@ -116,10 +116,21 @@ CREATE TABLE IF NOT EXISTS messages (
   reactions TEXT,
   is_read BOOLEAN DEFAULT 0,
   pin_expires_at DATETIME,
+  metadata TEXT,
+  is_forwarded BOOLEAN DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (room_id) REFERENCES chat_rooms(id),
   FOREIGN KEY (sender_id) REFERENCES users(id),
   FOREIGN KEY (reply_to_id) REFERENCES messages(id)
+);
+
+-- Batas "bersihkan chat" per pengguna: pesan sebelum cleared_at disembunyikan
+-- untuk pengguna itu saja, pasangannya tetap melihat riwayat penuh.
+CREATE TABLE IF NOT EXISTS chat_clears (
+  room_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
+  cleared_at DATETIME NOT NULL,
+  PRIMARY KEY (room_id, user_id)
 );
 
 -- Phase 1: Foundation Tables
