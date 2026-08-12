@@ -42,6 +42,10 @@
   // Media preview state
   let mediaPreview = $state<{ type: 'image'|'file'|'audio'; url: string; name?: string; caption?: string|null } | null>(null);
 
+  // Emoji picker state
+  let showEmojiPicker = $state(false);
+  const emojiList = ['😀','😄','😁','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😎','🥳','🤩','😏','😢','😭','😤','😡','🤯','😳','🥺','🤗','🤔','🤭','😐','🙄','😴','🤤','🤢','🤠','👻','👽','🤖','💀','👋','👍','👎','👌','✌️','🤞','🤝','🙏','💪','🫶','❤️','💔','💯','✨','🔥','🎉','🎊','🎁','🌈','⭐','🌙','☀️','☕','🍕','🍔','🍩','🍺','⚽','🏆','🎮','🎵','🎶','📚','💡','💰','📅','📍','🚀','✈️','🌍','🍀'];
+
   function openMediaPreview(msg: any) {
     if (!msg.file_url) return;
     const type = (msg.type === 'image' || msg.type === 'audio') ? msg.type : 'file';
@@ -420,6 +424,11 @@
     replyingTo = msg;
   }
 
+  function addEmoji(emoji: string) {
+    newMessage += emoji;
+    showEmojiPicker = false;
+  }
+
   async function scrollToBottom() {
     await tick();
     if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -715,6 +724,10 @@
       <button type="button" class="icon-btn" onclick={() => fileInput.click()} aria-label="Lampiran">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
       </button>
+
+      <button type="button" class="icon-btn" onclick={(e) => { e.stopPropagation(); showEmojiPicker = !showEmojiPicker; }} aria-label="Emoji">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      </button>
       
       {#if isRecording}
         <div class="recording-indicator">
@@ -752,6 +765,19 @@
         </button>
       {/if}
     </form>
+
+    {#if showEmojiPicker}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="emoji-overlay" onclick={() => showEmojiPicker = false}></div>
+      <div class="emoji-picker">
+        <div class="emoji-picker__grid">
+          {#each emojiList as emoji}
+            <button type="button" class="emoji-item" onclick={() => addEmoji(emoji)}>{emoji}</button>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </div>
 
 </div>
@@ -988,8 +1014,6 @@
   .msg-reply-bubble { background: rgba(0,0,0,0.1); border-left: 3px solid rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; font-size: 12px; }
   .attachment-preview { padding: 8px; display: flex; gap: 8px; align-items: center; background: #EFF6FF; border-radius: 8px; margin-bottom: 8px; }
   .attachment-preview img { max-height: 60px; border-radius: 4px; }
-  .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 8px; opacity: 0.7; transition: opacity 0.2s; }
-  .icon-btn:hover { opacity: 1; }
 
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
@@ -1060,36 +1084,115 @@
   /* Input — clean composer */
   .input-area {
     padding: 12px 14px;
-    background: #ffffff;
-    border-top: 1px solid rgba(226,232,240,0.8);
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-top: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 -4px 14px -8px rgba(31,60,110,0.2);
     flex-shrink: 0;
-    position: sticky;
-    bottom: 0;
+    position: relative;
     z-index: 20;
   }
   .input-form {
     display: flex;
     align-items: center;
+    gap: 6px;
+  }
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.6);
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 0 0 rgba(226,232,240,0.9), inset 0 1px 0 rgba(255,255,255,0.9);
+    transition: all .15s ease;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.9); color: #5B8DEF; transform: translateY(1px); box-shadow: 0 1px 0 0 rgba(226,232,240,0.9); }
+  .icon-btn:active { transform: translateY(1px); box-shadow: none; }
+  .recording-indicator {
+    flex: 1;
+    display: flex;
+    align-items: center;
     gap: 8px;
+    padding: 10px 16px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.6);
+    color: #EF4444;
+    font-size: 14px;
+    font-weight: 700;
   }
   .msg-input {
     flex: 1;
-    border: 1px solid rgba(226,232,240,0.8);
+    border: 1px solid rgba(226,232,240,0.9);
     border-radius: 24px;
-    padding: 10px 16px;
+    padding: 11px 16px;
     font-family: 'Nunito', sans-serif;
     font-size: 14px;
     font-weight: 600;
     color: #1F2937;
     outline: none;
-    background: #ffffff;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 0 0 rgba(226,232,240,0.8);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   }
   .msg-input::placeholder { color: #94A3B8; }
   .msg-input:focus {
     border-color: #5B8DEF;
-    box-shadow: 0 0 0 3px rgba(91, 141, 239,0.15);
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 0 0 3px rgba(91, 141, 239,0.15), 0 1px 0 0 rgba(226,232,240,0.8);
   }
+
+  /* Emoji picker */
+  .emoji-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: transparent;
+  }
+  .emoji-picker {
+    position: absolute;
+    bottom: 100%;
+    left: 14px;
+    right: 14px;
+    z-index: 41;
+    margin-bottom: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: 0 20px 50px -12px rgba(31,60,110,0.3), inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+  .emoji-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  .emoji-item {
+    width: 100%;
+    aspect-ratio: 1;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .emoji-item:hover { background: rgba(91,141,239,0.12); transform: scale(1.1); }
 
   .send-btn {
     width: 42px;
