@@ -41,6 +41,59 @@
   let longPressTimer: any = null;
   let pinnedMessage = $derived(messages.find(m => m.is_pinned));
 
+  // Swipe-to-reply state
+  let swipeMsgId = $state<number | null>(null);
+  let swipeStartX = $state(0);
+  let swipeStartY = $state(0);
+  let swipeCurrentX = $state(0);
+  let swipeActive = $state(false);
+
+  function swipeDown(e: any, msg: any) {
+    if (msg.is_deleted) return;
+    const point = e.touches ? e.touches[0] : e;
+    swipeMsgId = msg.id;
+    swipeStartX = point.clientX;
+    swipeStartY = point.clientY;
+    swipeCurrentX = 0;
+    swipeActive = true;
+  }
+
+  function swipeMove(e: any, msg: any) {
+    if (!swipeActive || swipeMsgId !== msg.id) return;
+    const point = e.touches ? e.touches[0] : e;
+    const dx = point.clientX - swipeStartX;
+    const dy = point.clientY - swipeStartY;
+    // Hanya aktif jika dominan horizontal ke kanan
+    if (Math.abs(dx) > Math.abs(dy) * 1.2 && dx > 0) {
+      swipeCurrentX = Math.min(dx, 80);
+      // Jangan trigger context menu saat swipe berlangsung
+      if (longPressTimer) clearTimeout(longPressTimer);
+    }
+  }
+
+  function swipeUp(e: any, msg: any) {
+    if (!swipeActive || swipeMsgId !== msg.id) return;
+    const point = e && e.touches ? e.touches[0] : e;
+    // dx dari posisi akhir jika punya event, fallback ke offset yg sudah terekam
+    let dx = swipeCurrentX;
+    if (point && typeof point.clientX === 'number') {
+      const raw = point.clientX - swipeStartX;
+      if (raw > dx) dx = raw;
+    }
+    swipeActive = false;
+    swipeMsgId = null;
+    swipeCurrentX = 0;
+    if (dx > 45) {
+      handleReply(msg);
+    }
+  }
+
+  function swipeCancel() {
+    swipeActive = false;
+    swipeMsgId = null;
+    swipeCurrentX = 0;
+  }
+
   // Media preview state
   let mediaPreview = $state<{ type: 'image'|'file'|'audio'; url: string; name?: string; caption?: string|null } | null>(null);
 
@@ -750,15 +803,25 @@
         {@const msg = item}
         {@const isMine = msg.sender_id === auth.user?.id}
         {@const reactions = getReactionSummary(msg.reactions)}
-        <div id="msg-{msg.id}" class="msg-container {isMine ? 'msg-container--mine' : 'msg-container--theirs'}"
-             onmousedown={(e) => handleTouchStart(e, msg)}
-             onmouseup={handleTouchEnd}
-             ontouchstart={(e) => handleTouchStart(e, msg)}
-             ontouchend={handleTouchEnd}
-             ontouchcancel={handleTouchEnd}
-             onmouseleave={handleTouchEnd}
+        <div id="msg-{msg.id}"
+             class="msg-container {isMine ? 'msg-container--mine' : 'msg-container--theirs'} {swipeMsgId === msg.id && swipeActive ? 'msg-container--swiping' : ''}"
+             style={swipeMsgId === msg.id && swipeActive ? `transform: translateX(${swipeCurrentX}px);` : ''}
+             onmousedown={(e) => { handleTouchStart(e, msg); swipeDown(e, msg); }}
+             onmousemove={(e) => { if (swipeActive && swipeMsgId === msg.id && (e.buttons === 1 || e.buttons > 0)) swipeMove(e, msg); }}
+             ontouchstart={(e) => { handleTouchStart(e, msg); swipeDown(e, msg); }}
+             ontouchmove={(e) => { if (swipeActive) e.preventDefault(); swipeMove(e, msg); }}
+             ontouchend={(e) => { handleTouchEnd(); swipeUp(e, msg); }}
+             ontouchcancel={() => { handleTouchEnd(); swipeCancel(); }}
+             onmouseup={(e) => { handleTouchEnd(); swipeUp(e, msg); }}
+             onmouseleave={(e) => { handleTouchEnd(); swipeUp(e, msg); }}
              role="button"
              tabindex="0">
+          {#if swipeMsgId === msg.id && swipeActive && swipeCurrentX > 20}
+            <div class="swipe-reply-hint">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              Balas
+            </div>
+          {/if}
           <div class="msg-bubble {isMine ? 'msg-bubble--mine' : 'msg-bubble--theirs'}">
             {#if msg.is_pinned && !msg.is_deleted}
               <div class="msg-pinned-badge">
@@ -1070,9 +1133,12 @@
   .msg-container {
     display: flex;
     margin-bottom: 2px;
+    position: relative;
+    transition: transform 0.2s ease;
   }
   .msg-container--mine { justify-content: flex-end; }
   .msg-container--theirs { justify-content: flex-start; }
+  .msg-container--swiping { transition: none; }
 
   .msg-bubble {
     max-width: 75%;
@@ -1094,6 +1160,26 @@
     color: white;
     border-bottom-left-radius: 4px;
     box-shadow: 0 3px 12px rgba(122, 99, 230, 0.35);
+  }
+
+  /* Swipe-to-reply hint */
+  .swipe-reply-hint {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: rgba(142,123,240,0.9);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(122,99,230,0.3);
+    z-index: 5;
   }
 
   .msg-text { font-size: 14px; font-weight: 600; margin: 0 0 3px; word-wrap: break-word; }
