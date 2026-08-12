@@ -1221,7 +1221,16 @@
           {cameraFacing === 'user' ? 'Belakang' : 'Depan'}
         </button>
         <button type="button" class="cam-btn cam-btn--primary" onclick={capturePhotoFromCamera}>
-          <span class="cam-shutter"></span> Jepret
+          <svg class="cam-shutter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9.5"/>
+            <path d="M12 2.5 8.2 9.1"/>
+            <path d="m21.2 7.2-7.6 0"/>
+            <path d="m18.6 17.6-3.8-6.6"/>
+            <path d="M12 21.5 15.8 14.9"/>
+            <path d="m2.8 16.8 7.6 0"/>
+            <path d="M5.4 6.4 9.2 13"/>
+          </svg>
+          Jepret
         </button>
       {/if}
     </div>
@@ -1281,6 +1290,11 @@
     </button>
   {/if}
 
+  <!-- Latar gelap saat menu pesan terbuka: hanya bubble terpilih & menu yang kontras -->
+  {#if contextMenuVisible}
+    <div class="ctx-overlay" aria-hidden="true"></div>
+  {/if}
+
   <!-- Messages -->
   <div class="messages-area" bind:this={chatContainer} onscroll={handleScroll} role="log" aria-label="Riwayat chat" aria-live="polite">
     {#if hasMore}
@@ -1311,7 +1325,7 @@
         {@const isMine = msg.sender_id === auth.user?.id}
         {@const reactions = getReactionSummary(msg.reactions)}
         <div id="msg-{msg.id}"
-             class="msg-container {isMine ? 'msg-container--mine' : 'msg-container--theirs'} {swipeMsgId === msg.id && swipeActive ? 'msg-container--swiping' : ''}"
+             class="msg-container {isMine ? 'msg-container--mine' : 'msg-container--theirs'} {swipeMsgId === msg.id && swipeActive ? 'msg-container--swiping' : ''} {contextMenuVisible && contextMessage?.id === msg.id ? 'msg-container--selected' : ''} {reactions.length > 0 ? 'msg-container--reacted' : ''}"
              style={swipeMsgId === msg.id && swipeActive ? `transform: translateX(${swipeCurrentX}px);` : ''}
              onmousedown={(e) => { handleTouchStart(e, msg); swipeDown(e, msg); }}
              onmousemove={(e) => { if (swipeActive && swipeMsgId === msg.id && (e.buttons === 1 || e.buttons > 0)) swipeMove(e, msg); }}
@@ -1430,7 +1444,7 @@
           {#if reactions.length > 0}
             <div class="reaction-badges {isMine ? 'reaction-badges--mine' : 'reaction-badges--theirs'}">
               {#each reactions as r}
-                <span class="reaction-badge">{r.emoji} {r.count > 1 ? r.count : ''}</span>
+                <span class="reaction-badge">{r.emoji}{#if r.count > 1}<span class="reaction-count">{r.count}</span>{/if}</span>
               {/each}
             </div>
           {/if}
@@ -1834,6 +1848,19 @@
   .msg-container--mine { justify-content: flex-end; }
   .msg-container--theirs { justify-content: flex-start; }
   .msg-container--swiping { transition: none; }
+  /* Bubble yang sedang dipilih diangkat di atas overlay agar tetap terang */
+  .msg-container--selected { z-index: 301; }
+
+  .ctx-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px) saturate(115%);
+    -webkit-backdrop-filter: blur(4px) saturate(115%);
+    animation: ctx-overlay-in 0.18s ease;
+  }
+  @keyframes ctx-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 
   .msg-bubble {
     max-width: 75%;
@@ -1841,7 +1868,21 @@
     border-radius: 18px;
     line-height: 1.4;
     animation: fade-in 0.2s ease;
+    /* Layout ala WhatsApp: jam menempel di ujung kanan bawah, sebaris dengan
+       teks bila muat, dan turun ke baris sendiri (tetap kanan) bila tidak. */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    column-gap: 8px;
+    row-gap: 4px;
   }
+  /* Blok non-teks selalu memakai satu baris penuh */
+  .msg-bubble > .msg-pinned-badge,
+  .msg-bubble > .msg-forwarded,
+  .msg-bubble > .msg-reply-bubble,
+  .msg-bubble > .msg-image-btn,
+  .msg-bubble > .msg-file-card,
+  .msg-bubble > .msg-vn { flex: 0 0 100%; min-width: 0; }
   @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
   .msg-bubble--mine {
@@ -1877,7 +1918,7 @@
     z-index: 5;
   }
 
-  .msg-text { font-size: 14px; font-weight: 600; margin: 0 0 3px; word-wrap: break-word; }
+  .msg-text { font-size: 14px; font-weight: 600; margin: 0; word-wrap: break-word; overflow-wrap: anywhere; flex: 0 1 auto; min-width: 0; }
   .msg-pinned-badge {
     display: inline-flex;
     align-items: center;
@@ -1891,11 +1932,14 @@
     margin-bottom: 5px;
     letter-spacing: 0.3px;
   }
-  .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 2px; }
-  .msg-time { font-size: 11px; margin: 0; opacity: 0.65; font-weight: 700; }
-  .msg-edited { font-size: 10px; opacity: 0.6; font-style: italic; }
-  .msg-star { font-size: 11px; }
+  /* Digeser sedikit ke bawah agar duduk di bawah garis teks, seperti WhatsApp */
+  .msg-meta { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; margin-left: auto; align-self: flex-end; position: relative; top: 4px; margin-bottom: -2px; }
+  /* Meta dibuat jelas lebih kecil dari teks pesan (14px) */
+  .msg-time { font-size: 10px; margin: 0; opacity: 0.6; font-weight: 700; letter-spacing: 0.01em; }
+  .msg-edited { font-size: 9px; opacity: 0.55; font-style: italic; }
+  .msg-star { font-size: 10px; display: inline-flex; }
   .msg-tick { display: inline-flex; align-items: center; color: rgba(255,255,255,0.8); margin-left: 1px; }
+  .msg-tick svg { width: 12px; height: 12px; }
   .msg-tick--read { color: #7FD3FF; }
 
   /* Date divider */
@@ -1903,10 +1947,34 @@
   .date-divider__label { font-size: 12px; font-weight: 700; color: #64748B; background: #E2E8F0; border-radius: 999px; padding: 3px 12px; }
   
   /* Reaction badges */
-  .reaction-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; padding: 0 4px; }
-  .reaction-badges--mine { justify-content: flex-end; }
-  .reaction-badges--theirs { justify-content: flex-start; }
-  .reaction-badge { background: white; border: 1.5px solid #E2E8F0; border-radius: 999px; padding: 2px 7px; font-size: 13px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); cursor: pointer; }
+  /* Reaksi menempel di sudut bawah bubble (bukan sebagai kolom terpisah,
+     karena .msg-container adalah flex row). */
+  .reaction-badges {
+    position: absolute;
+    bottom: -11px;
+    display: flex;
+    gap: 3px;
+    z-index: 2;
+  }
+  .reaction-badges--mine { right: 10px; }
+  .reaction-badges--theirs { left: 10px; }
+  .reaction-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #fff;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 999px;
+    padding: 1px 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #475569;
+    font-weight: 800;
+    box-shadow: 0 2px 6px rgba(31,60,110,0.12);
+  }
+  .reaction-count { font-size: 11px; }
+  /* Ruang ekstra agar badge tidak menabrak pesan berikutnya */
+  .msg-container--reacted { margin-bottom: 14px; }
 
   /* Message contents */
   .msg-image { max-width: 100%; border-radius: 10px; margin-bottom: 4px; display: block; }
@@ -1914,7 +1982,7 @@
   .msg-deleted { font-style: italic; opacity: 0.8; display: flex; align-items: center; gap: 6px; }
 
   /* File card */
-  .msg-file-card { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.18); border-radius: 10px; padding: 10px 12px; margin-bottom: 4px; text-decoration: none; color: inherit; transition: background 0.15s; }
+  .msg-file-card { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.18); border-radius: 10px; padding: 10px 12px; text-decoration: none; color: inherit; transition: background 0.15s; }
   .msg-file-card:hover { background: rgba(255,255,255,0.28); }
   .msg-file-icon { background: rgba(255,255,255,0.25); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .msg-file-name { font-size: 13px; font-weight: 700; word-break: break-all; }
@@ -1941,7 +2009,7 @@
   /* Recording indicator */
   .recording-indicator { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #EF4444; padding: 0 8px; }
   .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #EF4444; animation: pulse 1s infinite; flex-shrink: 0; }
-  .msg-reply-bubble { background: rgba(0,0,0,0.1); border-left: 3px solid rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; font-size: 12px; }
+  .msg-reply-bubble { background: rgba(0,0,0,0.1); border-left: 3px solid rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 4px; font-size: 12px; }
 
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
@@ -2345,10 +2413,9 @@
   .cam-btn--primary:hover { transform: translateY(1px); box-shadow: 0 2px 0 0 rgba(122,99,230,0.9); }
   .cam-btn--primary:active { transform: translateY(2px); box-shadow: none; }
   .cam-shutter {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #fff;
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
   }
 
   /* ── Header: indikator mengetik & tombol info ── */
@@ -2414,7 +2481,7 @@
   .msg-file-size { font-size: 10px; opacity: 0.7; }
   .msg-vn-bar--played { background: #fff; }
   .msg-vn-time { font-size: 10px; font-weight: 800; opacity: 0.85; flex-shrink: 0; }
-  .msg-caption { margin-top: 6px; }
+  .msg-caption { margin-top: 2px; }
 
   /* ── Strip lampiran tertunda ── */
   .pending-strip {
