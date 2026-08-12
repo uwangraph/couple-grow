@@ -6,6 +6,7 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import { MessageSquare, ChevronRight, PiggyBank } from '@lucide/svelte';
   import Icon from '$lib/Icon.svelte';
+  import MediaPreview from '$lib/components/MediaPreview.svelte';
 
   let savingId = $derived(page.url.searchParams.get('saving_id'));
   let savingName = $derived(page.url.searchParams.get('saving_name'));
@@ -37,6 +38,20 @@
   let contextMessage = $state<any | null>(null);
   let longPressTimer: any = null;
   let pinnedMessage = $derived(messages.find(m => m.is_pinned));
+
+  // Media preview state
+  let mediaPreview = $state<{ type: 'image'|'file'|'audio'; url: string; name?: string; caption?: string|null } | null>(null);
+
+  function openMediaPreview(msg: any) {
+    if (!msg.file_url) return;
+    const type = (msg.type === 'image' || msg.type === 'audio') ? msg.type : 'file';
+    mediaPreview = {
+      type,
+      url: msg.file_url,
+      name: msg.message && msg.message !== '🎤 Voice Note' ? msg.message : undefined,
+      caption: msg.message && msg.message !== '🎤 Voice Note' ? msg.message : null,
+    };
+  }
 
   onMount(async () => {
     if (!auth.token) return goto('/login');
@@ -513,6 +528,9 @@
   </div>
 {/if}
 
+<!-- Media Preview -->
+<MediaPreview media={mediaPreview} onClose={() => mediaPreview = null} />
+
 <div class="chat-root">
 
   <!-- Toast Notification -->
@@ -611,20 +629,25 @@
               {/if}
               
               {#if msg.type === 'image' && msg.file_url}
-                <img src={msg.file_url} alt="Attachment" class="msg-image" />
+                <button type="button" class="msg-image-btn" onclick={(e) => { e.stopPropagation(); openMediaPreview(msg); }} aria-label="Pratinjau gambar">
+                  <img src={msg.file_url} alt="Attachment" class="msg-image" />
+                </button>
               {/if}
               {#if msg.type === 'file' && msg.file_url}
-                <a href={msg.file_url} target="_blank" class="msg-file-card">
+                <button type="button" class="msg-file-card" onclick={(e) => { e.stopPropagation(); openMediaPreview(msg); }} style="width:100%; text-align:left; background:none; border:none; padding:0; cursor:pointer;">
                   <div class="msg-file-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
                   </div>
                   <span class="msg-file-name">{msg.message && msg.message !== '🎤 Voice Note' ? msg.message : 'File'}</span>
-                </a>
+                </button>
               {/if}
               {#if msg.type === 'audio' && msg.file_url}
                 <div class="msg-vn">
                   <button class="msg-vn-play" onclick={(e) => { e.stopPropagation(); const audio = e.currentTarget.parentElement?.querySelector('audio'); if(audio) { audio.paused ? audio.play() : audio.pause(); } }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                  <button type="button" class="msg-vn-open" onclick={(e) => { e.stopPropagation(); openMediaPreview(msg); }} aria-label="Preview audio">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                   </button>
                   <div class="msg-vn-wave">
                     {#each Array(12) as _, i}
@@ -927,6 +950,7 @@
 
   /* Message contents */
   .msg-image { max-width: 100%; border-radius: 10px; margin-bottom: 4px; display: block; }
+  .msg-image-btn { display: block; width: 100%; padding: 0; border: none; background: none; cursor: pointer; }
   .msg-deleted { font-style: italic; opacity: 0.8; display: flex; align-items: center; gap: 6px; }
 
   /* File card */
@@ -939,6 +963,8 @@
   .msg-vn { display: flex; align-items: center; gap: 10px; padding: 6px 4px; min-width: 180px; }
   .msg-vn-play { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.25); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: white; transition: background 0.15s; }
   .msg-vn-play:hover { background: rgba(255,255,255,0.4); }
+  .msg-vn-open { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.18); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: white; transition: background 0.15s; }
+  .msg-vn-open:hover { background: rgba(255,255,255,0.35); }
   .msg-vn-wave { display: flex; align-items: center; gap: 2px; flex: 1; }
   .msg-vn-bar { width: 3px; background: rgba(255,255,255,0.7); border-radius: 2px; flex-shrink: 0; }
 
