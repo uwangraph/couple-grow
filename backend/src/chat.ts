@@ -154,6 +154,25 @@ export class ChatRoom extends DurableObject {
         return
       }
 
+      // Read receipt: sender menandai pesan yang sudah dibaca
+      if (eventType === 'read') {
+        const upToId = innerData.last_id ?? innerData.id ?? null
+        const roomId = await this.currentRoomId()
+        if (roomId && upToId) {
+          // Tandai pesan dari pasangan (sender_id != current reader) sbg dibaca
+          await (this.env as any).DB.prepare(
+            'UPDATE messages SET is_read = 1 WHERE room_id = ? AND sender_id != ? AND id <= ?'
+          ).bind(roomId, senderId, upToId).run()
+        }
+        // Beri tahu sesi lain (pasangan) bahwa pesan sudah dibaca
+        for (const session of this.sessions.keys()) {
+          if (session !== ws) {
+            try { session.send(JSON.stringify({ type: 'read', data: { last_id: upToId, reader_id: senderId } })) } catch (e) { this.sessions.delete(session) }
+          }
+        }
+        return
+      }
+
       // Handling 'chat' event
       const messageText = innerData.message || ''
       const msgType = innerData.type || 'text'

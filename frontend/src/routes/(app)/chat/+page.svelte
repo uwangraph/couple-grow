@@ -226,6 +226,19 @@
     } catch(e) {}
   }
 
+  function sendReadReceipt() {
+    // Kirim status 'read' ke server: pesan sampai id ini sudah dilihat pengguna.
+    // Server menandai pesan dari pasangan (id <= last_seen_id) sbg dibaca
+    // & memberitahu pasangan agar pesan mereka tampil centang biru.
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    let lastSeenId = 0;
+    for (const m of messages) {
+      if (!m.is_deleted && m.id > lastSeenId) lastSeenId = m.id;
+    }
+    if (lastSeenId <= 0) return;
+    ws.send(JSON.stringify({ type: 'read', data: { last_id: lastSeenId } }));
+  }
+
   function connectWebSocket() {
     const wsUrl = API_URL.replace(/^http/, 'ws') + '/chat/ws';
     const params = new URLSearchParams({ token: auth.token || '' });
@@ -235,7 +248,7 @@
     } catch (e) { ws = null; }
     if (!ws) return;
     
-    ws.onopen = () => { connected = true; reconnectAttempts = 0; };
+    ws.onopen = () => { connected = true; reconnectAttempts = 0; sendReadReceipt(); };
     ws.onclose = async () => {
       connected = false;
       if (!auth.token) return;
@@ -273,6 +286,14 @@
           messages = messages.map(m => m.id === msg.data.id ? { ...m, message: msg.data.message, is_edited: true } : m);
         } else if (msg.type === 'react') {
           messages = messages.map(m => m.id === msg.data.id ? { ...m, reactions: msg.data.reactions } : m);
+        } else if (msg.type === 'read') {
+          // Pesan dari kita yang sudah dibaca pasangan → 2 centang biru
+          const lastId = msg.data?.last_id;
+          if (lastId != null) {
+            messages = messages.map(m =>
+              m.sender_id === auth.user?.id && m.id <= lastId ? { ...m, is_read: 1 } : m
+            );
+          }
         } else if (msg.type === 'chat' && msg.data) {
           const optimisticIndex = messages.findIndex(m =>
             m.id >= 1000000000000 &&
@@ -287,6 +308,8 @@
           scrollToBottom();
           if (msg.data.sender_id !== auth.user?.id) {
             showToast(`Pesan baru${msg.data.type !== 'text' ? ' (' + msg.data.type + ')' : ': "' + msg.data.message + '"'}`);
+            // Beri tahu pasangan bahwa pesan mereka sudah terbaca
+            sendReadReceipt();
           }
         }
       } catch(e) {}
@@ -342,7 +365,8 @@
       type: msgType,
       file_url: fileUrl,
       reply_to_id: replyingTo?.id || null,
-      created_at: tempCreatedAt
+      created_at: tempCreatedAt,
+      _sent: true // menandai belum mendapat ack dari server (1 centang)
     };
     
     messages = [...messages, tempMsg];
@@ -882,6 +906,21 @@
               {#if msg.is_edited && !msg.is_deleted}<span class="msg-edited">diperbarui</span>{/if}
               {#if msg.is_starred}<span class="msg-star"><svg width="10" height="10" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>{/if}
               <span class="msg-time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              {#if isMine && !msg.is_deleted}
+                {#if msg.is_read}
+                  <span class="msg-tick msg-tick--read" aria-label="Dibaca">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+                  </span>
+                {:else if msg._sent}
+                  <span class="msg-tick" aria-label="Terkirim">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                {:else}
+                  <span class="msg-tick" aria-label="Terikirim ke server">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+                  </span>
+                {/if}
+              {/if}
             </div>
           </div>
           {#if reactions.length > 0}
@@ -1200,6 +1239,8 @@
   .msg-time { font-size: 11px; margin: 0; opacity: 0.65; font-weight: 700; }
   .msg-edited { font-size: 10px; opacity: 0.6; font-style: italic; }
   .msg-star { font-size: 11px; }
+  .msg-tick { display: inline-flex; align-items: center; color: rgba(255,255,255,0.8); margin-left: 1px; }
+  .msg-tick--read { color: #7FD3FF; }
 
   /* Date divider */
   .date-divider { display: flex; align-items: center; justify-content: center; margin: 12px 0 4px; }
