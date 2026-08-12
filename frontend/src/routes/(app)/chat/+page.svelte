@@ -14,6 +14,9 @@
   let chatTitle = $derived(savingName ? `${decodeURIComponent(savingName)}` : 'Pasanganku');
   let chatSubtitle = $derived(savingName ? 'Chat Tabungan' : 'Global Chat');
 
+  const VOICE_NOTE_LABEL = '🎤 Voice Note';
+  const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // sesuai batas /chat/upload
+
   let messages = $state<any[]>([]);
   let newMessage = $state('');
   let ws = $state<WebSocket | null>(null);
@@ -39,7 +42,11 @@
   let contextMenuPos = $state({ x: 0, y: 0 });
   let contextMessage = $state<any | null>(null);
   let longPressTimer: any = null;
-  let pinnedMessage = $derived(messages.find(m => m.is_pinned));
+  // Sematan yang sudah lewat masa berlakunya tidak ditampilkan.
+  let pinnedMessage = $derived(messages.find(m =>
+    m.is_pinned && !m.is_deleted &&
+    (!m.pin_expires_at || new Date(m.pin_expires_at).getTime() > Date.now())
+  ));
 
   // Context menu membuka ke atas atau bawah dari bubble (konsep khwarizmi)
   let menuDirection = $state<'up' | 'down'>('down');
@@ -162,22 +169,23 @@
     fetch(capturedPhoto)
       .then(res => res.blob())
       .then((blob) => {
-        const file = new File([blob], 'foto_$(Date.now()).jpg', { type: 'image/jpeg' });
-        attachment = file;
-        attachmentPreview = URL.createObjectURL(blob);
-        if (!newMessage) newMessage = 'Foto';
+        setAttachment(new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' }));
         closeCameraModal();
       })
       .catch(() => closeCameraModal());
   }
 
-  function retakePhoto() {
-    capturePhotoFromCamera(); // re-capture current video
-    cameraMode = 'preview';
+  async function retakePhoto() {
+    // Kembali ke viewfinder: elemen <video> dibuat ulang oleh {#if},
+    // jadi stream harus dipasang lagi.
     capturedPhoto = null;
-    // kembali ke viewfinder
     cameraMode = 'viewfinder';
-    capturedPhoto = null;
+    await tick();
+    const video = document.getElementById('camera-video') as HTMLVideoElement | null;
+    if (video && cameraStream) {
+      video.srcObject = cameraStream;
+      await video.play().catch(() => {});
+    }
   }
 
   function closeCameraModal() {
@@ -190,14 +198,30 @@
     cameraMode = 'viewfinder';
   }
 
+  /** Pasang file sebagai lampiran; caption tetap diketik pengguna sendiri. */
+  function setAttachment(file: File) {
+    if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
+    attachment = file;
+    attachmentPreview = URL.createObjectURL(file);
+  }
+
+  /** Tipe pesan dari MIME lampiran (audio wajib 'audio' agar tampil sbg VN). */
+  function messageTypeOf(file: File | null): string {
+    if (!file) return 'text';
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('audio/')) return 'audio';
+    return 'file';
+  }
+
   function openMediaPreview(msg: any) {
     if (!msg.file_url) return;
     const type = (msg.type === 'image' || msg.type === 'audio') ? msg.type : 'file';
+    const caption = msg.message && msg.message !== VOICE_NOTE_LABEL ? msg.message : null;
     mediaPreview = {
       type,
       url: msg.file_url,
-      name: msg.message && msg.message !== '🎤 Voice Note' ? msg.message : undefined,
-      caption: msg.message && msg.message !== '🎤 Voice Note' ? msg.message : null,
+      name: caption || undefined,
+      caption,
     };
   }
 
@@ -236,13 +260,19 @@
       let url = `${API_URL}/chat/history`;
       if (savingId) url += `?saving_id=${savingId}`;
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${auth.token}` } });
-      const data = await readApiJson<{ room_id?: string; messages?: any[] }>(res);
+      const data = await readApiJson<{ room_id?: string; messages?: any[]; error?: string }>(res);
       if (res.ok) {
         roomId = data.room_id || null;
-        messages = data.messages || [];
+        // Pesan optimistik yang belum di-ack dipertahankan di akhir daftar.
+        const pending = messages.filter(m => m._pending);
+        messages = [...(data.messages || []), ...pending];
         scrollToBottom();
+      } else {
+        showToast(data?.error || 'Gagal memuat riwayat chat');
       }
-    } catch(e) {}
+    } catch (e) {
+      showToast('Gagal memuat riwayat chat');
+    }
   }
 
   function sendReadReceipt() {
@@ -252,7 +282,8 @@
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     let lastSeenId = 0;
     for (const m of messages) {
-      if (!m.is_deleted && m.id > lastSeenId) lastSeenId = m.id;
+      // Pesan optimistik memakai id string — abaikan.
+      if (typeof m.id === 'number' && !m.is_deleted && m.id > lastSeenId) lastSeenId = m.id;
     }
     if (lastSeenId <= 0) return;
     ws.send(JSON.stringify({ type: 'read', data: { last_id: lastSeenId } }));
@@ -267,7 +298,14 @@
     } catch (e) { ws = null; }
     if (!ws) return;
     
-    ws.onopen = () => { connected = true; reconnectAttempts = 0; sendReadReceipt(); };
+    ws.onopen = async () => {
+      connected = true;
+      const wasReconnect = reconnectAttempts > 0;
+      reconnectAttempts = 0;
+      // Setelah putus koneksi, ambil ulang riwayat agar pesan yang terlewat masuk.
+      if (wasReconnect) await fetchHistory();
+      sendReadReceipt();
+    };
     ws.onclose = async () => {
       connected = false;
       if (!auth.token) return;
@@ -298,7 +336,11 @@
         if (msg.type === 'delete') {
           messages = messages.map(m => m.id === msg.data.id ? { ...m, is_deleted: true } : m);
         } else if (msg.type === 'pin') {
-          messages = messages.map(m => m.id === msg.data.id ? { ...m, is_pinned: msg.data.is_pinned } : m);
+          messages = messages.map(m => {
+            if (m.id === msg.data.id) return { ...m, is_pinned: msg.data.is_pinned, pin_expires_at: msg.data.pin_expires_at ?? null };
+            // Hanya satu pesan tersemat per room.
+            return msg.data.is_pinned && m.is_pinned ? { ...m, is_pinned: false, pin_expires_at: null } : m;
+          });
         } else if (msg.type === 'star') {
           messages = messages.map(m => m.id === msg.data.id ? { ...m, is_starred: msg.data.is_starred } : m);
         } else if (msg.type === 'edit') {
@@ -310,23 +352,29 @@
           const lastId = msg.data?.last_id;
           if (lastId != null) {
             messages = messages.map(m =>
-              m.sender_id === auth.user?.id && m.id <= lastId ? { ...m, is_read: 1 } : m
+              m.sender_id === auth.user?.id && typeof m.id === 'number' && m.id <= lastId ? { ...m, is_read: 1 } : m
             );
           }
         } else if (msg.type === 'chat' && msg.data) {
-          const optimisticIndex = messages.findIndex(m =>
-            m.id >= 1000000000000 &&
-            m.sender_id === msg.data.sender_id &&
-            m.message === msg.data.message
-          );
+          const incoming = msg.data;
+          const isMine = incoming.sender_id === auth.user?.id;
+          const wasAtBottom = isNearBottom();
+          // Ganti placeholder optimistik berdasarkan client_id yang di-echo server.
+          const optimisticIndex = incoming.client_id
+            ? messages.findIndex(m => m.client_id === incoming.client_id)
+            : -1;
           if (optimisticIndex >= 0) {
-            messages = messages.map((m, index) => index === optimisticIndex ? msg.data : m);
-          } else if (!messages.some(m => m.id === msg.data.id)) {
-            messages = [...messages, msg.data];
+            const placeholder = messages[optimisticIndex];
+            if (placeholder.file_url && placeholder.file_url.startsWith('blob:')) {
+              URL.revokeObjectURL(placeholder.file_url);
+            }
+            messages = messages.map((m, index) => index === optimisticIndex ? incoming : m);
+          } else if (!messages.some(m => m.id === incoming.id)) {
+            messages = [...messages, incoming];
           }
-          scrollToBottom();
-          if (msg.data.sender_id !== auth.user?.id) {
-            showToast(`Pesan baru${msg.data.type !== 'text' ? ' (' + msg.data.type + ')' : ': "' + msg.data.message + '"'}`);
+          if (isMine || wasAtBottom) scrollToBottom();
+          if (!isMine) {
+            showToast(`Pesan baru${incoming.type !== 'text' ? ' (' + incoming.type + ')' : ': "' + incoming.message + '"'}`);
             // Beri tahu pasangan bahwa pesan mereka sudah terbaca
             sendReadReceipt();
           }
@@ -369,100 +417,123 @@
 
   async function sendMessage(e?: Event) {
     if (e) e.preventDefault();
-    if (!roomId) return;
-    
+
+    const pendingFile = attachment;
+    const msgType = pendingFile ? messageTypeOf(pendingFile) : 'text';
+    // Teks yang diketik menjadi caption lampiran; bila kosong pakai nama file
+    // (voice note memakai labelnya sendiri).
     let msgText = newMessage.trim();
-    let msgType = 'text';
-    let fileUrl = null;
-    
-    if (attachmentPreview) {
-      msgType = attachment?.type.startsWith('image/') ? 'image' : 'file';
-      fileUrl = attachmentPreview; // Optimistic
+    if (!msgText && pendingFile) {
+      msgText = msgType === 'audio' ? VOICE_NOTE_LABEL : pendingFile.name;
     }
-    
-    if (!msgText && !attachmentPreview) return;
-    
+    if (!msgText && !pendingFile) return;
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      showToast('Chat sedang menghubungkan ulang, coba lagi sebentar');
+      return;
+    }
+
+    const clientId = `c${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const replyId = replyingTo?.id ?? null;
+    const localPreview = attachmentPreview;
+    const draftText = newMessage;
+    const draftReply = replyingTo;
+
     newMessage = '';
-    const tempCreatedAt = new Date().toISOString();
-    const tempMsg = { 
-      id: Date.now(), 
-      sender_id: auth.user?.id, 
-      message: msgText, 
+    replyingTo = null;
+    // Preview lokal masih dipakai bubble optimistik, jadi jangan di-revoke di sini.
+    attachment = null;
+    attachmentPreview = null;
+
+    messages = [...messages, {
+      id: clientId,
+      client_id: clientId,
+      sender_id: auth.user?.id,
+      message: msgText,
       type: msgType,
-      file_url: fileUrl,
-      reply_to_id: replyingTo?.id || null,
-      created_at: tempCreatedAt,
-      _sent: true // menandai belum mendapat ack dari server (1 centang)
-    };
-    
-    messages = [...messages, tempMsg];
+      file_url: localPreview,
+      reply_to_id: replyId,
+      created_at: new Date().toISOString(),
+      _pending: true // belum ada ack dari server → 1 centang
+    }];
     scrollToBottom();
 
-    let uploadedUrl = null;
-    if (attachment) {
+    let uploadedUrl: string | null = null;
+    if (pendingFile) {
       const formData = new FormData();
-      formData.append('file', attachment);
+      formData.append('file', pendingFile);
       try {
         const uploadRes = await fetch(`${API_URL}/chat/upload`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${auth.token}` },
           body: formData
         });
-        if (!uploadRes.ok) throw new Error('Upload gagal');
-        const uploadData = await readApiJson<{ url?: string }>(uploadRes);
-        if (!uploadData.url) throw new Error('Upload gagal');
+        const uploadData = await readApiJson<{ url?: string; error?: string }>(uploadRes);
+        if (!uploadRes.ok || !uploadData.url) throw new Error(uploadData?.error || 'Upload gagal');
         uploadedUrl = uploadData.url;
-        tempMsg.file_url = uploadedUrl;
-      } catch (e) {
-        showToast('Gagal mengunggah file');
+      } catch (err: any) {
+        // Gagal: buang placeholder dan kembalikan draft agar bisa dikirim ulang.
+        messages = messages.filter(m => m.client_id !== clientId);
+        if (localPreview) URL.revokeObjectURL(localPreview);
+        attachment = pendingFile;
+        attachmentPreview = URL.createObjectURL(pendingFile);
+        newMessage = draftText;
+        replyingTo = draftReply;
+        showToast(err?.message || 'Gagal mengunggah file');
         return;
       }
     }
-    
-    const replyId = replyingTo?.id;
-    replyingTo = null;
-    attachment = null;
-    attachmentPreview = null;
 
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'chat', data: {
-        sender_id: auth.user?.id,
-        message: msgText,
-        type: msgType,
-        file_url: uploadedUrl,
-        reply_to_id: replyId
-      }}));
-    } else {
-      showToast('Chat sedang menghubungkan ulang');
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      messages = messages.filter(m => m.client_id !== clientId);
+      if (localPreview) URL.revokeObjectURL(localPreview);
+      showToast('Koneksi terputus, pesan tidak terkirim');
+      return;
     }
+
+    ws.send(JSON.stringify({ type: 'chat', data: {
+      client_id: clientId,
+      message: msgText,
+      type: msgType,
+      file_url: uploadedUrl,
+      reply_to_id: replyId
+    }}));
   }
 
-  async function deleteMessage(id: number) {
+  async function deleteMessage(id: number | string) {
+    // Pesan optimistik belum punya id server — tidak bisa dihapus.
+    if (typeof id !== 'number') return;
     if (!confirm('Hapus pesan ini?')) return;
+    const before = messages;
+    messages = messages.map(m => m.id === id ? { ...m, is_deleted: true } : m);
     try {
-      messages = messages.map(m => m.id === id ? { ...m, is_deleted: true } : m);
-      await fetch(`${API_URL}/chat/${id}`, {
+      const res = await fetch(`${API_URL}/chat/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
+      if (!res.ok) throw new Error('gagal');
+      // Beri tahu pasangan lewat WebSocket (REST sudah menyimpan perubahan).
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'delete', data: { id } }));
       }
-    } catch (e) {}
+    } catch (e) {
+      messages = before;
+      showToast('Gagal menghapus pesan');
+    }
   }
 
   let pinDurationVisible = $state(false);
   let pinTargetMsg = $state<any | null>(null);
 
   function openPinMenu(msg: any) {
+    if (typeof msg.id !== 'number') return;
     pinTargetMsg = msg;
     if (msg.is_pinned) {
-      // Unpin immediately
-      const isPinnedNow = false;
-      messages = messages.map(m => m.id === msg.id ? { ...m, is_pinned: isPinnedNow } : m);
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'pin', data: { id: msg.id, is_pinned: isPinnedNow } }));
+      // Lepas sematan langsung
+      if (sendWs({ type: 'pin', data: { id: msg.id, is_pinned: false } })) {
+        messages = messages.map(m => m.id === msg.id ? { ...m, is_pinned: false, pin_expires_at: null } : m);
       }
+      pinTargetMsg = null;
     } else {
       pinDurationVisible = true;
     }
@@ -470,19 +541,25 @@
 
   function pinWithDuration(hours: number) {
     if (!pinTargetMsg) return;
-    messages = messages.map(m => m.id === pinTargetMsg.id ? { ...m, is_pinned: true } : m);
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'pin', data: { id: pinTargetMsg.id, is_pinned: true, duration_hours: hours } }));
+    const target = pinTargetMsg;
+    const expiresAt = new Date(Date.now() + hours * 3600_000).toISOString();
+    if (sendWs({ type: 'pin', data: { id: target.id, is_pinned: true, duration_hours: hours } })) {
+      // Hanya satu pesan tersemat per room.
+      messages = messages.map(m =>
+        m.id === target.id
+          ? { ...m, is_pinned: true, pin_expires_at: expiresAt }
+          : (m.is_pinned ? { ...m, is_pinned: false, pin_expires_at: null } : m)
+      );
     }
     pinDurationVisible = false;
     pinTargetMsg = null;
   }
 
   function toggleStar(msg: any) {
+    if (typeof msg.id !== 'number') return;
     const isStarredNow = !msg.is_starred;
-    messages = messages.map(m => m.id === msg.id ? { ...m, is_starred: isStarredNow } : m);
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'star', data: { id: msg.id, is_starred: isStarredNow } }));
+    if (sendWs({ type: 'star', data: { id: msg.id, is_starred: isStarredNow } })) {
+      messages = messages.map(m => m.id === msg.id ? { ...m, is_starred: isStarredNow } : m);
     }
   }
 
@@ -490,6 +567,7 @@
   let editText = $state('');
 
   function startEdit(msg: any) {
+    if (typeof msg.id !== 'number') return;
     editingMsg = msg;
     editText = msg.message;
   }
@@ -502,45 +580,54 @@
   function submitEdit() {
     if (!editingMsg || !editText.trim()) return;
     const newText = editText.trim();
-    messages = messages.map(m => m.id === editingMsg.id ? { ...m, message: newText, is_edited: true } : m);
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'edit', data: { id: editingMsg.id, message: newText } }));
+    const targetId = editingMsg.id;
+    if (sendWs({ type: 'edit', data: { id: targetId, message: newText } })) {
+      messages = messages.map(m => m.id === targetId ? { ...m, message: newText, is_edited: true } : m);
     }
     editingMsg = null;
     editText = '';
   }
 
+  function parseReactions(reactionsStr: string | null): Record<string, string> {
+    if (!reactionsStr) return {};
+    try {
+      const obj = JSON.parse(reactionsStr);
+      return obj && typeof obj === 'object' ? obj : {};
+    } catch (e) { return {}; }
+  }
+
   function sendReaction(msg: any, emoji: string) {
     const userId = auth.user?.id;
-    if (!userId) return;
-    const reactionsObj = msg.reactions ? JSON.parse(msg.reactions) : {};
-    // Toggle same reaction off
+    if (!userId || typeof msg.id !== 'number') return;
+    const reactionsObj = parseReactions(msg.reactions);
+    // Reaksi yang sama ditekan lagi → dilepas
     if (reactionsObj[userId] === emoji) {
       delete reactionsObj[userId];
     } else {
       reactionsObj[userId] = emoji;
     }
     const reactionsStr = JSON.stringify(reactionsObj);
-    messages = messages.map(m => m.id === msg.id ? { ...m, reactions: reactionsStr } : m);
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'react', data: { id: msg.id, emoji: reactionsObj[userId] || null } }));
+    if (sendWs({ type: 'react', data: { id: msg.id, emoji: reactionsObj[userId] || null } })) {
+      messages = messages.map(m => m.id === msg.id ? { ...m, reactions: reactionsStr } : m);
     }
   }
 
   function copyText(text: string) {
-    navigator.clipboard.writeText(text).then(() => showToast('Pesan disalin'));
+    const value = (text || '').trim();
+    if (!value) return showToast('Tidak ada teks untuk disalin');
+    navigator.clipboard?.writeText(value)
+      .then(() => showToast('Pesan disalin'))
+      .catch(() => showToast('Gagal menyalin pesan'));
   }
 
   function getReactionSummary(reactionsStr: string | null): {emoji: string, count: number}[] {
     if (!reactionsStr) return [];
-    try {
-      const obj: Record<string, string> = JSON.parse(reactionsStr);
-      const counts: Record<string, number> = {};
-      for (const emoji of Object.values(obj)) {
-        counts[emoji] = (counts[emoji] || 0) + 1;
-      }
-      return Object.entries(counts).map(([emoji, count]) => ({ emoji, count }));
-    } catch(e) { return []; }
+    const obj = parseReactions(reactionsStr);
+    const counts: Record<string, number> = {};
+    for (const emoji of Object.values(obj)) {
+      counts[emoji] = (counts[emoji] || 0) + 1;
+    }
+    return Object.entries(counts).map(([emoji, count]) => ({ emoji, count }));
   }
 
   function getDateLabel(dateStr: string): string {
@@ -578,20 +665,19 @@
   });
 
   function handleFileSelect(e: any) {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    attachment = file;
-    attachmentPreview = URL.createObjectURL(file);
-    if (!newMessage) newMessage = file.name;
+    if (file.size > MAX_UPLOAD_BYTES) return showToast('Ukuran file maksimal 15 MB');
+    setAttachment(file);
   }
 
   function handleCameraSelect(e: any) {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    attachment = file;
-    attachmentPreview = URL.createObjectURL(file);
-    if (!newMessage) newMessage = file.name;
+    if (file.size > MAX_UPLOAD_BYTES) return showToast('Ukuran file maksimal 15 MB');
+    setAttachment(file);
   }
 
   async function startRecording() {
@@ -602,10 +688,8 @@
       mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const file = new File([audioBlob], 'voice_note.webm', { type: 'audio/webm' });
-        attachment = file;
-        attachmentPreview = URL.createObjectURL(file);
-        newMessage = '🎤 Voice Note';
+        const file = new File([audioBlob], `voice_note_${Date.now()}.webm`, { type: 'audio/webm' });
+        setAttachment(file);
       };
       mediaRecorder.start();
       isRecording = true;
@@ -634,6 +718,22 @@
   async function scrollToBottom() {
     await tick();
     if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  /** Pengguna sedang membaca di dasar daftar (jangan paksa scroll bila tidak). */
+  function isNearBottom() {
+    if (!chatContainer) return true;
+    return chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 120;
+  }
+
+  /** Kirim event lewat WebSocket; beri tahu pengguna bila koneksi terputus. */
+  function sendWs(payload: unknown) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload));
+      return true;
+    }
+    showToast('Koneksi terputus, perubahan belum tersimpan');
+    return false;
   }
 </script>
 
@@ -844,7 +944,7 @@
                   <div class="msg-file-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
                   </div>
-                  <span class="msg-file-name">{msg.message && msg.message !== '🎤 Voice Note' ? msg.message : 'File'}</span>
+                  <span class="msg-file-name">{msg.message && msg.message !== VOICE_NOTE_LABEL ? msg.message : 'File'}</span>
                 </button>
               {/if}
               {#if msg.type === 'audio' && msg.file_url}
@@ -873,16 +973,16 @@
               {#if msg.is_starred}<span class="msg-star"><svg width="10" height="10" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>{/if}
               <span class="msg-time">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
               {#if isMine && !msg.is_deleted}
-                {#if msg.is_read}
+                {#if msg._pending}
+                  <span class="msg-tick" aria-label="Mengirim">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                {:else if msg.is_read}
                   <span class="msg-tick msg-tick--read" aria-label="Dibaca">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
                   </span>
-                {:else if msg._sent}
-                  <span class="msg-tick" aria-label="Terkirim">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  </span>
                 {:else}
-                  <span class="msg-tick" aria-label="Terikirim ke server">
+                  <span class="msg-tick" aria-label="Terkirim">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
                   </span>
                 {/if}
@@ -903,7 +1003,7 @@
               <div class="reaction-bar">
                 {#each ['❤️','👍','😂','😮','😢','🙏'] as emoji}
                   <button
-                    class="reaction-btn {(contextMessage.reactions && auth.user?.id && JSON.parse(contextMessage.reactions)[auth.user.id] === emoji) ? 'reaction-btn--active' : ''}"
+                    class="reaction-btn {(auth.user?.id && parseReactions(contextMessage.reactions)[auth.user.id] === emoji) ? 'reaction-btn--active' : ''}"
                     onclick={() => { sendReaction(contextMessage, emoji); closeContextMenu(); }}
                     aria-label={emoji}
                   >{emoji}</button>
@@ -915,10 +1015,12 @@
                 <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a8 8 0 0 1 8 8v2M3 10l6 6M3 10l6-6"/></svg>
                 Balas
               </button>
+              {#if contextMessage.message}
               <button class="context-item" onclick={() => { copyText(contextMessage.message); closeContextMenu(); }}>
                 <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 Salin
               </button>
+              {/if}
               <button class="context-item" onclick={() => { openPinMenu(contextMessage); closeContextMenu(); }}>
                 <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17H19M12 17V3M9 3h6"/></svg>
                 {contextMessage.is_pinned ? 'Batal Sematkan' : 'Sematkan'}
@@ -933,14 +1035,6 @@
                   Edit
                 </button>
               {/if}
-              <button class="context-item" onclick={closeContextMenu}>
-                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Info
-              </button>
-              <button class="context-item" onclick={closeContextMenu}>
-                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                Pilih pesan
-              </button>
               {#if contextMessage.sender_id === auth.user?.id && !contextMessage.is_deleted}
                 <div class="context-divider"></div>
                 <button class="context-item context-item--danger" onclick={() => { deleteMessage(contextMessage.id); closeContextMenu(); }}>
@@ -964,7 +1058,7 @@
           <strong class="reply-preview__author">Membalas {replyingTo.sender_id === auth.user?.id ? 'Kamu' : 'Pasangan'}</strong>
           <p class="reply-preview__text">{replyingTo.message || 'Media'}</p>
         </div>
-        <button type="button" class="reply-preview__close" onclick={() => replyingTo = null}>
+        <button type="button" class="reply-preview__close" onclick={() => replyingTo = null} aria-label="Batalkan balasan">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1307,8 +1401,6 @@
   /* Recording indicator */
   .recording-indicator { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #EF4444; padding: 0 8px; }
   .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #EF4444; animation: pulse 1s infinite; flex-shrink: 0; }
-  .action-btn:hover { opacity: 1; }
-  .delete-btn { color: #F43F5E; }
   .msg-reply-bubble { background: rgba(0,0,0,0.1); border-left: 3px solid rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; font-size: 12px; }
   .attachment-preview { padding: 8px; display: flex; gap: 8px; align-items: center; background: #EFF6FF; border-radius: 8px; margin-bottom: 8px; }
   .attachment-preview img { max-height: 60px; border-radius: 4px; }

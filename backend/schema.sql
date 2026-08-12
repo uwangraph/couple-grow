@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS messages (
   is_edited BOOLEAN DEFAULT 0,
   reactions TEXT,
   is_read BOOLEAN DEFAULT 0,
+  pin_expires_at DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (room_id) REFERENCES chat_rooms(id),
   FOREIGN KEY (sender_id) REFERENCES users(id),

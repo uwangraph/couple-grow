@@ -26,6 +26,13 @@ async function ensureAttributionColumns(db: D1Database) {
   }
 }
 
+// Kolom chat yang ditambahkan setelah rilis awal.
+async function ensureChatColumns(db: D1Database) {
+  for (const column of ['pin_expires_at DATETIME']) {
+    try { await db.prepare(`ALTER TABLE messages ADD COLUMN ${column}`).run() } catch (_) { /* already exists */ }
+  }
+}
+
 async function notifyPartner(db: D1Database, partnerId: string | undefined, actorId: string, type: string, title: string, message: string, link: string) {
   if (!partnerId) return
   await db.prepare(`CREATE TABLE IF NOT EXISTS notifications (
@@ -251,6 +258,7 @@ app.use('/*', async (c, next) => {
     // Run compatibility migrations only for authenticated application requests.
     // Public/invalid requests must not trigger database DDL work.
     if (path !== '/auth/login' && path !== '/auth/register') await ensureAttributionColumns(c.env.DB)
+    if (path.startsWith('/chat/')) await ensureChatColumns(c.env.DB)
     return next() // Use return next() to be safer
   } catch (e: any) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -1655,8 +1663,14 @@ app.get('/chat/history', async (c) => {
     }
   }
 
-  const messages = await c.env.DB.prepare('SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC LIMIT 100').bind(room?.id).all()
-  return c.json({ room_id: room?.id, messages: messages.results })
+  // Lepas sematan yang sudah kedaluwarsa sebelum mengirim riwayat.
+  await c.env.DB.prepare(
+    "UPDATE messages SET is_pinned = 0, pin_expires_at = NULL WHERE room_id = ? AND is_pinned = 1 AND pin_expires_at IS NOT NULL AND pin_expires_at <= ?"
+  ).bind(room?.id, new Date().toISOString()).run()
+
+  // Ambil 100 pesan terbaru, lalu urutkan menaik untuk ditampilkan.
+  const messages = await c.env.DB.prepare('SELECT * FROM messages WHERE room_id = ? ORDER BY id DESC LIMIT 100').bind(room?.id).all()
+  return c.json({ room_id: room?.id, messages: (messages.results || []).slice().reverse() })
 })
 
 app.post('/chat/send', async (c) => {
@@ -1704,12 +1718,19 @@ app.post('/chat/upload', async (c) => {
   if (!file || !(file instanceof File)) {
     return c.json({ error: 'File is required' }, 400)
   }
-  if (!file.type.startsWith('image/') && !file.type.startsWith('audio/')) {
-    return c.json({ error: 'File harus berupa gambar atau audio' }, 400)
+  const allowedDocTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ]
+  if (!file.type.startsWith('image/') && !file.type.startsWith('audio/') && !allowedDocTypes.includes(file.type)) {
+    return c.json({ error: 'File harus berupa gambar, audio, atau dokumen (PDF/Word)' }, 400)
   }
   if (file.size > 15 * 1024 * 1024) return c.json({ error: 'Ukuran file maksimal 15 MB' }, 400)
   
-  const ext = file.type.split('/')[1]?.replace(/[^a-z0-9]/gi, '').slice(0, 8) || 'bin'
+  // Utamakan ekstensi asli file; MIME docx dsb. tidak memberi ekstensi yang berguna.
+  const nameExt = file.name.includes('.') ? file.name.split('.').pop()!.replace(/[^a-z0-9]/gi, '').slice(0, 8) : ''
+  const ext = nameExt || file.type.split('/')[1]?.replace(/[^a-z0-9]/gi, '').slice(0, 8) || 'bin'
   const filename = `chat/${payload.id}/${crypto.randomUUID()}.${ext}`
   
   await c.env.MEDIA.put(filename, await file.arrayBuffer(), {

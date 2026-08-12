@@ -4,11 +4,14 @@ interface Env {
   DB: D1Database
 }
 
-export class ChatRoom extends DurableObject {
-  private sessions: Map<WebSocket, string> = new Map()
-  private coupleId: string = ''
-  private savingId: string = 'global'
+/** Info sesi yang disimpan di attachment WebSocket agar selamat dari hibernasi. */
+interface SessionInfo {
+  userId: string
+  coupleId: string
+  savingId: string
+}
 
+export class ChatRoom extends DurableObject {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
   }
@@ -19,12 +22,21 @@ export class ChatRoom extends DurableObject {
       return new Response('Expected Upgrade: websocket', { status: 426 })
     }
 
-    // Extract user info from headers set by the gateway
-    this.coupleId = request.headers.get('X-Couple-Id') || ''
-    this.savingId = request.headers.get('X-Saving-Id') || 'global'
+    const info: SessionInfo = {
+      userId: request.headers.get('X-User-Id') || '',
+      coupleId: request.headers.get('X-Couple-Id') || '',
+      savingId: request.headers.get('X-Saving-Id') || 'global',
+    }
+    if (!info.userId || !info.coupleId) {
+      return new Response('Unauthorized', { status: 401 })
+    }
 
     const [client, server] = Object.values(new WebSocketPair())
-    await this.handleSession(server, request.headers.get('X-User-Id') || '')
+    // Hibernation API: identitas sesi disimpan di attachment, bukan di memori
+    // instance — DO bisa di-evict kapan saja dan Map in-memory akan hilang.
+    this.ctx.acceptWebSocket(server)
+    server.serializeAttachment(info)
+    server.send(JSON.stringify({ type: 'connected', message: 'Connected to chat room' }))
 
     return new Response(null, {
       status: 101,
@@ -32,211 +44,185 @@ export class ChatRoom extends DurableObject {
     })
   }
 
-  async handleSession(webSocket: WebSocket, userId: string) {
-    this.ctx.acceptWebSocket(webSocket)
-    this.sessions.set(webSocket, userId)
-
-    // Send a welcome message
-    webSocket.send(JSON.stringify({ type: 'connected', message: 'Connected to chat room' }))
+  private sessionInfo(ws: WebSocket): SessionInfo | null {
+    try {
+      const info = ws.deserializeAttachment() as SessionInfo | null
+      if (!info?.userId || !info?.coupleId) return null
+      return info
+    } catch (e) {
+      return null
+    }
   }
 
-  private async currentRoomId() {
-    const query = this.savingId && this.savingId !== 'global'
-      ? 'SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id = ?'
-      : 'SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id IS NULL'
-    const args = this.savingId && this.savingId !== 'global'
-      ? [this.coupleId, this.savingId]
-      : [this.coupleId]
-    const room = await (this.env as any).DB.prepare(query).bind(...args).first()
-    return room?.id || null
+  /** Kirim payload ke sesi lain (atau semua bila includeSelf). */
+  private broadcast(payload: unknown, from: WebSocket | null, includeSelf = false) {
+    const data = JSON.stringify(payload)
+    for (const session of this.ctx.getWebSockets()) {
+      if (!includeSelf && session === from) continue
+      try { session.send(data) } catch (e) { try { session.close() } catch (_) {} }
+    }
+  }
+
+  private async currentRoomId(info: SessionInfo) {
+    const isSaving = info.savingId && info.savingId !== 'global'
+    const room = isSaving
+      ? await (this.env as any).DB.prepare('SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id = ?').bind(info.coupleId, info.savingId).first()
+      : await (this.env as any).DB.prepare('SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id IS NULL').bind(info.coupleId).first()
+    return room?.id ?? null
+  }
+
+  /** Ambil room, buat bila belum ada (dipakai saat kirim pesan). */
+  private async ensureRoomId(info: SessionInfo) {
+    const existing = await this.currentRoomId(info)
+    if (existing) return existing
+    const isSaving = info.savingId && info.savingId !== 'global'
+    const created = isSaving
+      ? await (this.env as any).DB.prepare('INSERT INTO chat_rooms (couple_id, saving_id, name) VALUES (?, ?, ?) RETURNING id').bind(info.coupleId, info.savingId, 'Saving Chat').first()
+      : await (this.env as any).DB.prepare('INSERT INTO chat_rooms (couple_id, name) VALUES (?, ?) RETURNING id').bind(info.coupleId, 'Global').first()
+    return created?.id ?? null
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
-    const authenticatedUserId = this.sessions.get(ws)
-    if (!authenticatedUserId) return
+    const info = this.sessionInfo(ws)
+    if (!info) return
+    const senderId = info.userId
 
     let msgData: any
     try {
       msgData = JSON.parse(message as string)
     } catch (e) {
-      msgData = { message: message as string, sender_id: 'unknown', created_at: new Date().toISOString() }
+      return
     }
 
     const eventType = msgData.type || 'chat'
     const innerData = msgData.data || msgData
-    // The sender is derived from the authenticated WebSocket session. Never
-    // trust sender_id supplied by the client.
-    const senderId = authenticatedUserId
 
     try {
       if (eventType === 'delete') {
         const msgId = innerData.id
-        const roomId = await this.currentRoomId()
-        await (this.env as any).DB.prepare('UPDATE messages SET is_deleted = 1 WHERE id = ? AND room_id = ? AND sender_id = ?').bind(msgId, roomId, senderId).run()
-        
-        for (const session of this.sessions.keys()) {
-          if (session !== ws) {
-            try { session.send(JSON.stringify({ type: 'delete', data: { id: msgId } })) } catch (e) { this.sessions.delete(session) }
-          }
-        }
+        const roomId = await this.currentRoomId(info)
+        if (!roomId || !msgId) return
+        const res = await (this.env as any).DB.prepare('UPDATE messages SET is_deleted = 1 WHERE id = ? AND room_id = ? AND sender_id = ?').bind(msgId, roomId, senderId).run()
+        if (!res?.meta?.changes) return
+        this.broadcast({ type: 'delete', data: { id: msgId } }, ws)
         return
       }
 
       if (eventType === 'pin') {
         const msgId = innerData.id
         const isPinned = innerData.is_pinned ? 1 : 0
-        const roomId = await this.currentRoomId()
-        await (this.env as any).DB.prepare('UPDATE messages SET is_pinned = ? WHERE id = ? AND room_id = ?').bind(isPinned, msgId, roomId).run()
-        
-        for (const session of this.sessions.keys()) {
-          if (session !== ws) {
-            try { session.send(JSON.stringify({ type: 'pin', data: { id: msgId, is_pinned: isPinned === 1 } })) } catch (e) { this.sessions.delete(session) }
+        const roomId = await this.currentRoomId(info)
+        if (!roomId || !msgId) return
+        // Hanya satu pesan tersemat per room (seperti perilaku di UI).
+        let expiresAt: string | null = null
+        if (isPinned) {
+          const hours = Number(innerData.duration_hours)
+          if (Number.isFinite(hours) && hours > 0) {
+            expiresAt = new Date(Date.now() + hours * 3600_000).toISOString()
           }
+          await (this.env as any).DB.prepare('UPDATE messages SET is_pinned = 0, pin_expires_at = NULL WHERE room_id = ? AND is_pinned = 1').bind(roomId).run()
         }
+        const res = await (this.env as any).DB.prepare('UPDATE messages SET is_pinned = ?, pin_expires_at = ? WHERE id = ? AND room_id = ?').bind(isPinned, expiresAt, msgId, roomId).run()
+        if (!res?.meta?.changes) return
+        this.broadcast({ type: 'pin', data: { id: msgId, is_pinned: isPinned === 1, pin_expires_at: expiresAt } }, ws)
         return
       }
 
       if (eventType === 'star') {
         const msgId = innerData.id
         const isStarred = innerData.is_starred ? 1 : 0
-        const roomId = await this.currentRoomId()
-        await (this.env as any).DB.prepare('UPDATE messages SET is_starred = ? WHERE id = ? AND room_id = ?').bind(isStarred, msgId, roomId).run()
-        
-        for (const session of this.sessions.keys()) {
-          if (session !== ws) {
-            try { session.send(JSON.stringify({ type: 'star', data: { id: msgId, is_starred: isStarred === 1 } })) } catch (e) { this.sessions.delete(session) }
-          }
-        }
+        const roomId = await this.currentRoomId(info)
+        if (!roomId || !msgId) return
+        const res = await (this.env as any).DB.prepare('UPDATE messages SET is_starred = ? WHERE id = ? AND room_id = ?').bind(isStarred, msgId, roomId).run()
+        if (!res?.meta?.changes) return
+        this.broadcast({ type: 'star', data: { id: msgId, is_starred: isStarred === 1 } }, ws)
         return
       }
 
       if (eventType === 'edit') {
         const msgId = innerData.id
-        const newText = innerData.message
-        const roomId = await this.currentRoomId()
-        await (this.env as any).DB.prepare('UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND room_id = ? AND sender_id = ?').bind(newText, msgId, roomId, senderId).run()
-        
-        for (const session of this.sessions.keys()) {
-          if (session !== ws) {
-            try { session.send(JSON.stringify({ type: 'edit', data: { id: msgId, message: newText } })) } catch (e) { this.sessions.delete(session) }
-          }
-        }
+        const newText = typeof innerData.message === 'string' ? innerData.message.trim() : ''
+        const roomId = await this.currentRoomId(info)
+        if (!roomId || !msgId || !newText) return
+        const res = await (this.env as any).DB.prepare('UPDATE messages SET message = ?, is_edited = 1 WHERE id = ? AND room_id = ? AND sender_id = ? AND is_deleted = 0').bind(newText, msgId, roomId, senderId).run()
+        if (!res?.meta?.changes) return
+        this.broadcast({ type: 'edit', data: { id: msgId, message: newText } }, ws)
         return
       }
 
       if (eventType === 'react') {
         const msgId = innerData.id
         const emoji = innerData.emoji
-        
-        // Fetch current reactions
-        const roomId = await this.currentRoomId()
+        const roomId = await this.currentRoomId(info)
+        if (!roomId || !msgId) return
         const msgRec = await (this.env as any).DB.prepare('SELECT reactions FROM messages WHERE id = ? AND room_id = ?').bind(msgId, roomId).first()
-        let reactionsObj: Record<string, string> = {}
-        if (msgRec && msgRec.reactions) {
-          try { reactionsObj = JSON.parse(msgRec.reactions) } catch(e) {}
-        }
-        
-        if (emoji) {
-          reactionsObj[senderId] = emoji
-        } else {
-          delete reactionsObj[senderId]
-        }
-        
-        const reactionsStr = JSON.stringify(reactionsObj)
         if (!msgRec) return
-        await (this.env as any).DB.prepare('UPDATE messages SET reactions = ? WHERE id = ? AND room_id = ?').bind(reactionsStr, msgId, roomId).run()
-        
-        for (const session of this.sessions.keys()) {
-          if (session !== ws) {
-            try { session.send(JSON.stringify({ type: 'react', data: { id: msgId, reactions: reactionsStr } })) } catch (e) { this.sessions.delete(session) }
-          }
+
+        let reactionsObj: Record<string, string> = {}
+        if (msgRec.reactions) {
+          try { reactionsObj = JSON.parse(msgRec.reactions) } catch (e) {}
         }
+        if (emoji) reactionsObj[senderId] = emoji
+        else delete reactionsObj[senderId]
+
+        const reactionsStr = JSON.stringify(reactionsObj)
+        await (this.env as any).DB.prepare('UPDATE messages SET reactions = ? WHERE id = ? AND room_id = ?').bind(reactionsStr, msgId, roomId).run()
+        this.broadcast({ type: 'react', data: { id: msgId, reactions: reactionsStr } }, ws)
         return
       }
 
-      // Read receipt: sender menandai pesan yang sudah dibaca
+      // Read receipt: pembaca menandai pesan pasangan sebagai sudah dibaca.
       if (eventType === 'read') {
         const upToId = innerData.last_id ?? innerData.id ?? null
-        const roomId = await this.currentRoomId()
-        if (roomId && upToId) {
-          // Tandai pesan dari pasangan (sender_id != current reader) sbg dibaca
-          await (this.env as any).DB.prepare(
-            'UPDATE messages SET is_read = 1 WHERE room_id = ? AND sender_id != ? AND id <= ?'
-          ).bind(roomId, senderId, upToId).run()
-        }
-        // Beri tahu sesi lain (pasangan) bahwa pesan sudah dibaca
-        for (const session of this.sessions.keys()) {
-          if (session !== ws) {
-            try { session.send(JSON.stringify({ type: 'read', data: { last_id: upToId, reader_id: senderId } })) } catch (e) { this.sessions.delete(session) }
-          }
-        }
+        const roomId = await this.currentRoomId(info)
+        if (!roomId || !upToId) return
+        const res = await (this.env as any).DB.prepare(
+          'UPDATE messages SET is_read = 1 WHERE room_id = ? AND sender_id != ? AND id <= ? AND is_read = 0'
+        ).bind(roomId, senderId, upToId).run()
+        // Tidak perlu menyiarkan bila tidak ada perubahan status.
+        if (!res?.meta?.changes) return
+        this.broadcast({ type: 'read', data: { last_id: upToId, reader_id: senderId } }, ws)
         return
       }
 
-      // Handling 'chat' event
-      const messageText = innerData.message || ''
+      // Event 'chat'
+      const messageText = typeof innerData.message === 'string' ? innerData.message : ''
       const msgType = innerData.type || 'text'
       const fileUrl = innerData.file_url || null
       const replyToId = innerData.reply_to_id || null
+      const clientId = innerData.client_id || null
+      if (!messageText.trim() && !fileUrl) return
 
-      // Find or create the chat room in DB
-      let room: any
-      if (this.savingId && this.savingId !== 'global') {
-        room = await (this.env as any).DB.prepare(
-          'SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id = ?'
-        ).bind(this.coupleId, this.savingId).first()
-        if (!room) {
-          room = await (this.env as any).DB.prepare(
-            'INSERT INTO chat_rooms (couple_id, saving_id, name) VALUES (?, ?, ?) RETURNING id'
-          ).bind(this.coupleId, this.savingId, 'Saving Chat').first()
-        }
-      } else {
-        room = await (this.env as any).DB.prepare(
-          'SELECT id FROM chat_rooms WHERE couple_id = ? AND saving_id IS NULL'
-        ).bind(this.coupleId).first()
-        if (!room) {
-          room = await (this.env as any).DB.prepare(
-            'INSERT INTO chat_rooms (couple_id, name) VALUES (?, ?) RETURNING id'
-          ).bind(this.coupleId, 'Global').first()
-        }
+      const roomId = await this.ensureRoomId(info)
+      if (!roomId) return
+
+      // Balasan harus menunjuk pesan di room yang sama.
+      let safeReplyToId: number | null = null
+      if (replyToId) {
+        const reply = await (this.env as any).DB.prepare('SELECT id FROM messages WHERE id = ? AND room_id = ?').bind(replyToId, roomId).first()
+        safeReplyToId = reply?.id ?? null
       }
 
-      // Insert the message
       const savedMsg = await (this.env as any).DB.prepare(
         'INSERT INTO messages (room_id, sender_id, message, type, file_url, reply_to_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING *'
-      ).bind(room?.id, senderId, messageText, msgType, fileUrl, replyToId).first()
+      ).bind(roomId, senderId, messageText, msgType, fileUrl, safeReplyToId).first()
 
-      const broadcastData = {
-        type: 'chat',
-        data: savedMsg || {
-          sender_id: senderId,
-          message: messageText,
-          type: msgType,
-          file_url: fileUrl,
-          reply_to_id: replyToId,
-          created_at: new Date().toISOString()
-        }
-      }
+      if (!savedMsg) return
 
-      // Broadcast to every connected session, including the sender. The sender
-      // uses the persisted message to replace its optimistic placeholder.
-      for (const session of this.sessions.keys()) {
-        try {
-          session.send(JSON.stringify(broadcastData))
-        } catch (e) {
-          this.sessions.delete(session)
-        }
-      }
+      // Disiarkan ke semua sesi termasuk pengirim: pengirim memakai pesan
+      // tersimpan untuk mengganti placeholder optimistik-nya (via client_id).
+      this.broadcast({ type: 'chat', data: { ...savedMsg, client_id: clientId } }, ws, true)
     } catch (e) {
       console.error('Error saving/broadcasting message:', e)
+      try { ws.send(JSON.stringify({ type: 'error', message: 'Gagal memproses pesan' })) } catch (_) {}
     }
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
-    this.sessions.delete(ws)
+    try { ws.close(code, reason) } catch (e) {}
   }
 
   async webSocketError(ws: WebSocket, error: unknown) {
-    this.sessions.delete(ws)
+    console.error('WebSocket error:', error)
   }
 }
