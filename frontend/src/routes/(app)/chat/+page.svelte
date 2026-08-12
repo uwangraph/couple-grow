@@ -7,6 +7,7 @@
   import { MessageSquare, ChevronRight, PiggyBank } from '@lucide/svelte';
   import Icon from '$lib/Icon.svelte';
   import MediaPreview from '$lib/components/MediaPreview.svelte';
+  import { Capacitor } from '@capacitor/core';
 
   let savingId = $derived(page.url.searchParams.get('saving_id'));
   let savingName = $derived(page.url.searchParams.get('saving_name'));
@@ -47,6 +48,91 @@
   let showEmojiPicker = $state(false);
   const emojiList = ['😀','😄','😁','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😎','🥳','🤩','😏','😢','😭','😤','😡','🤯','😳','🥺','🤗','🤔','🤭','😐','🙄','😴','🤤','🤢','🤠','👻','👽','🤖','💀','👋','👍','👎','👌','✌️','🤞','🤝','🙏','💪','🫶','❤️','💔','💯','✨','🔥','🎉','🎊','🎁','🌈','⭐','🌙','☀️','☕','🍕','🍔','🍩','🍺','⚽','🏆','🎮','🎵','🎶','📚','💡','💰','📅','📍','🚀','✈️','🌍','🍀'];
 
+  // Camera (web) state — getUserMedia untuk desktop
+  let showCameraModal = $state(false);
+  let cameraStream = $state<MediaStream | null>(null);
+  let cameraError = $state('');
+  let cameraMode = $state<'viewfinder' | 'preview'>('viewfinder');
+  let capturedPhoto = $state<string | null>(null);
+
+  async function openCamera() {
+    // Di platform native (Capacitor/Android), pakai input capture → buka kamera native.
+    if (Capacitor.isNativePlatform()) {
+      cameraInput.click();
+      return;
+    }
+    // Di web/desktop: buka kamera via getUserMedia.
+    cameraMode = 'viewfinder';
+    capturedPhoto = null;
+    cameraError = '';
+    showCameraModal = true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false,
+      });
+      cameraStream = stream;
+      await tick();
+      const video = document.getElementById('camera-video') as HTMLVideoElement | null;
+      if (video) {
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+      }
+    } catch (e: any) {
+      cameraStream = null;
+      cameraError = e?.name === 'NotAllowedError'
+        ? 'Akses kamera ditolak. Izinkan kamera di browser untuk mengambil foto.'
+        : 'Kamera tidak tersedia di perangkat ini.';
+    }
+  }
+
+  function capturePhotoFromCamera() {
+    const video = document.getElementById('camera-video') as HTMLVideoElement | null;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
+    cameraMode = 'preview';
+  }
+
+  function useCapturedPhoto() {
+    if (!capturedPhoto) return;
+    // Konversi dataURL ke File, lalu set sebagai attachment.
+    fetch(capturedPhoto)
+      .then(res => res.blob())
+      .then((blob) => {
+        const file = new File([blob], 'foto_$(Date.now()).jpg', { type: 'image/jpeg' });
+        attachment = file;
+        attachmentPreview = URL.createObjectURL(blob);
+        if (!newMessage) newMessage = 'Foto';
+        closeCameraModal();
+      })
+      .catch(() => closeCameraModal());
+  }
+
+  function retakePhoto() {
+    capturePhotoFromCamera(); // re-capture current video
+    cameraMode = 'preview';
+    capturedPhoto = null;
+    // kembali ke viewfinder
+    cameraMode = 'viewfinder';
+    capturedPhoto = null;
+  }
+
+  function closeCameraModal() {
+    showCameraModal = false;
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+    }
+    capturedPhoto = null;
+    cameraMode = 'viewfinder';
+  }
+
   function openMediaPreview(msg: any) {
     if (!msg.file_url) return;
     const type = (msg.type === 'image' || msg.type === 'audio') ? msg.type : 'file';
@@ -68,6 +154,9 @@
     isLeaving = true;
     if (reconnectTimer) clearTimeout(reconnectTimer);
     if (ws) ws.close();
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+    }
   });
 
   async function fetchHistory() {
@@ -550,6 +639,51 @@
 <!-- Media Preview -->
 <MediaPreview media={mediaPreview} onClose={() => mediaPreview = null} />
 
+<!-- Web Camera Modal (desktop) -->
+{#if showCameraModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="cam-overlay" onclick={closeCameraModal}></div>
+  <div class="cam-modal" role="dialog" aria-modal="true" aria-label="Ambil foto">
+    <div class="cam-modal__header">
+      <div>
+        <p class="cam-modal__label">Kamera</p>
+        <h2 class="cam-modal__title">{cameraMode === 'preview' ? 'Pratinjau Foto' : 'Ambil Foto'}</h2>
+      </div>
+      <button type="button" class="cam-modal__close" onclick={closeCameraModal} aria-label="Tutup kamera">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="cam-modal__body">
+      {#if cameraError}
+        <div class="cam-error">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p>{cameraError}</p>
+        </div>
+      {:else if cameraMode === 'preview' && capturedPhoto}
+        <img src={capturedPhoto} alt="Foto" class="cam-photo" />
+      {:else}
+        <video id="camera-video" class="cam-video" autoplay playsinline></video>
+        <div class="cam-loading">
+          <p>Menyiapkan kamera...</p>
+        </div>
+      {/if}
+    </div>
+
+    <div class="cam-modal__footer">
+      {#if cameraMode === 'preview' && capturedPhoto}
+        <button type="button" class="cam-btn cam-btn--ghost" onclick={retakePhoto}>Ulangi</button>
+        <button type="button" class="cam-btn cam-btn--primary" onclick={useCapturedPhoto}>Gunakan Foto</button>
+      {:else if !cameraError}
+        <button type="button" class="cam-btn cam-btn--primary" onclick={capturePhotoFromCamera}>
+          <span class="cam-shutter"></span> Jepret
+        </button>
+      {/if}
+    </div>
+  </div>
+{/if}
+
 <div class="chat-root">
 
   <!-- Toast Notification -->
@@ -756,7 +890,7 @@
         <button type="button" class="in-field-btn" onclick={() => fileInput.click()} aria-label="Lampiran">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>
         </button>
-        <button type="button" class="in-field-btn" onclick={() => cameraInput.click()} aria-label="Ambil foto">
+        <button type="button" class="in-field-btn" onclick={openCamera} aria-label="Ambil foto">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
         </button>
       </div>
@@ -1291,5 +1425,146 @@
     border-radius: 50%;
     margin-bottom: 5px;
     opacity: 0.85;
+  }
+
+  /* Web camera modal (desktop) */
+  .cam-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(15,23,42,0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .cam-modal {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 61;
+    width: 92%;
+    max-width: 420px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.75);
+    background: #fff;
+    box-shadow: 0 24px 60px -12px rgba(31,60,110,0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .cam-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(226,232,240,0.8);
+  }
+  .cam-modal__label {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #8E7BF0;
+  }
+  .cam-modal__title { margin: 2px 0 0; font-size: 16px; font-weight: 800; color: #1F2937; }
+  .cam-modal__close {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(226,232,240,0.9);
+    background: #fff;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 0 0 #E2E8F0;
+    transition: all .15s ease;
+  }
+  .cam-modal__close:hover { transform: translateY(1px); box-shadow: 0 1px 0 0 #E2E8F0; }
+  .cam-modal__close:active { transform: translateY(1px); box-shadow: none; }
+  .cam-modal__body {
+    position: relative;
+    min-height: 320px;
+    background: #0F172A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .cam-video {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+  }
+  .cam-photo {
+    width: 100%;
+    max-height: 420px;
+    object-fit: contain;
+  }
+  .cam-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #CBD5E1;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .cam-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 24px;
+    text-align: center;
+    color: #E2E8F0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .cam-modal__footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(226,232,240,0.8);
+  }
+  .cam-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+    transition: all .15s ease;
+  }
+  .cam-btn--ghost {
+    background: #F8FAFC;
+    color: #475569;
+    border: 1px solid rgba(226,232,240,0.9);
+    box-shadow: 0 2px 0 0 #E2E8F0;
+  }
+  .cam-btn--ghost:hover { transform: translateY(1px); box-shadow: 0 1px 0 0 #E2E8F0; }
+  .cam-btn--primary {
+    color: #fff;
+    background: linear-gradient(135deg,#5B8DEF,#8E7BF0);
+    box-shadow: 0 3px 0 0 rgba(122,99,230,0.9);
+  }
+  .cam-btn--primary:hover { transform: translateY(1px); box-shadow: 0 2px 0 0 rgba(122,99,230,0.9); }
+  .cam-btn--primary:active { transform: translateY(2px); box-shadow: none; }
+  .cam-shutter {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
   }
 </style>
