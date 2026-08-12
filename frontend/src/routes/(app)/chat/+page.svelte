@@ -24,6 +24,7 @@
   let isLeaving = false;
   let toast = $state<string | null>(null);
   let fileInput: HTMLInputElement;
+  let cameraInput: HTMLInputElement;
   
   let replyingTo = $state<any | null>(null);
   let attachment = $state<File | null>(null);
@@ -392,6 +393,15 @@
     if (!newMessage) newMessage = file.name;
   }
 
+  function handleCameraSelect(e: any) {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    attachment = file;
+    attachmentPreview = URL.createObjectURL(file);
+    if (!newMessage) newMessage = file.name;
+  }
+
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -721,36 +731,43 @@
     {/if}
     <form class="input-form" onsubmit={sendMessage}>
       <input type="file" bind:this={fileInput} onchange={handleFileSelect} style="display: none;" accept="image/*,audio/*,.pdf,.doc,.docx" />
-      <button type="button" class="icon-btn" onclick={() => fileInput.click()} aria-label="Lampiran">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-      </button>
+      <input type="file" bind:this={cameraInput} onchange={handleCameraSelect} style="display: none;" accept="image/*" capture="environment" />
 
-      <button type="button" class="icon-btn" onclick={(e) => { e.stopPropagation(); showEmojiPicker = !showEmojiPicker; }} aria-label="Emoji">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-      </button>
-      
-      {#if isRecording}
-        <div class="recording-indicator">
-          <span class="rec-dot"></span>
-          Merekam...
-        </div>
-      {:else}
-        <input
-          type="text"
-          bind:value={newMessage}
-          placeholder="Ketik pesan..."
-          class="msg-input"
-          aria-label="Ketik pesan"
-        />
-      {/if}
-      
-      {#if !newMessage.trim() && !attachmentPreview && !isRecording}
-        <button type="button" class="icon-btn" onclick={startRecording} aria-label="Voice note">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <div class="input-field">
+        <button type="button" class="in-field-btn" onclick={(e) => { e.stopPropagation(); showEmojiPicker = !showEmojiPicker; }} aria-label="Emoji">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
         </button>
-      {:else if isRecording}
-        <button type="button" class="icon-btn" onclick={stopRecording} aria-label="Stop rekaman">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+
+        {#if isRecording}
+          <div class="recording-indicator">
+            <span class="rec-dot"></span>
+            Merekam...
+          </div>
+        {:else}
+          <input
+            type="text"
+            bind:value={newMessage}
+            placeholder="Ketik pesan..."
+            class="msg-input"
+            aria-label="Ketik pesan"
+          />
+        {/if}
+
+        <button type="button" class="in-field-btn" onclick={() => fileInput.click()} aria-label="Lampiran">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>
+        </button>
+        <button type="button" class="in-field-btn" onclick={() => cameraInput.click()} aria-label="Ambil foto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
+        </button>
+      </div>
+
+      {#if isRecording}
+        <button type="button" class="send-btn" onclick={stopRecording} aria-label="Hentikan rekaman">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+      {:else if !newMessage.trim() && !attachmentPreview}
+        <button type="button" class="send-btn" onclick={startRecording} aria-label="Rekam pesan suara">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg>
         </button>
       {:else}
         <button
@@ -759,7 +776,7 @@
           class="send-btn {(newMessage.trim() || attachmentPreview) ? 'send-btn--active' : ''}"
           aria-label="Kirim pesan"
         >
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
           </svg>
         </button>
@@ -1084,11 +1101,8 @@
   /* Input — clean composer */
   .input-area {
     padding: 12px 14px;
-    background: rgba(255,255,255,0.72);
-    backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
-    border-top: 1px solid rgba(255,255,255,0.75);
-    box-shadow: 0 -4px 14px -8px rgba(31,60,110,0.2);
+    background: #ffffff;
+    border-top: 1px solid rgba(226,232,240,0.8);
     flex-shrink: 0;
     position: relative;
     z-index: 20;
@@ -1096,58 +1110,65 @@
   .input-form {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
-  .icon-btn {
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-    border: none;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.6);
-    color: #64748B;
+  .input-field {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  .in-field-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #94A3B8;
     cursor: pointer;
-    box-shadow: 0 2px 0 0 rgba(226,232,240,0.9), inset 0 1px 0 rgba(255,255,255,0.9);
-    transition: all .15s ease;
+    transition: background 0.15s, color 0.15s;
   }
-  .icon-btn:hover { background: rgba(255,255,255,0.9); color: #5B8DEF; transform: translateY(1px); box-shadow: 0 1px 0 0 rgba(226,232,240,0.9); }
-  .icon-btn:active { transform: translateY(1px); box-shadow: none; }
+  .in-field-btn:hover { background: #fff; color: #5B8DEF; }
+  .in-field-btn:first-child { left: 6px; }
+  .in-field-btn:nth-child(3) { right: 42px; }
+  .in-field-btn:nth-child(4) { right: 6px; }
   .recording-indicator {
     flex: 1;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
+    padding: 11px 20px;
     border-radius: 24px;
-    background: rgba(255,255,255,0.6);
+    background: #F1F5F9;
     color: #EF4444;
     font-size: 14px;
     font-weight: 700;
   }
   .msg-input {
-    flex: 1;
+    width: 100%;
     border: 1px solid rgba(226,232,240,0.9);
     border-radius: 24px;
-    padding: 11px 16px;
+    padding: 11px 96px 11px 46px;
     font-family: 'Nunito', sans-serif;
     font-size: 14px;
     font-weight: 600;
     color: #1F2937;
     outline: none;
-    background: rgba(255,255,255,0.75);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 0 0 rgba(226,232,240,0.8);
-    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    background: #F8FAFC;
+    box-shadow: inset 0 2px 4px 0 rgba(148,163,184,0.1);
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   }
   .msg-input::placeholder { color: #94A3B8; }
   .msg-input:focus {
-    border-color: #5B8DEF;
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 0 0 3px rgba(91, 141, 239,0.15), 0 1px 0 0 rgba(226,232,240,0.8);
+    border-color: #8E7BF0;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(142,123,240,0.18);
   }
 
   /* Emoji picker */
@@ -1159,17 +1180,16 @@
   }
   .emoji-picker {
     position: absolute;
-    bottom: 100%;
+    bottom: calc(100% + 8px);
     left: 14px;
     right: 14px;
     z-index: 41;
-    margin-bottom: 8px;
     max-height: 220px;
     overflow-y: auto;
     padding: 12px;
     border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.75);
-    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(226,232,240,0.8);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     box-shadow: 0 20px 50px -12px rgba(31,60,110,0.3), inset 0 1px 0 rgba(255,255,255,0.9);
@@ -1197,25 +1217,25 @@
   .send-btn {
     width: 42px;
     height: 42px;
+    flex-shrink: 0;
     border-radius: 50%;
     border: none;
-    background: #F1F5F9;
-    color: #94A3B8;
+    background: linear-gradient(135deg, #5B8DEF, #8E7BF0);
+    color: #ffffff;
+    border-bottom: 2px solid rgba(122,99,230,0.9);
+    box-shadow: 0 3px 0 0 rgba(82,98,222,0.9);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
-    flex-shrink: 0;
+    transition: transform .15s ease, box-shadow .15s ease;
   }
   .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .send-btn:hover:not(:disabled) { transform: translateY(1px); box-shadow: 0 2px 0 0 rgba(82,98,222,0.9); }
+  .send-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
   .send-btn--active {
     background: linear-gradient(135deg, #5B8DEF, #4772E8);
-    color: white;
-    box-shadow: 0 4px 12px rgba(58,121,192,0.3);
   }
-  .send-btn--active:hover { transform: scale(1.05); }
-  .send-btn--active:active { transform: scale(0.95); }
 
   /* Pin duration modal */
   .pin-duration-modal {
