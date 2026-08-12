@@ -125,13 +125,12 @@ Setelah Anda mengunduh kedua file di atas, langkah berikutnya :
    npx wrangler deploy
    ```
 
-4. Bangun ulang APK:
+4. Bangun APK rilis (dari root proyek):
    ```bash
-   cd frontend
-   npm run build
-   npx cap sync android
-   cd android && ./gradlew assembleDebug
+   ./release.sh --no-deploy   # build release & siapkan file APK (tanpa deploy)
+   cd backend && npx wrangler deploy   # lalu deploy backend
    ```
+   > Atau langsung `./release.sh` yang build + update file + deploy sekaligus.
 
 ---
 
@@ -142,6 +141,33 @@ Setelah Anda mengunduh kedua file di atas, langkah berikutnya :
    - Saat login, perangkat otomatis mendaftarkan token FCM ke backend (`POST /push/token`).
 3. Di HP kamu, buat **transaksi baru** (atau aksi lain yang memicu notif pasangan).
 4. Di HP pasangan, notif harus muncul **tanpa membuka aplikasi** 🔔.
+
+---
+
+## 🚀 Bagian 8 — Rilis Versi Baru (Otomatis)
+
+Nama file APK mengikuti versi secara **otomatis** via skrip `release.sh` di root proyek.
+
+**Langkah:** ubah versi di `frontend/android/app/build.gradle`:
+```gradle
+versionCode 2        // naikkan setiap rilis
+versionName "1.1"    // nama versi baru
+```
+
+Lalu jalankan:
+```bash
+./release.sh            # build + update file + deploy backend
+# atau
+./release.sh --no-deploy  # hanya build & update file (deploy manual nanti)
+```
+
+Skrip ini akan otomatis:
+1. Baca `versionName` & `versionCode` dari `build.gradle`
+2. Build frontend + APK release (signed)
+3. Buat file **`CoupleGrow-v<versi>.apk`** (nama mengikuti versi)
+4. Update `app-version.json` (versionName, versionCode, downloadUrl)
+5. Salin ke `frontend/static/` & `release/`
+6. Deploy backend → halaman login otomatis menampilkan **"Download APK v<versi>"**
 
 ---
 
