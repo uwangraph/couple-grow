@@ -41,17 +41,9 @@
   let longPressTimer: any = null;
   let pinnedMessage = $derived(messages.find(m => m.is_pinned));
 
-  // Posisi dinamis context-menu dekat bubble (tidak menutupi chat)
-  let menuStyle = $derived.by(() => {
-    if (!contextMenuVisible) return '';
-    const vw = typeof window !== 'undefined' ? window.innerWidth : 480;
-    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-    const cw = Math.min(300, vw - 16);
-    const ch = Math.min(430, vh - 16);
-    const mLeft = Math.max(8, Math.min(contextMenuPos.x, vw - cw - 8));
-    const mTop = Math.max(8, Math.min(contextMenuPos.y, vh - ch - 8));
-    return `left:${mLeft}px;top:${mTop}px;max-width:${cw}px;max-height:${ch}px;`;
-  });
+  // Context menu membuka ke atas atau bawah dari bubble (konsep khwarizmi)
+  let menuDirection = $state<'up' | 'down'>('down');
+
 
   // Swipe-to-reply state
   let swipeMsgId = $state<number | null>(null);
@@ -213,7 +205,18 @@
     if (!auth.token) return goto('/login');
     await fetchHistory();
     connectWebSocket();
+    // Tutup context-menu saat klik di luar menu (tanpa overlay)
+    const onDocDown = (e: any) => {
+      if (!contextMenuVisible) return;
+      const menu = (e.target as HTMLElement)?.closest?.('.ctx-bubble-menu');
+      if (!menu) closeContextMenu();
+    };
+    window.addEventListener('mousedown', onDocDown);
+    window.addEventListener('touchstart', onDocDown);
+    documentDownListener = onDocDown;
   });
+
+  let documentDownListener: ((e: any) => void) | null = null;
 
   onDestroy(() => {
     isLeaving = true;
@@ -221,6 +224,10 @@
     if (ws) ws.close();
     if (cameraStream) {
       cameraStream.getTracks().forEach(t => t.stop());
+    }
+    if (documentDownListener) {
+      window.removeEventListener('mousedown', documentDownListener);
+      window.removeEventListener('touchstart', documentDownListener);
     }
   });
 
@@ -331,9 +338,16 @@
   function handleTouchStart(e: any, msg: any) {
     if (msg.is_deleted) return;
     longPressTimer = setTimeout(() => {
-      // Show context menu
       const touch = e.touches ? e.touches[0] : e;
       contextMenuPos = { x: touch.clientX, y: touch.clientY };
+      // Tentukan arah buka menu: jika bubble dekat bawah, buka ke atas
+      const el = document.getElementById('msg-' + msg.id);
+      if (el && typeof window !== 'undefined') {
+        const rect = el.getBoundingClientRect();
+        menuDirection = (rect.bottom + 360 > window.innerHeight) ? 'up' : 'down';
+      } else {
+        menuDirection = (touch.clientY + 360 > window.innerHeight) ? 'up' : 'down';
+      }
       contextMessage = msg;
       contextMenuVisible = true;
     }, 500); // 500ms long press
@@ -639,66 +653,6 @@
 {/if}
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-{#if contextMenuVisible && contextMessage}
-  <div class="context-overlay" onclick={closeContextMenu}></div>
-  <div class="context-menu" style={menuStyle}>
-    <!-- Emoji reactions bar -->
-    <div class="reaction-bar">
-      {#each ['❤️','👍','😂','😮','😢','🙏'] as emoji}
-        <button
-          class="reaction-btn {(contextMessage.reactions && auth.user?.id && JSON.parse(contextMessage.reactions)[auth.user.id] === emoji) ? 'reaction-btn--active' : ''}"
-          onclick={() => { sendReaction(contextMessage, emoji); closeContextMenu(); }}
-          aria-label={emoji}
-        >{emoji}</button>
-      {/each}
-    </div>
-    <div class="context-divider"></div>
-
-    <button class="context-item" onclick={() => { handleReply(contextMessage); closeContextMenu(); }}>
-      <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a8 8 0 0 1 8 8v2M3 10l6 6M3 10l6-6"/></svg>
-      Balas
-    </button>
-    <button class="context-item" onclick={() => { copyText(contextMessage.message); closeContextMenu(); }}>
-      <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      Salin
-    </button>
-    <button class="context-item" onclick={() => { openPinMenu(contextMessage); closeContextMenu(); }}
-    >
-      <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17H19M12 17V3M9 3h6"/></svg>
-      {contextMessage.is_pinned ? 'Batal Sematkan' : 'Sematkan'}
-    </button>
-    <button class="context-item" onclick={() => { toggleStar(contextMessage); closeContextMenu(); }}>
-      <svg class="ctx-icon" viewBox="0 0 24 24" fill={contextMessage.is_starred ? '#FBBF24' : 'none'} stroke={contextMessage.is_starred ? '#FBBF24' : 'currentColor'} stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      {contextMessage.is_starred ? 'Batal Bintangi' : 'Bintangi'}
-    </button>
-
-    {#if contextMessage.sender_id === auth.user?.id && !contextMessage.is_deleted}
-      <button class="context-item" onclick={() => { startEdit(contextMessage); closeContextMenu(); }}>
-        <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit
-      </button>
-    {/if}
-
-    <button class="context-item" onclick={closeContextMenu}>
-      <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Info
-    </button>
-    <button class="context-item" onclick={closeContextMenu}>
-      <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Pilih pesan
-    </button>
-
-    {#if contextMessage.sender_id === auth.user?.id && !contextMessage.is_deleted}
-      <div class="context-divider"></div>
-      <button class="context-item context-item--danger" onclick={() => { deleteMessage(contextMessage.id); closeContextMenu(); }}>
-        <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Hapus
-      </button>
-    {/if}
-  </div>
-{/if}
-
 <!-- Pin duration modal -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -940,6 +894,60 @@
               {#each reactions as r}
                 <span class="reaction-badge">{r.emoji} {r.count > 1 ? r.count : ''}</span>
               {/each}
+            </div>
+          {/if}
+
+          {#if contextMenuVisible && contextMessage?.id === msg.id}
+            <div class="ctx-bubble-menu {isMine ? 'ctx-bubble-menu--mine' : 'ctx-bubble-menu--theirs'} {menuDirection === 'up' ? 'ctx-bubble-menu--up' : 'ctx-bubble-menu--down'}">
+              <!-- Emoji reactions bar -->
+              <div class="reaction-bar">
+                {#each ['❤️','👍','😂','😮','😢','🙏'] as emoji}
+                  <button
+                    class="reaction-btn {(contextMessage.reactions && auth.user?.id && JSON.parse(contextMessage.reactions)[auth.user.id] === emoji) ? 'reaction-btn--active' : ''}"
+                    onclick={() => { sendReaction(contextMessage, emoji); closeContextMenu(); }}
+                    aria-label={emoji}
+                  >{emoji}</button>
+                {/each}
+              </div>
+              <div class="context-divider"></div>
+
+              <button class="context-item" onclick={() => { handleReply(contextMessage); closeContextMenu(); }}>
+                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a8 8 0 0 1 8 8v2M3 10l6 6M3 10l6-6"/></svg>
+                Balas
+              </button>
+              <button class="context-item" onclick={() => { copyText(contextMessage.message); closeContextMenu(); }}>
+                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Salin
+              </button>
+              <button class="context-item" onclick={() => { openPinMenu(contextMessage); closeContextMenu(); }}>
+                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17H19M12 17V3M9 3h6"/></svg>
+                {contextMessage.is_pinned ? 'Batal Sematkan' : 'Sematkan'}
+              </button>
+              <button class="context-item" onclick={() => { toggleStar(contextMessage); closeContextMenu(); }}>
+                <svg class="ctx-icon" viewBox="0 0 24 24" fill={contextMessage.is_starred ? '#FBBF24' : 'none'} stroke={contextMessage.is_starred ? '#FBBF24' : 'currentColor'} stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                {contextMessage.is_starred ? 'Batal Bintangi' : 'Bintangi'}
+              </button>
+              {#if contextMessage.sender_id === auth.user?.id && !contextMessage.is_deleted}
+                <button class="context-item" onclick={() => { startEdit(contextMessage); closeContextMenu(); }}>
+                  <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit
+                </button>
+              {/if}
+              <button class="context-item" onclick={closeContextMenu}>
+                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Info
+              </button>
+              <button class="context-item" onclick={closeContextMenu}>
+                <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Pilih pesan
+              </button>
+              {#if contextMessage.sender_id === auth.user?.id && !contextMessage.is_deleted}
+                <div class="context-divider"></div>
+                <button class="context-item context-item--danger" onclick={() => { deleteMessage(contextMessage.id); closeContextMenu(); }}>
+                  <svg class="ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                  Hapus
+                </button>
+              {/if}
             </div>
           {/if}
         </div>
@@ -1307,22 +1315,30 @@
 
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-  /* Context Menu */
-  .context-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: transparent; z-index: 100; }
-  /* Context Menu — posisi dinamis dekat bubble */
-  .context-menu {
-    position: fixed;
-    background: white;
+  /* Context Menu — menempel di bubble (konsep khwarizmi) */
+  .ctx-bubble-menu {
+    position: absolute;
+    z-index: 300;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(226,232,240,0.8);
     border-radius: 16px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-    width: min(300px, 90vw);
-    z-index: 101;
+    box-shadow: 0 12px 40px rgba(31,60,110,0.22);
+    width: 224px;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     overscroll-behavior: contain;
     animation: menu-in 0.16s cubic-bezier(0.34,1.56,0.64,1);
   }
+  /* Buka ke bawah (di bawah bubble) */
+  .ctx-bubble-menu--down { top: calc(100% + 6px); }
+  /* Buka ke atas (di atas bubble) */
+  .ctx-bubble-menu--up { bottom: calc(100% + 6px); }
+  /* Posisi horizontal: pesan sendiri di kanan, pesan pasangan di kiri */
+  .ctx-bubble-menu--mine { right: 0; }
+  .ctx-bubble-menu--theirs { left: 0; }
   @keyframes menu-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
 
   /* Reaction Bar */
