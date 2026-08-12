@@ -5,3 +5,6 @@
 
 # APK build artifacts
 *.apk
+
+# macOS
+.DS_Store
