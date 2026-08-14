@@ -78,11 +78,11 @@
     </div>
   {/if}
   <!-- Main Content -->
-  <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : '72px'}; display: flex; flex-direction: column;">
+  <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : '104px'}; display: flex; flex-direction: column;">
     {#if auth.user && !auth.user.partner_id}
-      <div style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(91, 141, 239,0.2); color: #475569; padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 8px;">
+      <div style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(33, 150, 243,0.2); color: #475569; padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <span>🔗 Belum terhubung dengan pasangan.</span>
-        <a href="/profile" style="color: #4772E8; text-decoration: none; font-weight: 700; white-space: nowrap;">Hubungkan →</a>
+        <a href="/profile" style="color: #1976D2; text-decoration: none; font-weight: 700; white-space: nowrap;">Hubungkan →</a>
       </div>
     {/if}
 
@@ -113,19 +113,14 @@
 
   <!-- Bottom Tab Bar -->
   {#if !hideBottomNav}
-    <nav class="app-nav glass-nav">
+    <nav class="app-nav">
       {#each tabs as tab}
         {@const isActive = currentPath === tab.path || (tab.path !== '/home' && currentPath.startsWith(tab.path))}
-        <a href={tab.path} style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; text-decoration: none; position: relative; transition: all 0.2s ease; color: {isActive ? '#5B8DEF' : '#94A3B8'};">
-          {#if isActive}
-            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 32px; height: 3px; background: linear-gradient(90deg, #5B8DEF, #8E7BF0); border-radius: 0 0 4px 4px;"></div>
-          {:else}
-            <div style="height: 3px;"></div>
-          {/if}
-          <div style="margin-bottom: 4px; transition: transform 0.2s; transform: {isActive ? 'scale(1.1)' : 'scale(1)'}; opacity: {isActive ? '1' : '0.5'};">
-            <Icon name={tab.icon} size={24} />
-          </div>
-          <span style="font-size: 10px; font-weight: {isActive ? '700' : '500'}; letter-spacing: 0.01em;">{tab.name}</span>
+        <a href={tab.path} class="nav-tab {isActive ? 'nav-tab--active' : ''}">
+          <span class="nav-tile">
+            <Icon name={tab.icon} size={21} />
+          </span>
+          <span class="nav-label">{tab.name}</span>
         </a>
       {/each}
     </nav>
@@ -150,28 +145,80 @@
   }
 
   .update-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: rgba(30,41,59,.42); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-  .update-card { width: min(100%, 360px); padding: 28px 22px 22px; border: 1px solid rgba(255,255,255,.8); border-radius: 28px; background: rgba(255,255,255,.86); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 20px 60px rgba(43,117,190,.2); text-align: center; }
-  .update-icon { width: 58px; height: 58px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 18px; color: #5FA8EF; background: #EAF5FE; }
+  .update-card { width: min(100%, 360px); padding: 28px 22px 22px; border: none; border-radius: 28px; background: #FFFFFF;  box-shadow:
+      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
+      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
+      6px 10px 22px rgba(21, 101, 192, 0.10),
+      2px 3px 6px rgba(21, 101, 192, 0.06); text-align: center; }
+  .update-icon { width: 58px; height: 58px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 18px; color: #2196F3; background: #E7F4FE; }
   .update-card h2 { margin: 0 0 8px; color: #1E293B; font-size: 20px; font-weight: 900; }
   .update-card p { margin: 0 0 22px; color: #64748B; font-size: 13px; line-height: 1.55; }
   .update-actions { display: flex; flex-direction: column; gap: 8px; }
   .update-primary, .update-secondary { display: block; width: 100%; padding: 13px; border: 0; border-radius: 14px; font: inherit; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
-  .update-primary { color: white; background: linear-gradient(135deg,#5FA8EF,#83BDF5); box-shadow: 0 8px 20px rgba(107,175,242,.3); }
+  .update-primary { color: white; background: linear-gradient(135deg,#2196F3,#64B5F6); box-shadow: 0 8px 20px rgba(33,150,243,.3); }
   .update-secondary { color: #64748B; background: rgba(226,232,240,.7); }
 
+  /* Dock clay mengambang — menggantikan bilah nav menempel di tepi layar */
   .app-nav {
     position: fixed;
-    bottom: 0;
+    bottom: max(14px, env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
-    width: 100%;
-    max-width: 100%; /* Full width for mobile and tablet */
+    width: calc(100% - 24px);
+    max-width: 456px;
     display: flex;
     justify-content: space-around;
     align-items: center;
-    height: 68px;
+    gap: 2px;
+    height: 74px;
+    padding: 0 6px;
+    border-radius: 30px;
+    background: linear-gradient(150deg, #FFFFFF 0%, #EDF6FE 100%);
+    box-shadow:
+      inset 5px 5px 10px rgba(255, 255, 255, 0.95),
+      inset -4px -6px 12px rgba(33, 150, 243, 0.12),
+      8px 14px 30px rgba(21, 101, 192, 0.16),
+      2px 4px 10px rgba(21, 101, 192, 0.08);
     z-index: 50;
   }
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 100%;
+    text-decoration: none;
+    color: #94A3B8;
+    transition: color 0.2s ease;
+  }
+  .nav-tile {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 32%;
+    transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.22s ease, background 0.22s ease;
+  }
+  .nav-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  /* Tab aktif diangkat sebagai ubin clay */
+  .nav-tab--active { color: #1976D2; }
+  .nav-tab--active .nav-tile {
+    color: #fff;
+    transform: translateY(-3px);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%);
+    box-shadow:
+      inset 3px 3px 6px rgba(255, 255, 255, 0.5),
+      inset -3px -4px 8px rgba(13, 71, 161, 0.35),
+      4px 7px 14px rgba(21, 101, 192, 0.3);
+  }
+  .nav-tab--active .nav-label { font-weight: 800; }
+  .nav-tab:active .nav-tile { transform: translateY(1px) scale(0.94); }
 
   /* Force Mobile size on Laptops (>= 1024px) */
   @media (min-width: 1024px) {
@@ -184,7 +231,7 @@
       -webkit-backdrop-filter: blur(8px);
     }
     .app-nav {
-      max-width: 480px;
+      max-width: 456px;
     }
   }
 
@@ -230,18 +277,18 @@
     color: #166534;
   }
   .toast-item--success .toast-icon {
-    color: #22C55E;
-    background: #DCFCE7;
+    color: #5CC8AC;
+    background: #E1F4EE;
   }
 
   .toast-item--error {
     background: rgba(254, 242, 242, 0.93);
     border: 1.5px solid rgba(248, 113, 113, 0.4);
-    color: #991B1B;
+    color: #B04058;
   }
   .toast-item--error .toast-icon {
-    color: #EF4444;
-    background: #FEE2E2;
+    color: #EF7C97;
+    background: #FBE4EA;
   }
 
   .toast-item--info {
@@ -250,8 +297,8 @@
     color: #1E3A8A;
   }
   .toast-item--info .toast-icon {
-    color: #5B8DEF;
-    background: #EFF4FE;
+    color: #2196F3;
+    background: #EAF4FE;
   }
 
   .toast-icon {

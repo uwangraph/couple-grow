@@ -1,26 +1,40 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-primary: #5B8DEF;       /* Logo blue - dominant */
-  --color-primary-dark: #4772E8;
-  --color-primary-light: #8FB2F5;
-  --color-primary-lighter: #DCE7FC;
-  --color-primary-bg: #EFF4FE;
+  --color-primary: #2196F3;       /* Biru brand - dominan */
+  --color-primary-dark: #1976D2;
+  --color-primary-light: #64B5F6;
+  --color-primary-lighter: #D2E9FB;
+  --color-primary-bg: #EAF4FE;
   
-  --color-secondary: #8E7BF0;     /* Logo purple - accent */
-  --color-secondary-dark: #7A63E6;
-  --color-secondary-light: #B3A6F6;
-  --color-secondary-bg: #F4F1FE;
+  --color-secondary: #4FC3F7;     /* Sky Leaf dari logo - aksen kedua */
+  --color-secondary-dark: #29B6F6;
+  --color-secondary-light: #B3E5FC;
+  --color-secondary-bg: #E7F4FE;
   
-  --color-accent: #10B981;        /* Emerald - money / success */
-  --color-background: #F4F6FE;
+  --color-accent: #4FBFA3;        /* Emerald - money / success */
+  --color-background: #EFF7FE;
   --color-text-navy: #1F2937;
   --color-text-secondary: #64748B;
-  --color-success: #10B981;
+  --color-success: #4FBFA3;
   --color-warning: #F59E0B;
-  --color-danger: #EF4444;
+  --color-danger: #EF7C97;
   --color-gold: #F59E0B;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Claymorphism (fokus biru) ──────────────────────────────────
+     Tiga lapis: highlight dalam di kiri-atas, bayangan dalam di
+     kanan-bawah, lalu drop shadow biru yang lembut. Kombinasi inilah
+     yang membuat permukaan terasa empuk seperti tanah liat. */
+  --clay-surface: #EDF6FE;          /* permukaan clay netral */
+  --clay-surface-raised: #FFFFFF;
+  --clay-tint: #D2E9FB;             /* isian clay biru muda */
+  --clay-shadow: 190 60% 45%;       /* nada bayangan (biru) */
+
+  --clay-radius-sm: 18px;
+  --clay-radius: 26px;
+  --clay-radius-lg: 34px;
+  --clay-radius-tile: 32%;          /* squircle untuk ubin ikon */
 }
 
 @layer base {
@@ -38,12 +52,12 @@
     height: 100%;
     margin: 0;
     font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-    /* Soft blue-purple gradient inspired by the app logo — gives the frosted
-       glass a subtle color to refract while staying calm. */
+    /* Gradien biru dari warna brand #2196F3 — hangat di atas, sedikit lebih
+       terang di bawah, tanpa nada lavender. */
     background:
-      radial-gradient(110% 85% at 85% 0%, rgba(91, 141, 239, 0.28) 0%, transparent 55%),
-      radial-gradient(100% 80% at 0% 100%, rgba(142, 123, 240, 0.22) 0%, transparent 55%),
-      linear-gradient(160deg, #EEF2FE 0%, #E9EEFE 45%, #F1EFFE 100%);
+      radial-gradient(110% 85% at 85% 0%, rgba(33, 150, 243, 0.30) 0%, transparent 55%),
+      radial-gradient(100% 80% at 0% 100%, rgba(79, 195, 247, 0.24) 0%, transparent 55%),
+      linear-gradient(160deg, #E8F4FE 0%, #E3F1FD 45%, #E9F6FE 100%);
     background-attachment: fixed;
     background-size: 100% 100%, 100% 100%, cover;
     color: #1F2937;
@@ -87,6 +101,93 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04), 0 6px 18px rgba(31, 41, 55, 0.06);
+  }
+
+  /* ── Claymorphism ──────────────────────────────────────────────
+     Dipakai bertahap menggantikan .glass-*; keduanya hidup
+     berdampingan sampai seluruh halaman selesai dipindahkan. */
+  .clay-card {
+    background: var(--clay-surface-raised);
+    border-radius: var(--clay-radius);
+    box-shadow:
+      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
+      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
+      6px 10px 22px rgba(21, 101, 192, 0.10),
+      2px 3px 6px rgba(21, 101, 192, 0.06);
+  }
+
+  /* Kartu dengan isian biru — untuk blok yang perlu menonjol */
+  .clay-card-tinted {
+    background: linear-gradient(150deg, #E7F3FD 0%, #D2E9FB 100%);
+    border-radius: var(--clay-radius);
+    box-shadow:
+      inset 6px 6px 12px rgba(255, 255, 255, 0.85),
+      inset -5px -7px 14px rgba(25, 118, 210, 0.14),
+      6px 10px 22px rgba(21, 101, 192, 0.12),
+      2px 3px 6px rgba(21, 101, 192, 0.07);
+  }
+
+  /* Ubin ikon 3D — jantung gaya clay */
+  .clay-tile {
+    border-radius: var(--clay-radius-tile);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%);
+    color: #fff;
+    box-shadow:
+      inset 3px 3px 6px rgba(255, 255, 255, 0.55),
+      inset -3px -4px 8px rgba(13, 71, 161, 0.35),
+      4px 7px 14px rgba(21, 101, 192, 0.26),
+      1px 2px 4px rgba(21, 101, 192, 0.16);
+  }
+  /* Varian ubin dalam keluarga biru + dua warna pendukung yang diredam */
+  .clay-tile--sky    { background: linear-gradient(145deg, #B3E5FC 0%, #4FC3F7 55%, #29B6F6 100%); }
+  .clay-tile--indigo { background: linear-gradient(145deg, #7CC5F8 0%, #1E88E5 55%, #1565C0 100%); }
+  .clay-tile--teal   { background: linear-gradient(145deg, #8ED9C6 0%, #4FBFA3 55%, #35A88C 100%); }
+  .clay-tile--rose   { background: linear-gradient(145deg, #F7A9BC 0%, #EF7C97 55%, #E2637F 100%); }
+  .clay-tile--amber  { background: linear-gradient(145deg, #FBD79A 0%, #F5B85C 55%, #E9A23D 100%); }
+
+  /* Cekungan — untuk track progress, input, dan slot kosong */
+  .clay-inset {
+    background: #DAEBFA;
+    border-radius: 99px;
+    box-shadow:
+      inset 3px 3px 6px rgba(25, 118, 210, 0.20),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.95);
+  }
+
+  /* Tombol clay: ditekan → benar-benar masuk ke dalam */
+  .clay-btn {
+    background: linear-gradient(150deg, #FFFFFF 0%, #EAF4FE 100%);
+    border-radius: var(--clay-radius-sm);
+    box-shadow:
+      inset 4px 4px 8px rgba(255, 255, 255, 0.95),
+      inset -3px -5px 10px rgba(33, 150, 243, 0.13),
+      4px 7px 16px rgba(21, 101, 192, 0.11);
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
+  }
+  .clay-btn:active {
+    transform: translateY(2px);
+    box-shadow:
+      inset 4px 5px 10px rgba(25, 118, 210, 0.20),
+      inset -3px -3px 8px rgba(255, 255, 255, 0.9),
+      1px 2px 5px rgba(21, 101, 192, 0.08);
+  }
+
+  .clay-btn-primary {
+    background: linear-gradient(150deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
+    color: #fff;
+    border-radius: var(--clay-radius-sm);
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.45),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26);
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
+  }
+  .clay-btn-primary:active {
+    transform: translateY(2px);
+    box-shadow:
+      inset 4px 5px 11px rgba(13, 71, 161, 0.4),
+      inset -2px -2px 6px rgba(255, 255, 255, 0.3),
+      2px 3px 7px rgba(21, 101, 192, 0.16);
   }
 
   .glass-nav {

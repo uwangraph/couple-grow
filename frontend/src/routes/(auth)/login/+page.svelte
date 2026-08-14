@@ -208,14 +208,14 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: #6BAFF2;
+    color: #2196F3;
     font: 600 13px Inter, sans-serif;
     cursor: pointer;
   }
   .inline-auth-link {
     border: none;
     background: transparent;
-    color: #6BAFF2;
+    color: #2196F3;
     font: 600 13px Inter, sans-serif;
     cursor: pointer;
     padding: 0;

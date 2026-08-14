@@ -84,7 +84,7 @@
     <div class="p-3 bg-warning/20 text-warning rounded-lg text-sm">{errorMsg}</div>
   {/if}
 
-  <div class="p-4 border border-white/60 bg-white/50 backdrop-blur-md rounded-xl shadow-[0_4px_16px_rgba(107,175,242,0.08)]">
+  <div class="p-4 border border-white/60 bg-white/50 backdrop-blur-md rounded-xl shadow-[0_4px_16px_rgba(33,150,243,0.08)]">
     <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
       <Icon name="dice" class="w-4 h-4 opacity-70" /> Buat Kode Undangan
     </h3>
