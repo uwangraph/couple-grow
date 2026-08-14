@@ -57,13 +57,13 @@
   .page { min-height: 100%; background: transparent; color: #1F2937; }
   .header { padding: 22px 20px 18px; position: relative; border-radius: 0 0 24px 24px; background: #ffffff; }
   .header-inner { position: relative; }
-  .back { display:flex; align-items:center; gap:6px; border:0; background:none; color:#4772E8; font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; margin-bottom:18px; }
+  .back { display:flex; align-items:center; gap:6px; border:0; background:none; color:#1976D2; font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:0; margin-bottom:18px; }
   .title-row p { margin:0 0 5px; font-size:12px; font-weight:600; color:#94A3B8; }
   .title-row h1 { margin:0; display:flex; align-items:center; gap:8px; font-size:26px; font-weight:800; color:#1F2937; }
   main { padding:18px 16px 30px; }
   .item { width:100%; display:flex; align-items:center; gap:12px; padding:15px 12px; margin-bottom:10px; border:1px solid rgba(226,232,240,0.8); border-radius:16px; background:#ffffff; color:inherit; text-align:left; cursor:pointer; box-shadow:0 1px 2px rgba(31,41,55,0.04); }
-  .item.unread { border-color:rgba(91, 141, 239,0.4); background:rgba(239,246,252,0.6); }
-  .icon { width:42px; height:42px; display:grid; place-items:center; flex-shrink:0; border-radius:12px; background:rgba(91, 141, 239,0.1); color:#4772E8; }
+  .item.unread { border-color:rgba(33, 150, 243,0.4); background:rgba(239,246,252,0.6); }
+  .icon { width:42px; height:42px; display:grid; place-items:center; flex-shrink:0; border-radius:12px; background:rgba(33, 150, 243,0.1); color:#1976D2; }
   .content { flex:1; display:flex; flex-direction:column; gap:3px; }.content strong { font-size:14px; font-weight:700; color:#1F2937; }.content span { font-size:13px; color:#64748B; }.content small { font-size:10px; color:#94A3B8; }
   .empty { min-height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#94A3B8; text-align:center; }.empty strong { color:#64748B; }.empty span { max-width:260px; font-size:13px; }
 </style>
