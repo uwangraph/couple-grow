@@ -394,7 +394,7 @@
   .fx {
     font-size: 12px;
     font-weight: 900;
-    color: #22C55E;
+    color: #5CC8AC;
     margin-right: 8px;
     flex-shrink: 0;
   }
@@ -517,7 +517,7 @@
   }
 
   .cell--error .cell-display {
-    color: #EF4444;
+    color: #EF7C97;
     font-weight: 800;
   }
 
@@ -549,6 +549,9 @@
     background: white;
     z-index: 3;
     min-width: 200px;
+    box-shadow:
+      inset 4px 4px 8px rgba(25, 118, 210, 0.13),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.95);
   }
 
   /* Controls */
@@ -596,9 +599,9 @@
   .hint-chip {
     font-size: 10px;
     font-weight: 800;
-    color: #22C55E;
-    background: #F0FDF4;
-    border: 1px solid #BBF7D0;
+    color: #5CC8AC;
+    background: #F0F9F7;
+    border: 1px solid #CDEBE2;
     border-radius: 6px;
     padding: 3px 8px;
     cursor: pointer;
@@ -606,5 +609,5 @@
     transition: all 0.15s;
   }
 
-  .hint-chip:hover { background: #DCFCE7; border-color: #86EFAC; }
+  .hint-chip:hover { background: #E1F4EE; border-color: #86EFAC; }
 </style>

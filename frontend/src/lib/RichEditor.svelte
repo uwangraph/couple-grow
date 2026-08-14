@@ -31,10 +31,10 @@
 
   const TEXT_COLORS = [
     { label: 'Default', value: '' },
-    { label: 'Merah', value: '#EF4444' },
+    { label: 'Merah', value: '#EF7C97' },
     { label: 'Oranye', value: '#F97316' },
     { label: 'Kuning', value: '#EAB308' },
-    { label: 'Hijau', value: '#22C55E' },
+    { label: 'Hijau', value: '#5CC8AC' },
     { label: 'Biru', value: '#3B82F6' },
     { label: 'Ungu', value: '#A855F7' },
     { label: 'Pink', value: '#EC4899' },
@@ -561,7 +561,7 @@
   }
   .table-action-btn:hover { background: #EEF4FF; }
   .table-action-btn--merge { background: #FEF9C3; color: #A16207; border-color: #FDE68A; }
-  .table-action-btn--delete { background: #FFF1F2; color: #F43F5E; border-color: #FECDD3; }
+  .table-action-btn--delete { background: #FDF4F6; color: #EF7C97; border-color: #FECDD3; }
 
   /* Global table styles */
   :global(.rich-editor-content table) {
