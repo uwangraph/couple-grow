@@ -233,36 +233,47 @@
   .back-btn {
     width: 38px;
     height: 38px;
-    border-radius: 12px;
-    background: rgba(91, 141, 239, 0.1);
+    border-radius: 14px;
+    background: linear-gradient(150deg, #FFFFFF 0%, #EAF4FE 100%);
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #4772E8;
+    color: #1976D2;
     cursor: pointer;
-    transition: background 0.15s;
+    flex-shrink: 0;
+    box-shadow:
+      inset 3px 3px 6px rgba(255, 255, 255, 0.95),
+      inset -2px -3px 7px rgba(33, 150, 243, 0.12),
+      2px 4px 9px rgba(21, 101, 192, 0.10);
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
   }
-  .back-btn:hover { background: rgba(91, 141, 239, 0.18); }
+  .back-btn:active {
+    transform: translateY(1px);
+    box-shadow:
+      inset 3px 4px 8px rgba(25, 118, 210, 0.16),
+      inset -2px -2px 6px rgba(255, 255, 255, 0.9),
+      1px 1px 3px rgba(21, 101, 192, 0.06);
+  }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
   .delete-btn {
     padding: 8px 14px;
     border-radius: 12px;
     border: none;
-    background: rgba(239, 68, 68, 0.08);
-    color: #DC2626;
+    background: rgba(239, 124, 151, 0.08);
+    color: #D2566F;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
   }
-  .delete-btn:hover { background: rgba(239, 68, 68, 0.14); }
+  .delete-btn:hover { background: rgba(239, 124, 151, 0.14); }
   .save-btn {
     padding: 8px 20px;
     border-radius: 12px;
     border: none;
-    background: #5B8DEF;
+    background: #2196F3;
     color: white;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
@@ -271,7 +282,12 @@
     transition: all 0.2s;
   }
   .save-btn:disabled { opacity: 0.6; }
-  .save-btn--saved { background: #0B9E6B; }
+  .save-btn--saved { background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26);
+  }
 
   /* Title */
   .title-area { padding: 20px 22px 10px; }
@@ -285,18 +301,21 @@
     color: #1F2937;
     background: transparent;
     margin-bottom: 10px;
+    box-shadow:
+      inset 4px 4px 8px rgba(25, 118, 210, 0.13),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.95);
   }
   .title-input::placeholder { color: #CBD5E1; }
   .title-meta { display: flex; gap: 8px; flex-wrap: wrap; }
   .meta-pill {
     font-size: 11px;
     font-weight: 600;
-    color: #4772E8;
-    background: rgba(91, 141, 239, 0.1);
+    color: #1976D2;
+    background: rgba(33, 150, 243, 0.1); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10);
     padding: 3px 10px;
     border-radius: 99px;
   }
-  .meta-pill--progress { color: #059669; background: rgba(16, 185, 129, 0.1); }
+  .meta-pill--progress { color: #2F9A80; background: rgba(79, 191, 163, 0.1); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10); }
 
   /* Tab bar */
   .tab-bar {
@@ -321,10 +340,10 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .tab-pill--active { background: #ffffff; border-color: rgba(91, 141, 239, 0.4); color: #4772E8; box-shadow: 0 1px 3px rgba(91, 141, 239,0.18); }
+  .tab-pill--active { background: #ffffff; border-color: rgba(33, 150, 243, 0.4); color: #1976D2; box-shadow: 0 1px 3px rgba(33, 150, 243,0.18); }
   .tab-badge {
-    background: rgba(91, 141, 239, 0.12);
-    color: #4772E8;
+    background: rgba(33, 150, 243, 0.12); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10);
+    color: #1976D2;
     padding: 1px 7px;
     border-radius: 99px;
     font-size: 11px;
@@ -340,10 +359,9 @@
   }
   .tab-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #10B981, #34D399);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 60%, #1976D2 100%);
     border-radius: 99px;
-    transition: width 0.4s ease;
-  }
+    transition: width 0.4s ease; box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.5), inset -1px -2px 4px rgba(13, 71, 161, 0.3); }
 
   /* Content area */
   .content-area {
@@ -382,10 +400,10 @@
     transition: all 0.15s;
   }
   .check-item--done {
-    background: rgba(16, 185, 129, 0.06);
+    background: rgba(79, 191, 163, 0.06);
     border-color: transparent;
   }
-  .check-item:focus-within { border-color: rgba(91, 141, 239, 0.4); }
+  .check-item:focus-within { border-color: rgba(33, 150, 243, 0.4); }
 
   .check-bubble {
     width: 26px;
@@ -400,7 +418,7 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .check-bubble--done { background: #10B981; border-color: #10B981; }
+  .check-bubble--done { background: #4FBFA3; border-color: #4FBFA3; }
 
   .check-text {
     flex: 1;
@@ -429,7 +447,7 @@
     transition: all 0.15s;
     flex-shrink: 0;
   }
-  .check-delete:hover { background: rgba(239, 68, 68, 0.08); color: #DC2626; }
+  .check-delete:hover { background: rgba(239, 124, 151, 0.08); color: #D2566F; }
 
   .add-item-btn {
     display: flex;
@@ -448,18 +466,18 @@
     transition: all 0.15s;
     margin-top: 4px;
   }
-  .add-item-btn:hover { border-color: #5B8DEF; color: #4772E8; background: #F8FAFC; }
+  .add-item-btn:hover { border-color: #2196F3; color: #1976D2; background: #F8FAFC; }
   .add-item-plus { font-size: 20px; line-height: 1; }
 
   .all-done-banner {
     text-align: center;
     padding: 14px;
-    background: rgba(16, 185, 129, 0.08);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: rgba(79, 191, 163, 0.08);
+    border: 1px solid rgba(79, 191, 163, 0.3);
     border-radius: 14px;
     font-size: 14px;
     font-weight: 700;
-    color: #059669;
+    color: #2F9A80;
     margin-top: 6px;
   }
 </style>

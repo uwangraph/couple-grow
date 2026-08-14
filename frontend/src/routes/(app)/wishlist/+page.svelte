@@ -153,7 +153,7 @@
   }
 
   function getPriorityLabel(p: number) {
-    if (p === 3) return { label: 'Tinggi', color: '#F43F5E' };
+    if (p === 3) return { label: 'Tinggi', color: '#EF7C97' };
     if (p === 2) return { label: 'Sedang', color: '#F59E0B' };
     return { label: 'Rendah', color: '#64748B' };
   }
@@ -210,7 +210,7 @@
       {#if highPriority.length > 0}
         <div class="priority-section">
           <h2 class="priority-title">
-            <span class="priority-badge" style="background:#FFF1F2;color:#F43F5E">Prioritas Tinggi</span>
+            <span class="priority-badge" style="background:#FDF4F6;color:#EF7C97">Prioritas Tinggi</span>
           </h2>
           <div class="wishlist-grid">
             {#each highPriority as wish}
@@ -325,7 +325,7 @@
       {#if completed.length > 0}
         <div class="priority-section">
           <h2 class="priority-title">
-            <span class="priority-badge" style="background:#F0FDF4;color:#22C55E">Tercapai</span>
+            <span class="priority-badge" style="background:#F0F9F7;color:#5CC8AC">Tercapai</span>
           </h2>
           <div class="wishlist-grid">
             {#each completed as wish}
@@ -442,15 +442,15 @@
   }
   .header-inner { position: relative; }
   .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
-  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #4772E8; padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #1976D2; padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
   .back-btn:hover { color: #2f5bb0; }
   .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
   .header-title { font-size: 24px; font-weight: 800; color: #1F2937; margin: 0; }
 
   .create-btn {
-    background: #0B9E6B;
+    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: #ffffff;
-    border: 1px solid #0B9E6B;
+    border: none;
     border-radius: 12px;
     padding: 10px 16px;
     font-family: 'Nunito', sans-serif;
@@ -460,14 +460,18 @@
     white-space: nowrap;
     transition: transform 0.12s, background 0.2s;
     flex-shrink: 0;
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .create-btn:hover { background: #059669; }
+  .create-btn:hover { background: #2F9A80; }
   .create-btn:active { transform: scale(0.96); }
 
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #5B8DEF; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .empty-state { text-align: center; padding: 60px 20px; }
@@ -475,9 +479,9 @@
   .empty-title { font-size: 16px; font-weight: 700; color: #1F2937; margin: 0 0 6px; }
   .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
   .empty-cta {
-    background: #0B9E6B;
+    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: white;
-    border: 1px solid #0B9E6B;
+    border: none;
     border-radius: 12px;
     padding: 13px 24px;
     font-family: 'Nunito', sans-serif;
@@ -485,8 +489,12 @@
     font-weight: 700;
     cursor: pointer;
     transition: background 0.2s;
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .empty-cta:hover { background: #059669; }
+  .empty-cta:hover { background: #2F9A80; }
 
   /* Priority Section */
   .priority-section { margin-bottom: 20px; }
@@ -519,7 +527,7 @@
   }
   .wish-card--completed {
     background: #ffffff;
-    border-color: rgba(16, 185, 129, 0.4);
+    border-color: rgba(79, 191, 163, 0.4);
     opacity: 0.75;
   }
   .wish-card:active { transform: scale(0.98); }
@@ -535,8 +543,8 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: rgba(91, 141, 239, 0.1);
-    color: #4772E8;
+    background: rgba(33, 150, 243, 0.1);
+    color: #1976D2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -545,25 +553,29 @@
     flex-shrink: 0;
   }
   .wish-check:active { transform: scale(0.85); }
-  .wish-check--completed { background: rgba(16,185,129,0.1); color: #059669; }
+  .wish-check--completed { background: rgba(79,191,163,0.1); color: #2F9A80; }
 
   .wish-menu { display: flex; gap: 4px; }
   .menu-btn {
     width: 28px;
     height: 28px;
-    border-radius: 8px;
-    background: rgba(91, 141, 239,0.08);
-    color: #64748B;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%);
+    color: #fff;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.15s;
+    box-shadow:
+      inset 3px 3px 6px rgba(255, 255, 255, 0.5),
+      inset -3px -4px 8px rgba(13, 71, 161, 0.32),
+      4px 6px 13px rgba(21, 101, 192, 0.22);
   }
-  .menu-btn:hover { background: rgba(91, 141, 239,0.18); }
-  .menu-btn--delete { background: rgba(239,68,68,0.1); color: #DC2626; }
-  .menu-btn--delete:hover { background: rgba(239,68,68,0.18); }
+  .menu-btn:hover { background: rgba(33, 150, 243,0.18); }
+  .menu-btn--delete { background: linear-gradient(145deg, #F7A9BC 0%, #EF7C97 55%, #E2637F 100%); color: #fff; }
+  .menu-btn--delete:hover { background: linear-gradient(145deg, #F7A9BC 0%, #EF7C97 55%, #E2637F 100%); }
 
   .wish-name {
     font-size: 13px;
@@ -588,7 +600,7 @@
   .wish-price {
     font-size: 13px;
     font-weight: 700;
-    color: #4772E8;
+    color: #1976D2;
     margin: 0 0 6px;
   }
 
@@ -597,9 +609,9 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #4772E8;
+    color: #1976D2;
     font-weight: 600;
-    background: rgba(91, 141, 239,0.1);
+    background: rgba(33, 150, 243,0.1);
     padding: 4px 8px;
     border-radius: 8px;
     margin-top: 6px;
@@ -617,8 +629,7 @@
     z-index: 100;
   }
   .modal {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(20px);
+    background: #FFFFFF;
     border-top: 1px solid rgba(255,255,255,0.8);
     border-radius: 28px 28px 0 0;
     width: 100%;
@@ -627,6 +638,11 @@
     max-height: 85vh;
     overflow-y: auto;
     animation: slide-up 0.25s ease;
+    box-shadow:
+      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
+      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
+      6px 10px 22px rgba(21, 101, 192, 0.10),
+      2px 3px 6px rgba(21, 101, 192, 0.06);
   }
   @keyframes slide-up {
     from { transform: translateY(40px); opacity: 0; }
@@ -636,7 +652,7 @@
   .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
   .modal-icon-circle {
     width: 50px; height: 50px; border-radius: 16px;
-    background: #EFF6FF; color: #6BAFF2;
+    background: #EFF6FF; color: #2196F3;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .modal-title { font-size: 17px; font-weight: 900; color: #1E293B; margin: 0 0 3px; }
@@ -646,12 +662,20 @@
   .form-group { display: flex; flex-direction: column; gap: 5px; }
   .form-label { font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; }
   .form-input {
-    padding: 13px 16px; border: 2px solid #E0E7FF; border-radius: 16px;
+    padding: 13px 16px; border: none; border-radius: 22px;
     font-size: 15px; font-weight: 700; color: #1E293B; font-family: 'Nunito', sans-serif;
-    outline: none; background: #F8FAFC; transition: border-color 0.2s;
+    outline: none; background: #E6F2FD; transition: border-color 0.2s;
     width: 100%; box-sizing: border-box;
+    box-shadow:
+      inset 4px 4px 8px rgba(25, 118, 210, 0.13),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.95);
   }
-  .form-input:focus { border-color: #6BAFF2; }
+  .form-input:focus {
+    box-shadow:
+      inset 4px 4px 8px rgba(25, 118, 210, 0.18),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.95),
+      0 0 0 3px rgba(33, 150, 243, 0.16);
+  }
   .form-textarea { resize: none; min-height: 80px; }
   .modal-actions { display: flex; gap: 12px; padding-top: 4px; }
   .modal-cancel {
@@ -660,10 +684,13 @@
   }
   .modal-submit {
     flex: 2; padding: 14px;
-    background: linear-gradient(135deg, #6BAFF2, #4F96E5);
-    color: white; border: none; border-radius: 16px;
+    background: linear-gradient(145deg, #2196F3, #4F96E5);
+    color: white; border: none; border-radius: 22px;
     font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer;
-    box-shadow: 0 6px 20px rgba(107,175,242,0.3); transition: transform 0.12s;
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26); transition: transform 0.12s;
   }
   .modal-submit:active { transform: scale(0.97); }
 </style>

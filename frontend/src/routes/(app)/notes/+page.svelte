@@ -252,13 +252,13 @@
   }
   .header-inner { position: relative; }
   .header-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #4772E8; padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #1976D2; padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
   .back-btn:hover { color: #2b5f9e; }
   .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; }
   .header-title { font-size: 26px; font-weight: 800; color: #1F2937; margin: 0; letter-spacing: -0.02em; }
   .new-folder-btn {
-    background: #0B9E6B;
-    border: 1px solid #0B9E6B;
+    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
+    border: none;
     color: #ffffff;
     border-radius: 12px;
     padding: 8px 14px;
@@ -268,8 +268,12 @@
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.15s;
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .new-folder-btn:hover { background: #059669; }
+  .new-folder-btn:hover { background: #2F9A80; }
 
   /* Folder tabs */
   .folder-tabs {
@@ -296,13 +300,13 @@
     white-space: nowrap;
     transition: all 0.15s;
   }
-  .folder-tab--active { background: #ffffff; color: #4772E8; border-color: rgba(91, 141, 239, 0.4); box-shadow: 0 1px 3px rgba(91, 141, 239,0.18); }
+  .folder-tab--active { background: #ffffff; color: #1976D2; border-color: rgba(33, 150, 243, 0.4); box-shadow: 0 1px 3px rgba(33, 150, 243,0.18); }
 
   /* Body */
   .body { padding: 8px 20px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #5B8DEF; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
@@ -312,7 +316,7 @@
   .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
   .empty-cta {
     display: inline-block;
-    background: #0B9E6B;
+    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: white;
     border: none;
     border-radius: 12px;
@@ -322,17 +326,21 @@
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26);
   }
 
   /* Section header */
   .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .section-title-group { display: flex; align-items: center; gap: 10px; }
-  .section-emoji { color: #4772E8; }
+  .section-emoji { color: #1976D2; }
   .section-title { font-size: 16px; font-weight: 800; color: #1F2937; margin: 0 0 2px; }
   .section-sub { font-size: 12px; color: #94A3B8; margin: 0; font-weight: 600; }
   .new-note-btn {
     display: inline-block;
-    background: #5B8DEF;
+    background: #2196F3;
     color: white;
     border-radius: 12px;
     padding: 9px 16px;
@@ -351,36 +359,36 @@
 
   .note-card {
     /* Apple-like glass card: translucent white + subtle specular top edge */
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
-    border-radius: 18px;
+    background: #FFFFFF;
+    border-radius: 24px;
     padding: 14px;
     text-decoration: none;
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    border: none;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 1px 3px rgba(31, 41, 55, 0.06);
+      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
+      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
+      6px 10px 22px rgba(21, 101, 192, 0.10),
+      2px 3px 6px rgba(21, 101, 192, 0.06);
     transition: all 0.15s;
     display: flex;
     flex-direction: column;
     gap: 8px;
     min-height: 110px;
   }
-  .note-card:hover { border-color: rgba(91, 141, 239, 0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 10px rgba(31,41,55,0.08); }
+  .note-card:hover { border-color: rgba(33, 150, 243, 0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 10px rgba(31,41,55,0.08); }
   .note-card:active { transform: scale(0.97); }
 
   .note-card-top { display: flex; align-items: center; justify-content: space-between; }
   .note-type-badge {
-    color: #4772E8;
-    background: rgba(91, 141, 239, 0.12);
+    color: #1976D2;
+    background: rgba(33, 150, 243, 0.12); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10);
     padding: 5px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  .note-type-badge--check { background: rgba(16, 185, 129, 0.12); color: #059669; }
+  .note-type-badge--check { background: rgba(79, 191, 163, 0.12); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10); color: #2F9A80; }
   .note-date { font-size: 10px; color: #94A3B8; font-weight: 600; }
   .note-title { font-size: 13px; font-weight: 700; color: #1F2937; margin: 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .note-preview { font-size: 11px; color: #64748B; margin: 0; font-weight: 500; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -422,7 +430,12 @@
   .modal-handle { width: 44px; height: 5px; background: #E2E8F0; border-radius: 99px; margin: 0 auto 20px; }
 
   .modal-icon-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-  .modal-icon-circle { width: 50px; height: 50px; border-radius: 16px; background: rgba(91, 141, 239,0.12); display: flex; align-items: center; justify-content: center; color: #4772E8; flex-shrink: 0; }
+  .modal-icon-circle { width: 50px; height: 50px; border-radius: 22px; background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
+    box-shadow:
+      inset 3px 3px 6px rgba(255, 255, 255, 0.5),
+      inset -3px -4px 8px rgba(13, 71, 161, 0.32),
+      4px 6px 13px rgba(21, 101, 192, 0.22);
+  }
   .modal-title { font-size: 17px; font-weight: 800; color: #1F2937; margin: 0 0 3px; }
   .modal-subtitle { font-size: 13px; color: #64748B; margin: 0; font-weight: 600; }
 
@@ -431,20 +444,23 @@
   .form-label { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; }
   .form-input {
     padding: 13px 16px;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    border-radius: 14px;
+    border: none;
+    border-radius: 20px;
     font-size: 15px;
     font-weight: 600;
     color: #1F2937;
     font-family: 'Nunito', sans-serif;
     outline: none;
-    background: #ffffff;
+    background: #E6F2FD;
     transition: border-color 0.2s, box-shadow 0.2s;
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus { border-color: #5B8DEF; box-shadow: 0 0 0 3px rgba(91, 141, 239, 0.12); }
+  .form-input:focus {  box-shadow:
+      inset 4px 4px 8px rgba(25, 118, 210, 0.18),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.95),
+      0 0 0 3px rgba(33, 150, 243, 0.16); }
   .modal-actions { display: flex; gap: 12px; }
   .modal-cancel { flex: 1; padding: 14px; background: #F1F5F9; color: #64748B; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
-  .modal-submit { flex: 2; padding: 14px; background: #5B8DEF; color: white; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .modal-submit { flex: 2; padding: 14px; background: #2196F3; color: white; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
 </style>
