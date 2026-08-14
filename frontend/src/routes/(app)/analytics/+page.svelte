@@ -101,7 +101,7 @@
   let totalBreakdown = $derived(categoryBreakdown.reduce((sum, c) => sum + c.total, 0));
 
   // Colors for pie chart
-  const colors = ['#6BAFF2', '#F59E0B', '#F43F5E', '#22C55E', '#A58BE8', '#EC4899', '#14B8A6', '#F97316'];
+  const colors = ['#2196F3', '#F59E0B', '#EF7C97', '#5CC8AC', '#A58BE8', '#EC4899', '#14B8A6', '#F97316'];
 </script>
 
 <div class="analytics-root">
@@ -351,7 +351,7 @@
   .body { padding: 18px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #5B8DEF; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Comparison Card */
@@ -375,8 +375,8 @@
     margin: 0 auto 16px;
   }
 
-  .comparison-icon--green { background: rgba(16,185,129,0.1); color: #059669; }
-  .comparison-icon--red { background: rgba(239,68,68,0.1); color: #DC2626; }
+  .comparison-icon--green { background: rgba(79,191,163,0.1); color: #2F9A80; }
+  .comparison-icon--red { background: rgba(239,124,151,0.1); color: #D2566F; }
   .comparison-icon--gray { background: rgba(100,116,139,0.1); color: #64748B; }
 
   .comparison-title {
@@ -468,8 +468,8 @@
 
   .period-tab--active {
     background: white;
-    color: #4772E8;
-    box-shadow: 0 1px 3px rgba(91, 141, 239,0.18);
+    color: #1976D2;
+    box-shadow: 0 1px 3px rgba(33, 150, 243,0.18);
   }
 
   .empty-text {
@@ -514,7 +514,7 @@
 
   .bar-fill {
     width: 100%;
-    background: linear-gradient(180deg, #8FBCEA, #5B8DEF);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 60%, #1976D2 100%);
     border-radius: 8px 8px 0 0;
     position: relative;
     min-height: 20px;
@@ -522,8 +522,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding-top: 6px;
-  }
+    padding-top: 6px; box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.5), inset -1px -2px 4px rgba(13, 71, 161, 0.3); }
 
   .bar-value {
     font-size: 10px;
@@ -608,7 +607,7 @@
   .category-percent {
     font-size: 11px;
     font-weight: 600;
-    color: #4772E8;
+    color: #1976D2;
     margin: 0;
   }
 
@@ -648,8 +647,8 @@
   }
 
   .velocity-badge--green {
-    background: rgba(16,185,129,0.1);
-    color: #059669;
+    background: rgba(79,191,163,0.1); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10);
+    color: #2F9A80;
   }
 
   .velocity-badge--gray {
@@ -674,15 +673,14 @@
 
   .velocity-fill {
     height: 100%;
-    background: linear-gradient(90deg, #10B981, #34D399);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 60%, #1976D2 100%);
     border-radius: 99px;
-    transition: width 0.6s ease;
-  }
+    transition: width 0.6s ease; box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.5), inset -1px -2px 4px rgba(13, 71, 161, 0.3); }
 
   .velocity-percent {
     font-size: 14px;
     font-weight: 700;
-    color: #059669;
+    color: #2F9A80;
     margin: 0;
     min-width: 45px;
     text-align: right;
