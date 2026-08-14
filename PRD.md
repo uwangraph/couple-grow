@@ -70,30 +70,33 @@ Semua query domain difilter dengan `couple_id`, sehingga tidak ada data yang boc
 
 ### Palet
 
-Warna brand diambil langsung dari logo (dua daun membentuk hati — daun biru langit
-dan daun lavender dengan batang biru & indigo di tengahnya).
+Biru brand **`#2196F3`**. Ramp clay-nya dibangun dari warna itu, sementara
+warna pendukung diambil dari logo (dua daun membentuk hati).
 
-| Peran                    | Nama            | Kode Hex  | Asal di logo               |
-| ------------------------ | --------------- | --------- | -------------------------- |
-| **Brand / Primary**      | Leaf Blue       | `#4E81F8` | Batang daun kiri           |
-| **Brand / Secondary**    | Leaf Indigo     | `#5D5FF4` | Batang daun kanan          |
-| **Accent Biru**          | Sky Leaf        | `#76CFFD` | Tepi daun kiri             |
-| **Accent Ungu**          | Lavender Leaf   | `#9473FE` | Tepi daun kanan            |
-| **Surface Biru Lembut**  | Ice Blue        | `#C7F2FE` | Bagian terang daun kiri    |
-| **Surface Ungu Lembut**  | Soft Lilac      | `#C7A9FF` | Bagian terang daun kanan   |
-| **Background**           | Pale Blue       | `#E8EEF9` | Turunan Ice Blue           |
-| **Surface**              | White           | `#FFFFFF` | Latar logo                 |
-| **Text**                 | Dark Navy       | `#1E293B` | —                          |
-| **Muted**                | Slate           | `#64748B` | —                          |
-| **Success**              | Soft Mint       | `#8BC6A5` | —                          |
-| **Danger**               | Rose            | `#F43F5E` | —                          |
+| Peran                    | Nama            | Kode Hex  | Catatan                          |
+| ------------------------ | --------------- | --------- | -------------------------------- |
+| **Brand / Primary**      | Brand Blue      | `#2196F3` | Warna inti seluruh aplikasi      |
+| **Primary Dark**         | Deep Blue       | `#1976D2` | Stop bawah gradien clay          |
+| **Primary Light**        | Light Blue      | `#64B5F6` | Stop atas gradien clay           |
+| **Ubin nada kedua**      | Ocean Blue      | `#1565C0` | Membedakan ubin sejenis          |
+| **Secondary / Aksen**    | Sky             | `#4FC3F7` | Turunan daun kiri logo           |
+| **Surface Biru Lembut**  | Ice Blue        | `#D2E9FB` | Isian kartu bertinta             |
+| **Background**           | Pale Blue       | `#EAF4FE` | Latar gradien aplikasi           |
+| **Surface**              | White           | `#FFFFFF` | Kartu clay                       |
+| **Text**                 | Dark Navy       | `#1F2937` | —                                |
+| **Muted**                | Slate           | `#64748B` | —                                |
+| **Positif**              | Muted Teal      | `#4FBFA3` | Pemasukan — sengaja diredam      |
+| **Peringatan**           | Muted Rose      | `#EF7C97` | Pengeluaran — sengaja diredam    |
 
-**Gradien brand** — `linear-gradient(135deg, #4E81F8, #9473FE)` mengikuti transisi
-daun biru ke daun ungu pada logo; dipakai untuk tombol utama dan aksen header.
+**Gradien clay** — `linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%)`
+untuk ubin ikon dan tombol utama.
 
-> Catatan implementasi: komponen yang sudah ada memakai `#5B8DEF` / `#4772E8`, yaitu
-> varian Leaf Blue yang sedikit lebih lembut. Nilai di tabel ini adalah acuan brand;
-> penyelarasan komponen ke nilai logo dilakukan bertahap.
+**Nada bayangan** — drop shadow memakai `rgba(21, 101, 192, …)` dan bayangan
+dalam `rgba(13, 71, 161, …)`, bukan abu-abu netral. Inilah yang membuat
+permukaan clay terasa menyatu dengan warna brand.
+
+> Hijau dan rose hanya dipakai sebagai penanda pemasukan/pengeluaran, dengan
+> saturasi yang diturunkan agar tidak melawan biru.
 
 ### Tipografi
 
