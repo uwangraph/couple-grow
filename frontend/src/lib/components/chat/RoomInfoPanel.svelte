@@ -148,12 +148,16 @@
     width: 46px;
     height: 46px;
     border-radius: 15px;
-    background: rgba(91, 141, 239, 0.12);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
     flex-shrink: 0;
+    box-shadow:
+      inset 3px 3px 6px rgba(255, 255, 255, 0.5),
+      inset -3px -4px 8px rgba(13, 71, 161, 0.32),
+      4px 6px 13px rgba(21, 101, 192, 0.22);
   }
   .ri-head__text { flex: 1; min-width: 0; }
   .ri-title {
@@ -207,7 +211,7 @@
   .ri-link {
     border: none;
     background: none;
-    color: #4772E8;
+    color: #1976D2;
     font-size: 12px;
     font-weight: 800;
     cursor: pointer;
@@ -252,9 +256,9 @@
     width: 100%;
     padding: 11px;
     border-radius: 13px;
-    border: 1px solid #FECACA;
-    background: #FEF2F2;
-    color: #DC2626;
+    border: 1px solid #F8CDD7;
+    background: #FDF3F5;
+    color: #D2566F;
     font-size: 13px;
     font-weight: 800;
     font-family: inherit;

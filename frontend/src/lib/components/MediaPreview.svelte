@@ -136,7 +136,7 @@
     border-radius: 20px;
     border: 1px solid rgba(255,255,255,0.75);
     background: rgba(255,255,255,0.92);
-    box-shadow: 0 20px 50px -12px rgba(31,60,110,0.3);
+    box-shadow: 0 20px 50px -12px rgba(13,71,161,0.3);
     overflow: hidden;
   }
   .media-header {
@@ -154,7 +154,7 @@
     font-weight: 800;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    background: linear-gradient(135deg,#5B8DEF,#8E7BF0);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -198,7 +198,7 @@
     border-radius: 12px;
     background: #fff;
     border: 1px solid rgba(226,232,240,0.8);
-    box-shadow: 0 8px 24px -8px rgba(31,60,110,0.15);
+    box-shadow: 0 8px 24px -8px rgba(13,71,161,0.15);
   }
   .media-iframe {
     width: 100%;
@@ -225,8 +225,8 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(91,141,239,0.12), rgba(142,123,240,0.12));
-    color: #5B8DEF;
+    background: linear-gradient(135deg, rgba(33,150,243,0.14), rgba(79,195,247,0.14));
+    color: #2196F3;
     margin-bottom: 14px;
   }
   .media-audio__name {
@@ -258,8 +258,8 @@
     width: 60px;
     height: 60px;
     border-radius: 16px;
-    background: linear-gradient(135deg, rgba(91,141,239,0.12), rgba(142,123,240,0.12));
-    color: #5B8DEF;
+    background: linear-gradient(135deg, rgba(33,150,243,0.14), rgba(79,195,247,0.14));
+    color: #2196F3;
     margin-bottom: 12px;
   }
   .media-fallback__name { margin: 0; font-size: 14px; font-weight: 800; color: #334155; }
@@ -313,10 +313,13 @@
   .media-btn--primary {
     flex: 1.5;
     color: #fff;
-    border: 1px solid rgba(71,114,232,0.9);
-    background: linear-gradient(135deg,#5B8DEF,#8E7BF0);
-    box-shadow: 0 3px 0 0 rgba(122,99,230,0.9);
+    border: 1px solid rgba(25,118,210,0.9);
+    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%);
+    box-shadow:
+      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
+      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
+      5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .media-btn--primary:hover { transform: translateY(1px); box-shadow: 0 2px 0 0 rgba(122,99,230,0.9); }
+  .media-btn--primary:hover { transform: translateY(1px); box-shadow: 0 2px 0 0 rgba(25,118,210,0.9); }
   .media-btn--primary:active { transform: translateY(2px); box-shadow: none; }
 </style>

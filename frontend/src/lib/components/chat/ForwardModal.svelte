@@ -193,7 +193,7 @@
     text-align: left;
     font-family: inherit;
   }
-  .fw-item--active { border-color: #5B8DEF; background: rgba(91, 141, 239, 0.08); }
+  .fw-item--active { border-color: #2196F3; background: rgba(33, 150, 243, 0.08); }
   .fw-item__icon { font-size: 18px; }
   .fw-item__name {
     flex: 1;
@@ -215,13 +215,13 @@
     color: #fff;
     flex-shrink: 0;
   }
-  .fw-check--on { background: #5B8DEF; border-color: #5B8DEF; }
+  .fw-check--on { background: #2196F3; border-color: #2196F3; }
   .fw-submit {
     width: 100%;
     padding: 12px;
     border-radius: 14px;
     border: none;
-    background: #5B8DEF;
+    background: #2196F3;
     color: #fff;
     font-size: 14px;
     font-weight: 800;
