@@ -731,13 +731,13 @@
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: transform 0.1s ease, background 0.2s;
+    transition: transform 0.15s, filter 0.2s;
     box-shadow:
       inset 3px 3px 7px rgba(255, 255, 255, 0.4),
       inset -3px -5px 10px rgba(13, 71, 161, 0.32),
       5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .add-btn:hover { background: #1E88E5; }
+  .add-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
   .add-btn:active { transform: scale(0.97); }
 
   /* Content */

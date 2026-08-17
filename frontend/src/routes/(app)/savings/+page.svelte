@@ -808,14 +808,14 @@
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: transform 0.12s, background 0.2s;
+    transition: transform 0.15s, filter 0.2s;
     flex-shrink: 0;
     box-shadow:
       inset 3px 3px 7px rgba(255, 255, 255, 0.4),
       inset -3px -5px 10px rgba(13, 71, 161, 0.32),
       5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .create-btn:hover { background: #1E88E5; }
+  .create-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
   .create-btn:active { transform: scale(0.96); }
 
   /* Summary Card */
@@ -856,13 +856,13 @@
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: filter 0.2s, transform 0.15s;
     box-shadow:
       inset 3px 3px 7px rgba(255, 255, 255, 0.4),
       inset -3px -5px 10px rgba(13, 71, 161, 0.32),
       5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .empty-cta:hover { background: #1E88E5; }
+  .empty-cta:hover { filter: brightness(1.12); transform: translateY(-1px); }
 
   /* Savings List */
   .savings-list { display: flex; flex-direction: column; gap: 14px; }

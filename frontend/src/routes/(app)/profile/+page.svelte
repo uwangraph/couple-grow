@@ -1084,7 +1084,7 @@
     font-family: 'Nunito', sans-serif;
     font-weight: 700;
     cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
+    transition: opacity 0.2s, transform 0.1s, filter 0.2s;
     font-size: 13px;
     padding: 10px 18px;
   }
@@ -1093,7 +1093,7 @@
   .btn--primary { background: #2196F3; color: white; }
   .btn--primary:hover { background: #1976D2; }
   .btn--success { background: #4FBFA3; color: white; }
-  .btn--success:hover { background: #1E88E5; }
+  .btn--success:hover { filter: brightness(1.12); }
   .btn--outline {
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.8);

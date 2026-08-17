@@ -267,13 +267,13 @@
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.15s;
+    transition: filter 0.2s, transform 0.15s;
     box-shadow:
       inset 3px 3px 7px rgba(255, 255, 255, 0.4),
       inset -3px -5px 10px rgba(13, 71, 161, 0.32),
       5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .new-folder-btn:hover { background: #1E88E5; }
+  .new-folder-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
 
   /* Folder tabs */
   .folder-tabs {
