@@ -273,7 +273,7 @@
       inset -3px -5px 10px rgba(13, 71, 161, 0.32),
       5px 9px 18px rgba(21, 101, 192, 0.26);
   }
-  .new-folder-btn:hover { background: #2F9A80; }
+  .new-folder-btn:hover { background: #1E88E5; }
 
   /* Folder tabs */
   .folder-tabs {

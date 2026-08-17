@@ -1093,7 +1093,7 @@
   .btn--primary { background: #2196F3; color: white; }
   .btn--primary:hover { background: #1976D2; }
   .btn--success { background: #4FBFA3; color: white; }
-  .btn--success:hover { background: #2F9A80; }
+  .btn--success:hover { background: #1E88E5; }
   .btn--outline {
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.8);
