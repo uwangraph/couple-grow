@@ -2,7 +2,8 @@ import {
   Home, User, Heart, MessageSquare, FileText, Wallet, PiggyBank, 
   TrendingUp, TrendingDown, Inbox, Loader2, Bell, Smile, Mail, 
   LogOut, Dice5, Check, Link, ChevronRight, Folder, Calendar,
-  Gift, Users, Sparkles, CheckCircle2, AlertCircle, Pencil, Lock, Trash2, History, ArrowLeft, Phone
+  Gift, Users, Sparkles, CheckCircle2, AlertCircle, Pencil, Lock, Trash2, History, ArrowLeft, Phone,
+  UtensilsCrossed, CarFront, ShoppingBag, Clapperboard, ReceiptText, HeartPulse, GraduationCap, Ellipsis
 } from '@lucide/svelte';
 import type { Component } from 'svelte';
 
@@ -38,7 +39,15 @@ export const ICONS: Record<string, Component> = {
   trash: Trash2,
   history: History,
   back: ArrowLeft,
-  phone: Phone
+  phone: Phone,
+  food: UtensilsCrossed,
+  transport: CarFront,
+  shopping: ShoppingBag,
+  entertainment: Clapperboard,
+  bills: ReceiptText,
+  health: HeartPulse,
+  education: GraduationCap,
+  other: Ellipsis
 };
 
 export {

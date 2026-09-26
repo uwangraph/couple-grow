@@ -9,6 +9,7 @@
   let budgets = $state<any[]>([]);
   let transactions = $state<any[]>([]);
   let loading = $state(true);
+  let loadError = $state('');
 
   let showModal = $state(false);
   let editingBudget = $state<any>(null);
@@ -39,21 +40,22 @@
 
   async function fetchData() {
     loading = true;
+    loadError = '';
     try {
       // Fetch budgets
       const budgetRes = await fetch(`${API_URL}/budgets`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (budgetRes.status === 401) { handleUnauthorized(); return; }
-      if (budgetRes.ok) {
-        const data = await readApiJson<{ budgets?: any[] }>(budgetRes);
-        budgets = data.budgets || [];
-      }
+      const budgetData = await readApiJson<{ budgets?: any[]; error?: string }>(budgetRes);
+      if (!budgetRes.ok) throw new Error(budgetData.error || 'Gagal memuat anggaran');
+      budgets = budgetData.budgets || [];
 
       // Fetch current month transactions for comparison
       const txnRes = await fetch(`${API_URL}/transactions`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
+      if (txnRes.status === 401) { handleUnauthorized(); return; }
       if (txnRes.ok) {
         const data = await readApiJson<{ transactions?: any[] }>(txnRes);
         const now = new Date();
@@ -66,9 +68,9 @@
                  txnDate.getMonth() + 1 === currentMonth && 
                  txnDate.getFullYear() === currentYear;
         });
-      }
+      } else throw new Error('Gagal memuat transaksi');
     } catch(e) {
-      console.error('Failed to fetch data:', e);
+      loadError = e instanceof Error ? e.message : 'Anggaran belum bisa dimuat.';
     } finally {
       loading = false;
     }
@@ -148,7 +150,7 @@
 
   function getCategoryIcon(cat: string) {
     const found = categories.find(c => c.name === cat);
-    return found ? found.icon : '📦';
+    return found ? found.icon : 'other';
   }
 
   function getCategoryColor(cat: string) {
@@ -157,8 +159,8 @@
   }
 
   let totalBudget = $derived(budgets.reduce((sum, b) => sum + b.amount, 0));
-  let totalSpent = $derived(transactions.reduce((sum, t) => sum + t.amount, 0));
-  let overallPercentage = $derived(totalBudget > 0 ? Math.min(Math.round((totalSpent / totalBudget) * 100), 100) : 0);
+  let totalSpent = $derived(transactions.filter(t => budgets.some(b => b.category === t.category)).reduce((sum, t) => sum + t.amount, 0));
+  let overallPercentage = $derived(totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0);
 </script>
 
 <div class="budget-root">
@@ -169,17 +171,18 @@
       <div class="header-top">
         <div>
           <p class="header-sub">Kelola Pengeluaran</p>
-          <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
-            Budget <Icon name="wallet" size={24} />
+          <h1 class="header-title">
+            Anggaran <Icon name="wallet" size={24} />
           </h1>
+          <p class="header-description">Atur pengeluaran bulanan supaya rencana tetap terasa ringan.</p>
         </div>
         <button class="create-btn" onclick={openCreateModal}>
-          + Set Budget
+          + Atur
         </button>
       </div>
 
       <!-- Overall Summary -->
-      {#if budgets.length > 0}
+      {#if !loading && !loadError && budgets.length > 0}
         <div class="summary-card">
           <div class="summary-row">
             <div>
@@ -187,12 +190,12 @@
               <p class="summary-amount">Rp {formatCompact(totalSpent)}</p>
             </div>
             <div style="text-align:right;">
-              <p class="summary-label">Total Budget</p>
+              <p class="summary-label">Total Anggaran</p>
               <p class="summary-amount">Rp {formatCompact(totalBudget)}</p>
             </div>
           </div>
           <div class="summary-track">
-            <div class="summary-fill" style="width:{overallPercentage}%"></div>
+            <div class="summary-fill" style="width:{Math.min(overallPercentage,100)}%"></div>
           </div>
           <div class="summary-meta">
             <span>{budgets.length} kategori</span>
@@ -210,10 +213,18 @@
         <div class="spinner"></div>
       </div>
 
+    {:else if loadError}
+      <div class="empty-state" role="alert">
+        <div class="empty-icon"><Icon name="wallet" size={36} /></div>
+        <p class="empty-title">Anggaran belum bisa dimuat</p>
+        <p class="empty-sub">{loadError}</p>
+        <button type="button" class="empty-cta" onclick={fetchData}>Coba lagi</button>
+      </div>
+
     {:else if budgets.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          <Icon name="empty" size={56} />
+          <Icon name="wallet" size={36} />
         </div>
         <p class="empty-title">Belum ada budget</p>
         <p class="empty-sub">Yuk atur budget bulanan per kategori!</p>
@@ -224,7 +235,7 @@
       <div class="budget-list">
         {#each budgets as budget}
           {@const spent = getSpentAmount(budget.category)}
-          {@const percentage = Math.min(Math.round((spent / budget.amount) * 100), 100)}
+          {@const percentage = budget.amount > 0 ? Math.round((spent / budget.amount) * 100) : 0}
           {@const remaining = budget.amount - spent}
           {@const isWarning = percentage >= 80}
           {@const isOver = percentage >= 100}
@@ -232,17 +243,17 @@
           <div class="budget-card {isOver ? 'budget-card--over' : ''}">
             <div class="budget-header">
               <div class="budget-icon" style="background:linear-gradient(145deg, {getCategoryColor(budget.category)}CC, {getCategoryColor(budget.category)});">
-                <span class="budget-emoji">{getCategoryIcon(budget.category)}</span>
+                <Icon name={getCategoryIcon(budget.category)} size={23} />
               </div>
               <div class="budget-info">
                 <h3 class="budget-name">{budget.category}</h3>
-                <p class="budget-limit">Budget: {formatRp(budget.amount)}</p>
+                <p class="budget-limit">Anggaran: {formatRp(budget.amount)}</p>
               </div>
               <div class="budget-menu">
-                <button class="menu-btn" onclick={() => openEditModal(budget)}>
+                <button type="button" class="menu-btn" onclick={() => openEditModal(budget)} aria-label="Edit anggaran {budget.category}">
                   <Icon name="edit" size={16} />
                 </button>
-                <button class="menu-btn menu-btn--delete" onclick={() => deleteBudget(budget.id)}>
+                <button type="button" class="menu-btn menu-btn--delete" onclick={() => deleteBudget(budget.id)} aria-label="Hapus anggaran {budget.category}">
                   <Icon name="trash" size={16} />
                 </button>
               </div>
@@ -252,7 +263,7 @@
               <div class="budget-track">
                 <div 
                   class="budget-fill {isWarning ? 'budget-fill--warning' : ''} {isOver ? 'budget-fill--over' : ''}" 
-                  style="width:{percentage}%"
+                  style="width:{Math.min(percentage,100)}%"
                 ></div>
               </div>
             </div>
@@ -264,7 +275,7 @@
               </div>
               <div class="budget-amount-item" style="text-align:right;">
                 {#if isOver}
-                  <p class="budget-amount-label">Over Budget</p>
+                  <p class="budget-amount-label">Melebihi anggaran</p>
                   <p class="budget-amount-val budget-amount-val--over">{formatRp(Math.abs(remaining))}</p>
                 {:else}
                   <p class="budget-amount-label">Sisa</p>
@@ -276,7 +287,7 @@
             {#if isOver}
               <div class="budget-warning">
                 <Icon name="error" size={16} />
-                <span>Melebihi budget {Math.abs(percentage - 100)}%!</span>
+                <span>Melebihi anggaran {percentage - 100}%</span>
               </div>
             {:else if isWarning}
               <div class="budget-alert">
@@ -294,7 +305,7 @@
 
   <!-- Modal Set/Edit Budget -->
   {#if showModal}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label={editingBudget ? 'Edit anggaran' : 'Atur anggaran baru'} tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }} onkeydown={(e) => { if (e.key === 'Escape') showModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -302,35 +313,38 @@
             <Icon name="wallet" size={24} />
           </div>
           <div>
-            <h3 class="modal-title">{editingBudget ? 'Edit Budget' : 'Set Budget Baru'}</h3>
-            <p class="modal-subtitle">Atur budget bulanan</p>
+            <h3 class="modal-title">{editingBudget ? 'Edit Anggaran' : 'Atur Anggaran Baru'}</h3>
+            <p class="modal-subtitle">Tentukan batas pengeluaran bulanan</p>
           </div>
         </div>
         <form class="modal-form" onsubmit={saveBudget}>
           <div class="form-group">
-            <label class="form-label">Kategori</label>
+            <label class="form-label" for="budget-category">Kategori</label>
             {#if editingBudget}
               <input
+                id="budget-category"
                 type="text"
                 bind:value={category}
                 disabled
                 class="form-input form-input--disabled"
               />
             {:else}
-              <select bind:value={category} required class="form-input">
+              <select id="budget-category" bind:value={category} required class="form-input">
                 <option value="">Pilih Kategori</option>
                 {#each categories as cat}
-                  <option value={cat.name}>{cat.icon} {cat.name}</option>
+                  <option value={cat.name}>{cat.name}</option>
                 {/each}
               </select>
             {/if}
           </div>
           <div class="form-group">
-            <label class="form-label">Budget per Bulan (Rp)</label>
+            <label class="form-label" for="budget-amount">Anggaran per Bulan (Rp)</label>
             <input
+              id="budget-amount"
               type="number"
               bind:value={amount}
               required
+              min="1"
               placeholder="0"
               class="form-input form-input--amount"
             />
@@ -355,23 +369,27 @@
     background: transparent;
   }
 
-  /* Header — clean & minimal */
+  /* Header */
   .header {
-    padding: 26px 18px 18px;
+    padding:24px 22px 28px;
     position: relative;
     flex-shrink: 0;
     font-family: 'Nunito', sans-serif;
+    border-radius:0 0 28px 28px;
+    background:linear-gradient(155deg,#1D4ED8,#2563EB 55%,#3B82F6);
+    box-shadow:0 12px 26px rgba(37,99,235,.18);
   }
 
-  .header-inner { position: relative; }
-  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-  .header-title { font-size: 24px; font-weight: 800; color: #1F2937; margin: 0; }
+  .header-inner { position:relative; max-width:760px; margin:auto; }
+  .header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:18px; }
+  .header-sub { font-size:10px; color:#BFDBFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
+  .header-title { display:flex; align-items:center; gap:8px; font-size:29px; font-weight:900; color:#fff; margin:0; letter-spacing:-.03em; }
+  .header-description { max-width:260px; margin:8px 0 0; color:#DBEAFE; font-size:12px; line-height:1.4; font-weight:600; }
 
   .create-btn {
-    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
+    background:rgba(255,255,255,.18);
     color: #ffffff;
-    border: none;
+    border:1px solid rgba(255,255,255,.35);
     border-radius: 12px;
     padding: 10px 16px;
     font-family: 'Nunito', sans-serif;
@@ -381,43 +399,40 @@
     white-space: nowrap;
     transition: transform 0.15s, filter 0.2s;
     flex-shrink: 0;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
+    box-shadow:0 5px 14px rgba(15,55,140,.13);
   }
   .create-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
   .create-btn:active { transform: scale(0.96); }
 
   /* Summary Card */
   .summary-card {
-    background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
+    background:rgba(255,255,255,.17);
+    border:1px solid rgba(255,255,255,.28);
+    border-radius:20px;
+    padding:17px;
+    box-shadow:0 8px 22px rgba(15,55,140,.12);
   }
-  .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
-  .summary-label { font-size: 10px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-  .summary-amount { font-size: 18px; font-weight: 800; color: #1F2937; margin: 0; }
-  .summary-track { height: 11px; background: #DAEBFA; border-radius: 99px; padding: 2px; box-shadow: inset 3px 3px 6px rgba(25, 118, 210, 0.20), inset -2px -2px 5px rgba(255, 255, 255, 0.95); margin-bottom: 8px; }
-  .summary-fill { height: 100%; background: linear-gradient(145deg, #64B5F6 0%, #2196F3 60%, #1976D2 100%); border-radius: 99px; transition: width 0.6s ease; box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.5), inset -1px -2px 4px rgba(13, 71, 161, 0.3); }
-  .summary-meta { display: flex; justify-content: space-between; font-size: 12px; color: #64748B; font-weight: 600; }
-  .summary-pct { color: #2F9A80; font-weight: 700; }
-  .summary-pct--warning { color: #D97706; }
+  .summary-row { display:flex; justify-content:space-between; gap:14px; margin-bottom:14px; }
+  .summary-label { font-size:10px; color:#BFDBFE; margin:0 0 4px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+  .summary-amount { font-size:18px; font-weight:900; color:#fff; margin:0; }
+  .summary-track { height:10px; background:rgba(255,255,255,.22); border-radius:99px; padding:2px; margin-bottom:10px; }
+  .summary-fill { height:100%; background:#fff; border-radius:99px; transition:width .6s ease; }
+  .summary-meta { display:flex; justify-content:space-between; gap:8px; font-size:11px; color:#DBEAFE; font-weight:700; }
+  .summary-pct { color:#fff; font-weight:900; }
+  .summary-pct--warning { color:#FDE68A; }
 
   /* Body */
-  .body { padding: 18px 16px; }
+  .body { max-width:760px; margin:auto; padding:24px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
-  .empty-state { text-align: center; padding: 60px 20px; }
-  .empty-icon { margin-bottom: 14px; color: #94A3B8; display: flex; justify-content: center; }
-  .empty-title { font-size: 16px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
-  .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
+  .empty-state { text-align:center; padding:60px 20px; border-radius:22px; background:rgba(255,255,255,.7); }
+  .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563EB; display:grid; place-items:center; border-radius:22px; background:#E7F1FF; }
+  .empty-title { font-size:17px; font-weight:900; color:#172033; margin:0 0 6px; }
+  .empty-sub { font-size:12px; line-height:1.5; color:#64748B; margin:0 0 22px; }
   .empty-cta {
     background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: white;
@@ -469,6 +484,7 @@
     justify-content: center;
     flex-shrink: 0;
     font-size: 24px;
+    color:#fff;
   }
 
   .budget-info { flex: 1; min-width: 0; }
@@ -644,15 +660,15 @@
   .modal-submit:active { transform: scale(0.97); }
 
   /* Refined product surface */
-  .summary-card, .budget-card, .empty-state {
+  .budget-card, .empty-state {
     border: 1px solid rgba(255,255,255,.92);
     box-shadow: 0 8px 20px rgba(30,64,175,.06);
   }
   .budget-card { border-radius: 18px; }
-  .summary-track, .budget-track { box-shadow: none; background: #E8EEF7; }
-  .summary-fill, .budget-fill, .budget-fill--warning, .budget-fill--over { background: #2563EB; box-shadow: none; }
+  .budget-track { box-shadow:none; background:#E8EEF7; }
+  .budget-fill, .budget-fill--warning, .budget-fill--over { background:#2563EB; box-shadow:none; }
   .menu-btn { border-radius: 10px; box-shadow: none; }
-  .create-btn, .empty-cta, .modal-submit { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.22); border-radius: 14px; }
+  .empty-cta, .modal-submit { background:#2563EB; box-shadow:0 8px 18px rgba(37,99,235,.22); border-radius:14px; }
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 </style>

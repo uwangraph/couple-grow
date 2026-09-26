@@ -101,7 +101,7 @@
   let totalBreakdown = $derived(categoryBreakdown.reduce((sum, c) => sum + c.total, 0));
 
   // Colors for pie chart
-  const colors = ['#2196F3', '#F59E0B', '#EF7C97', '#5CC8AC', '#A58BE8', '#EC4899', '#14B8A6', '#F97316'];
+  const colors = ['#2563EB', '#38BDF8', '#14B8A6', '#818CF8', '#F59E0B', '#F472B6', '#64748B', '#60A5FA'];
 </script>
 
 <div class="analytics-root">
@@ -109,12 +109,14 @@
   <!-- Header -->
   <div class="header">
     <div class="header-inner">
+        <button class="back-link" onclick={() => goto('/home')} aria-label="Kembali ke beranda"><Icon name="back" size={18} /> Kembali</button>
         <div class="header-top">
           <div>
-            <p class="header-sub">Insights & Trends</p>
-            <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
-              Analytics <Icon name="sparkles" size={24} />
+            <p class="header-sub">Cerita dari angkamu</p>
+            <h1 class="header-title">
+              Analitik <Icon name="sparkles" size={24} />
             </h1>
+            <p class="header-description">Lihat kebiasaan keuangan dan langkah kecil menuju tujuan bersama.</p>
           </div>
         </div>
     </div>
@@ -141,7 +143,7 @@
           </div>
           <h3 class="comparison-title">
             {#if status === 'hemat'}
-              Bulan ini hemat {Math.abs(diff)}%!
+              Pengeluaran turun {Math.abs(diff)}%
             {:else if status === 'boros'}
               Pengeluaran naik {Math.abs(diff)}%
             {:else}
@@ -256,7 +258,9 @@
                 
                 <path d={path} fill={colors[i % colors.length]} opacity="0.9" />
               {/each}
-              <circle cx="100" cy="100" r="50" fill="white" />
+              <circle cx="100" cy="100" r="50" fill="rgba(255,255,255,.92)" />
+              <text x="100" y="96" text-anchor="middle" class="donut-caption">Total</text>
+              <text x="100" y="113" text-anchor="middle" class="donut-value">{formatCompact(totalBreakdown)}</text>
             </svg>
           </div>
 
@@ -291,7 +295,7 @@
                 <div class="velocity-header">
                   <h3 class="velocity-name">{vel.name}</h3>
                   <div class="velocity-badge velocity-badge--{vel.velocity_status === 'on_track' ? 'green' : 'gray'}">
-                    {vel.velocity_status === 'on_track' ? 'On Track' : 'Stalled'}
+                    {vel.velocity_status === 'on_track' ? 'Sesuai rencana' : 'Perlu perhatian'}
                   </div>
                 </div>
                 <div class="velocity-progress">
@@ -334,21 +338,26 @@
     background: transparent;
   }
 
-  /* Header — clean & minimal */
+  /* Header */
   .header {
-    padding: 26px 18px 18px;
+    padding: 24px 22px 28px;
     position: relative;
     flex-shrink: 0;
     font-family: 'Nunito', sans-serif;
+    background: linear-gradient(155deg, #1D4ED8, #2563EB 55%, #3B82F6);
+    border-radius: 0 0 28px 28px;
+    box-shadow: 0 12px 26px rgba(37,99,235,.18);
   }
 
   .header-inner { position: relative; }
-  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-  .header-title { font-size: 24px; font-weight: 800; color: #1F2937; margin: 0; }
+  .back-link { display:inline-flex; align-items:center; gap:6px; padding:0; margin:0 0 24px; border:0; background:none; color:#dbeafe; font:700 13px 'Nunito',sans-serif; cursor:pointer; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .header-sub { font-size: 11px; color: #bfdbfe; margin: 0 0 7px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; }
+  .header-title { display:flex; align-items:center; gap:9px; font-size: 30px; font-weight: 900; color: #fff; margin: 0; letter-spacing:-.03em; }
+  .header-description { max-width:330px; margin:8px 0 0; color:#dbeafe; font-size:13px; line-height:1.5; font-weight:600; }
 
   /* Body */
-  .body { padding: 18px 16px; }
+  .body { padding: 20px 16px; max-width:760px; margin:auto; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
@@ -356,12 +365,12 @@
 
   /* Comparison Card */
   .comparison-card {
-    background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 16px;
+    background: rgba(255,255,255,.9);
+    border: 1px solid rgba(255,255,255,.95);
+    border-radius: 22px;
     padding: 24px;
     margin-bottom: 20px;
-    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
+    box-shadow: 0 10px 25px rgba(30,64,175,.07);
     text-align: center;
   }
 
@@ -421,12 +430,12 @@
 
   /* Section */
   .section {
-    background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 16px;
+    background: rgba(255,255,255,.88);
+    border: 1px solid rgba(255,255,255,.95);
+    border-radius: 22px;
     padding: 20px;
     margin-bottom: 16px;
-    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
+    box-shadow: 0 10px 25px rgba(30,64,175,.07);
   }
 
   .section-header {
@@ -550,6 +559,8 @@
     width: 200px;
     height: 200px;
   }
+  .donut-caption { font:700 11px 'Nunito',sans-serif; fill:#94a3b8; }
+  .donut-value { font:900 13px 'Nunito',sans-serif; fill:#1e3a5f; }
 
   /* Category List */
   .category-list {

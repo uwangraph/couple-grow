@@ -32,23 +32,27 @@
 </script>
 
 <form onsubmit={handleRegister}>
-  <h2 style="font-size: 20px; font-weight: 700; color: #30435F; margin: 0 0 24px 0; font-family: Inter, sans-serif;">Buat Akun Baru</h2>
+  <div class="form-heading">
+    <span class="eyebrow">MULAI BERSAMA</span>
+    <h2>Buat akunmu</h2>
+    <p>Beberapa langkah lagi untuk mulai tumbuh bersama.</p>
+  </div>
 
   {#if errorMsg}
     <div class="auth-error" style="margin-bottom: 16px;">{errorMsg}</div>
   {/if}
 
-  <div style="margin-bottom: 16px;">
+  <div class="field">
     <label for="name" class="auth-label">Nama Panggilan</label>
-    <input type="text" id="name" bind:value={name} required class="auth-input" placeholder="Panggil aku..." />
+    <input type="text" id="name" bind:value={name} required autocomplete="name" class="auth-input" placeholder="Nama yang ingin ditampilkan" />
   </div>
 
-  <div style="margin-bottom: 16px;">
+  <div class="field">
     <label for="email" class="auth-label">Email</label>
-    <input type="email" id="email" bind:value={email} required class="auth-input" placeholder="nama@email.com" />
+    <input type="email" id="email" bind:value={email} required autocomplete="email" class="auth-input" placeholder="nama@email.com" />
   </div>
 
-  <div style="margin-bottom: 24px;">
+  <div class="field field--password">
     <label for="password" class="auth-label">Password</label>
     <div class="password-wrap">
       <input
@@ -57,8 +61,9 @@
         bind:value={password}
         required
         minlength="8"
+        autocomplete="new-password"
         class="auth-input"
-        placeholder="Min. 8 karakter"
+        placeholder="Minimal 8 karakter"
       />
       <button
         type="button"
@@ -75,18 +80,30 @@
         {/if}
       </button>
     </div>
+    <p class="field-hint">Gunakan minimal 8 karakter agar akunmu lebih aman.</p>
   </div>
 
   <button type="submit" disabled={loading} class="auth-btn flex items-center justify-center gap-2">
     {#if loading}
       <Icon name="loading" class="w-5 h-5 animate-spin invert" /> Memproses...
     {:else}
-      Daftar Sekarang
+      Buat akun
     {/if}
 
   </button>
 
-  <p style="text-align: center; font-size: 13px; color: #64748B; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
-    Sudah punya akun? <a href="/login" class="auth-link">Masuk di sini</a>
+  <p class="form-footer">
+    Sudah punya akun? <a href="/login" class="auth-link">Masuk</a>
   </p>
 </form>
+
+<style>
+  .form-heading { margin-bottom:24px; }
+  .eyebrow { display:block; margin-bottom:6px; color:#2563eb; font:900 10px 'Nunito',sans-serif; letter-spacing:.12em; }
+  h2 { margin:0 0 5px; color:#172033; font:900 23px 'Nunito',sans-serif; letter-spacing:-.025em; }
+  .form-heading p { margin:0; color:#64748b; font:600 12px/1.5 'Nunito',sans-serif; }
+  .field { margin-bottom:16px; }
+  .field--password { margin-bottom:22px; }
+  .field-hint { margin:6px 0 0; color:#94a3b8; font:600 11px 'Nunito',sans-serif; }
+  .form-footer { margin:20px 0 0; text-align:center; color:#64748b; font:600 12px 'Nunito',sans-serif; }
+</style>

@@ -7,14 +7,13 @@
   import Icon from '$lib/Icon.svelte';
 
   let folderId = $derived(page.url.searchParams.get('folder_id'));
-  let id = 'new';
-
   let title = $state('');
   let content = $state('');
   let checklist = $state<any[]>([]);
   let activeTab = $state<'text' | 'checklist'>('text');
   let loading = $state(false);
   let saved = $state(false);
+  let errorMsg = $state('');
 
   onMount(async () => {
     if (!auth.token) return goto('/login');
@@ -22,9 +21,14 @@
 
   async function saveNote() {
     if (!folderId) {
-      alert('Folder ID is required');
+      errorMsg = 'Pilih folder sebelum membuat catatan.';
       return;
     }
+    if (!title.trim()) {
+      errorMsg = 'Isi judul catatan terlebih dahulu.';
+      return;
+    }
+    errorMsg = '';
     loading = true;
     const body = { folder_id: folderId, title, content, checklist: checklist.length > 0 ? checklist : null };
     try {
@@ -37,7 +41,7 @@
       if (!res.ok || !data.id) throw new Error(data.error || 'Gagal menyimpan catatan');
       saved = true;
       setTimeout(() => goto(`/notes/${data.id}`), 300);
-    } catch(e) {} finally { loading = false; }
+    } catch(e: any) { errorMsg = e.message || 'Catatan belum tersimpan. Coba lagi.'; } finally { loading = false; }
   }
 
   function addCheckItem() { checklist = [...checklist, { text: '', is_done: false }]; }
@@ -52,9 +56,11 @@
 
   <!-- Top Bar -->
   <div class="topbar">
-    <button class="back-btn" onclick={() => goto('/notes')}>
+    <button class="back-btn" onclick={() => goto('/notes')} aria-label="Kembali ke catatan">
       <Icon name="arrow" size={20} style="transform: rotate(180deg)" />
     </button>
+
+    <span class="topbar-title">Catatan baru</span>
 
     <div class="topbar-actions">
       <button class="save-btn {saved ? 'save-btn--saved' : ''}" onclick={saveNote} disabled={loading}>
@@ -63,10 +69,13 @@
     </div>
   </div>
 
+  {#if errorMsg}<p class="save-error" role="alert">{errorMsg}</p>{/if}
+
   <!-- Title Area -->
   <div class="title-area">
     <input
       bind:value={title}
+      aria-label="Judul catatan"
       placeholder="Judul catatan..."
       class="title-input"
     />
@@ -110,6 +119,7 @@
     {#if activeTab === 'text'}
       <textarea
         bind:value={content}
+        aria-label="Isi catatan"
         placeholder="Tulis sesuatu di sini..."
         class="text-area"
       ></textarea>
@@ -121,6 +131,7 @@
           <div class="check-item {item.is_done ? 'check-item--done' : ''}">
             <button
               class="check-bubble {item.is_done ? 'check-bubble--done' : ''}"
+              aria-label={item.is_done ? 'Tandai belum selesai' : 'Tandai selesai'}
               onclick={() => toggleCheckItem(idx)}
             >
               {#if item.is_done}
@@ -129,11 +140,13 @@
             </button>
             <input
               bind:value={item.text}
+              aria-label="Item checklist {idx + 1}"
               placeholder="Tulis item..."
               class="check-text {item.is_done ? 'check-text--done' : ''}"
             />
             <button
               class="check-delete"
+              aria-label="Hapus item {idx + 1}"
               onclick={() => checklist = checklist.filter((_, i) => i !== idx)}
             >
               <Icon name="empty" size={14} />
@@ -165,7 +178,7 @@
   .editor-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: white;
+    background: transparent;
     display: flex;
     flex-direction: column;
   }
@@ -176,9 +189,13 @@
     align-items: center;
     justify-content: space-between;
     padding: 14px 18px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    background:rgba(255,255,255,.86);
+    border-bottom: 1px solid rgba(255,255,255,.95);
+    box-shadow:0 6px 20px rgba(30,64,175,.05);
     flex-shrink: 0;
   }
+  .topbar-title { font-size:14px; font-weight:800; color:#172033; }
+  .save-error { margin:14px 20px 0; padding:11px 13px; border-radius:12px; background:#fff1f2; color:#be123c; font-size:12px; font-weight:700; }
   .back-btn {
     width: 38px;
     height: 38px;
@@ -209,7 +226,7 @@
     padding: 8px 20px;
     border-radius: 12px;
     border: none;
-    background: #2196F3;
+    background: #2563EB;
     color: white;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
@@ -226,7 +243,7 @@
   }
 
   /* Title */
-  .title-area { padding: 20px 22px 10px; }
+  .title-area { margin:20px 18px 0; padding:18px 18px 10px; border-radius:20px 20px 0 0; background:rgba(255,255,255,.9); border:1px solid rgba(255,255,255,.95); border-bottom:0; }
   .title-input {
     width: 100%;
     border: none;
@@ -237,9 +254,7 @@
     color: #1F2937;
     background: transparent;
     margin-bottom: 10px;
-    box-shadow:
-      inset 4px 4px 8px rgba(25, 118, 210, 0.13),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+    box-shadow:none;
   }
   .title-input::placeholder { color: #CBD5E1; }
   .title-meta { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -258,7 +273,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 22px 14px;
+    padding: 8px 36px 14px;
+    margin:0 18px;
+    background:rgba(255,255,255,.9);
+    border-left:1px solid rgba(255,255,255,.95);
+    border-right:1px solid rgba(255,255,255,.95);
     flex-wrap: wrap;
   }
   .tab-pill {
@@ -303,7 +322,13 @@
   .content-area {
     flex: 1;
     overflow-y: auto;
-    padding: 0 22px 32px;
+    padding: 12px 18px 32px;
+    margin:0 18px 18px;
+    border-radius:0 0 20px 20px;
+    background:rgba(255,255,255,.9);
+    border:1px solid rgba(255,255,255,.95);
+    border-top:0;
+    box-shadow:0 12px 28px rgba(30,64,175,.07);
   }
 
   /* Text area */

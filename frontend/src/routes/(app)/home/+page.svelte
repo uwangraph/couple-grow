@@ -40,7 +40,7 @@
       if (res.status === 401) { handleUnauthorized(); return; }
       if (!res.ok) throw new Error('Gagal memuat transaksi');
       const data = await readApiJson<{ transactions?: any[] }>(res);
-      if (res.ok) transactions = (data.transactions || []).slice(0, 5);
+      if (res.ok) transactions = data.transactions || [];
     } catch(e) {}
   }
 
@@ -286,7 +286,7 @@
           <a href="/wallet" class="empty-link">Catat sekarang →</a>
         </div>
       {:else}
-        {#each transactions as t}
+        {#each transactions.slice(0, 5) as t}
           <a href="/wallet" class="tx-row">
             <div class="tx-icon {t.type === 'income' ? 'tx-icon--in' : 'tx-icon--out'}">
               <Icon name={t.type === 'income' ? 'income' : 'expense'} size={18} />
@@ -305,6 +305,12 @@
         {/each}
       {/if}
     </div>
+
+    <a href="/analytics" class="insights-link">
+      <span class="insights-icon"><Icon name="sparkles" size={21} /></span>
+      <span class="insights-copy"><strong>Lihat cerita keuanganmu</strong><small>Pola pengeluaran dan progres tabungan</small></span>
+      <span class="insights-arrow" aria-hidden="true">→</span>
+    </a>
 
     <div style="height:32px;"></div>
   </div>
@@ -418,12 +424,13 @@
   /* Quick Actions */
   .quick-actions {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 26px;
   }
 
   .quick-btn {
+    min-width: 0;
     background: rgba(255,255,255,.8);
     border: 1px solid rgba(255,255,255,.92);
     border-radius: 16px;
@@ -461,6 +468,12 @@
     box-shadow: 0 5px 12px rgba(30,64,175,.14);
   }
   .quick-btn:hover .quick-icon { transform: scale(1.06) rotate(-3deg); }
+  .insights-link { display:flex; align-items:center; gap:13px; padding:16px; border-radius:20px; margin:2px 0 8px; text-decoration:none; color:#173457; background:linear-gradient(115deg,rgba(255,255,255,.94),rgba(226,240,255,.85)); border:1px solid rgba(255,255,255,.95); box-shadow:0 8px 22px rgba(30,64,175,.08); }
+  .insights-icon { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:14px; color:#fff; background:linear-gradient(145deg,#60a5fa,#1976d2); box-shadow:0 5px 14px rgba(37,99,235,.2); }
+  .insights-copy { min-width:0; display:flex; flex:1; flex-direction:column; gap:3px; }
+  .insights-copy strong { font-size:14px; font-weight:800; }
+  .insights-copy small { color:#64748b; font-size:11px; line-height:1.35; }
+  .insights-arrow { color:#1976d2; font-size:24px; }
 
   /* Semua ubin tetap di keluarga biru; dua warna pendukung diredam
      agar tidak melawan warna brand. */

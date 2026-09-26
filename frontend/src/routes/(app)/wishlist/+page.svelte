@@ -176,9 +176,10 @@
               Kembali
             </button>
             <p class="header-sub">Impian Bersama</p>
-            <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
+            <h1 class="header-title">
               Wishlist <Icon name="sparkles" size={24} />
             </h1>
+            <p class="header-description">Simpan impian kecil dan besar untuk diwujudkan bersama.</p>
           </div>
           <button class="create-btn" onclick={openCreateModal}>
             + Tambah
@@ -197,7 +198,7 @@
     {:else if wishlists.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          <Icon name="empty" size={56} />
+          <Icon name="sparkles" size={38} />
         </div>
         <p class="empty-title">Belum ada wishlist</p>
         <p class="empty-sub">Yuk catat impian yang pengen diwujudkan berdua!</p>
@@ -216,14 +217,14 @@
             {#each highPriority as wish}
               <div class="wish-card">
                 <div class="wish-header">
-                  <div class="wish-check" onclick={() => toggleComplete(wish)}>
+                  <button type="button" class="wish-check" onclick={() => toggleComplete(wish)} aria-label="Tandai {wish.name} tercapai">
                     <Icon name={wish.is_completed ? 'check' : 'sparkles'} size={20} />
-                  </div>
+                  </button>
                   <div class="wish-menu">
-                    <button class="menu-btn" onclick={() => openEditModal(wish)}>
+                    <button type="button" class="menu-btn" onclick={() => openEditModal(wish)} aria-label="Edit {wish.name}">
                       <Icon name="edit" size={16} />
                     </button>
-                    <button class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)}>
+                    <button type="button" class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)} aria-label="Hapus {wish.name}">
                       <Icon name="trash" size={16} />
                     </button>
                   </div>
@@ -261,14 +262,14 @@
             {#each mediumPriority as wish}
               <div class="wish-card">
                 <div class="wish-header">
-                  <div class="wish-check" onclick={() => toggleComplete(wish)}>
+                  <button type="button" class="wish-check" onclick={() => toggleComplete(wish)} aria-label="Tandai {wish.name} tercapai">
                     <Icon name={wish.is_completed ? 'check' : 'sparkles'} size={20} />
-                  </div>
+                  </button>
                   <div class="wish-menu">
-                    <button class="menu-btn" onclick={() => openEditModal(wish)}>
+                    <button type="button" class="menu-btn" onclick={() => openEditModal(wish)} aria-label="Edit {wish.name}">
                       <Icon name="edit" size={16} />
                     </button>
-                    <button class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)}>
+                    <button type="button" class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)} aria-label="Hapus {wish.name}">
                       <Icon name="trash" size={16} />
                     </button>
                   </div>
@@ -290,20 +291,20 @@
       {#if lowPriority.length > 0}
         <div class="priority-section">
           <h2 class="priority-title">
-            <span class="priority-badge" style="background:#F1F5F9;color:#64748B">Someday</span>
+            <span class="priority-badge" style="background:#F1F5F9;color:#64748B">Prioritas Rendah</span>
           </h2>
           <div class="wishlist-grid">
             {#each lowPriority as wish}
               <div class="wish-card">
                 <div class="wish-header">
-                  <div class="wish-check" onclick={() => toggleComplete(wish)}>
+                  <button type="button" class="wish-check" onclick={() => toggleComplete(wish)} aria-label="Tandai {wish.name} tercapai">
                     <Icon name={wish.is_completed ? 'check' : 'sparkles'} size={20} />
-                  </div>
+                  </button>
                   <div class="wish-menu">
-                    <button class="menu-btn" onclick={() => openEditModal(wish)}>
+                    <button type="button" class="menu-btn" onclick={() => openEditModal(wish)} aria-label="Edit {wish.name}">
                       <Icon name="edit" size={16} />
                     </button>
-                    <button class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)}>
+                    <button type="button" class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)} aria-label="Hapus {wish.name}">
                       <Icon name="trash" size={16} />
                     </button>
                   </div>
@@ -331,11 +332,11 @@
             {#each completed as wish}
               <div class="wish-card wish-card--completed">
                 <div class="wish-header">
-                  <div class="wish-check wish-check--completed" onclick={() => toggleComplete(wish)}>
+                  <button type="button" class="wish-check wish-check--completed" onclick={() => toggleComplete(wish)} aria-label="Buka kembali {wish.name}">
                     <Icon name="check" size={20} />
-                  </div>
+                  </button>
                   <div class="wish-menu">
-                    <button class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)}>
+                    <button type="button" class="menu-btn menu-btn--delete" onclick={() => deleteWishlist(wish.id)} aria-label="Hapus {wish.name}">
                       <Icon name="trash" size={16} />
                     </button>
                   </div>
@@ -357,7 +358,7 @@
 
   <!-- Modal -->
   {#if showModal}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label={editingWishlist ? 'Edit wishlist' : 'Tambah wishlist'} tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }} onkeydown={(e) => { if (e.key === 'Escape') showModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -371,8 +372,9 @@
         </div>
         <form class="modal-form" onsubmit={saveWishlist}>
           <div class="form-group">
-            <label class="form-label">Nama Impian</label>
+            <label class="form-label" for="wish-name">Nama Impian</label>
             <input
+              id="wish-name"
               type="text"
               bind:value={name}
               required
@@ -381,16 +383,18 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">Deskripsi (opsional)</label>
+            <label class="form-label" for="wish-description">Deskripsi (opsional)</label>
             <textarea
+              id="wish-description"
               bind:value={description}
               placeholder="Detail impian..."
               class="form-input form-textarea"
             ></textarea>
           </div>
           <div class="form-group">
-            <label class="form-label">Estimasi Harga (Rp, opsional)</label>
+            <label class="form-label" for="wish-price">Estimasi Harga (Rp, opsional)</label>
             <input
+              id="wish-price"
               type="number"
               bind:value={estimatedPrice}
               placeholder="0"
@@ -398,16 +402,16 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">Prioritas</label>
-            <select bind:value={priority} class="form-input">
-              <option value={3}>🔥 Tinggi</option>
-              <option value={2}>⭐ Sedang</option>
-              <option value={1}>💭 Rendah</option>
+            <label class="form-label" for="wish-priority">Prioritas</label>
+            <select id="wish-priority" bind:value={priority} class="form-input">
+              <option value={3}>Tinggi</option>
+              <option value={2}>Sedang</option>
+              <option value={1}>Rendah</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Link ke Tabungan (opsional)</label>
-            <select bind:value={linkedSavingId} class="form-input">
+            <label class="form-label" for="wish-saving">Hubungkan ke Tabungan (opsional)</label>
+            <select id="wish-saving" bind:value={linkedSavingId} class="form-input">
               <option value="">Tidak ada</option>
               {#each savings as saving}
                 <option value={saving.id}>{saving.name}</option>
@@ -435,22 +439,26 @@
   }
 
   .header {
-    padding: 26px 18px 18px;
+    padding: 24px 22px 28px;
     position: relative;
     flex-shrink: 0;
     font-family: 'Nunito', sans-serif;
+    background: linear-gradient(155deg, #1D4ED8, #2563EB 55%, #3B82F6);
+    border-radius: 0 0 28px 28px;
+    box-shadow: 0 12px 26px rgba(37,99,235,.18);
   }
-  .header-inner { position: relative; }
-  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
-  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #1976D2; padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .back-btn:hover { color: #2f5bb0; }
-  .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-  .header-title { font-size: 24px; font-weight: 800; color: #1F2937; margin: 0; }
+  .header-inner { position: relative; max-width:760px; margin:auto; }
+  .header-top { display: flex; align-items: flex-end; justify-content: space-between; gap:12px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color:#DBEAFE; padding: 0; margin-bottom: 22px; font:700 13px 'Nunito',sans-serif; cursor: pointer; }
+  .back-btn:hover { color:#fff; }
+  .header-sub { font-size: 10px; color:#BFDBFE; margin: 0 0 6px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
+  .header-title { display:flex; align-items:center; gap:8px; font-size: 29px; font-weight: 900; color:#fff; margin: 0; letter-spacing:-.03em; }
+  .header-description { max-width:255px; margin:8px 0 0; color:#DBEAFE; font-size:12px; line-height:1.4; font-weight:600; }
 
   .create-btn {
-    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
-    color: #ffffff;
-    border: none;
+    background:rgba(255,255,255,.18);
+    color:#ffffff;
+    border:1px solid rgba(255,255,255,.35);
     border-radius: 12px;
     padding: 10px 16px;
     font-family: 'Nunito', sans-serif;
@@ -460,24 +468,21 @@
     white-space: nowrap;
     transition: transform 0.15s, filter 0.2s;
     flex-shrink: 0;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
+    box-shadow:0 5px 14px rgba(15,55,140,.13);
   }
   .create-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
   .create-btn:active { transform: scale(0.96); }
 
-  .body { padding: 18px 16px; }
+  .body { max-width:760px; margin:auto; padding:24px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .empty-state { text-align: center; padding: 60px 20px; }
-  .empty-icon { margin-bottom: 14px; color: #94A3B8; display: flex; justify-content: center; }
-  .empty-title { font-size: 16px; font-weight: 700; color: #1F2937; margin: 0 0 6px; }
-  .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
+  .empty-state { text-align:center; padding:64px 20px; background:rgba(255,255,255,.66); border-radius:24px; }
+  .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563eb; display:grid; place-items:center; border-radius:22px; background:#e7f1ff; }
+  .empty-title { font-size:17px; font-weight:900; color:#172033; margin:0 0 6px; }
+  .empty-sub { max-width:240px; font-size:12px; line-height:1.5; color:#64748B; margin:0 auto 22px; }
   .empty-cta {
     background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: white;
@@ -497,7 +502,7 @@
   .empty-cta:hover { filter: brightness(1.12); transform: translateY(-1px); }
 
   /* Priority Section */
-  .priority-section { margin-bottom: 20px; }
+  .priority-section { margin-bottom:26px; }
   .priority-title { margin: 0 0 12px; }
   .priority-badge {
     display: inline-flex;
@@ -512,17 +517,18 @@
   /* Wishlist Grid */
   .wishlist-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
+  @media (min-width: 600px) { .wishlist-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
   /* Wish Card */
   .wish-card {
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
+    border-radius: 20px;
+    padding: 17px;
+    box-shadow: 0 8px 22px rgba(30,64,175,.07);
     transition: transform 0.15s;
   }
   .wish-card--completed {
@@ -544,6 +550,7 @@
     height: 36px;
     border-radius: 50%;
     background: rgba(33, 150, 243, 0.1);
+    border:1px solid rgba(37,99,235,.14);
     color: #1976D2;
     display: flex;
     align-items: center;
@@ -578,28 +585,29 @@
   .menu-btn--delete:hover { background: linear-gradient(145deg, #F7A9BC 0%, #EF7C97 55%, #E2637F 100%); }
 
   .wish-name {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 900;
     color: #1F2937;
     margin: 0 0 4px;
     line-height: 1.3;
   }
 
   .wish-desc {
-    font-size: 11px;
+    font-size: 12px;
     color: #64748B;
     font-weight: 600;
     margin: 0 0 6px;
     line-height: 1.4;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
   .wish-price {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 900;
     color: #1976D2;
     margin: 0 0 6px;
   }
@@ -695,7 +703,7 @@
   .modal-submit:active { transform: scale(0.97); }
 
   .wish-card, .empty-state { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); border-radius: 18px; }
-  .create-btn, .empty-cta, .modal-submit { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); border-radius: 12px; }
+  .empty-cta, .modal-submit { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); border-radius: 12px; }
   .menu-btn { border-radius: 10px; box-shadow: none; }
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }

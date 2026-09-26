@@ -98,9 +98,11 @@
 </script>
 
 <form onsubmit={mode === 'login' ? handleLogin : mode === 'forgot' ? handleForgotPassword : handleResetPassword}>
-  <h2 class="auth-title">
-    {mode === 'login' ? 'Masuk ke Akunmu' : mode === 'forgot' ? 'Lupa Password' : 'Reset Password'}
-  </h2>
+  <div class="form-heading">
+    <span class="eyebrow">{mode === 'login' ? 'SELAMAT DATANG KEMBALI' : 'BANTUAN AKUN'}</span>
+    <h2 class="auth-title">{mode === 'login' ? 'Halo lagi!' : mode === 'forgot' ? 'Lupa password?' : 'Buat password baru'}</h2>
+    <p>{mode === 'login' ? 'Masuk dan lanjutkan cerita kalian.' : mode === 'forgot' ? 'Masukkan email akunmu untuk membuat kode reset.' : 'Masukkan kode dari email dan password barumu.'}</p>
+  </div>
 
   {#if errorMsg}
     <div class="auth-error" style="margin-bottom: 16px;">{errorMsg}</div>
@@ -109,13 +111,13 @@
     <div class="auth-success" style="margin-bottom: 16px;">{successMsg}</div>
   {/if}
 
-  <div style="margin-bottom: 16px;">
+  <div class="field">
     <label for="email" class="auth-label">Email</label>
-    <input type="email" id="email" bind:value={email} required class="auth-input" placeholder="nama@email.com" />
+    <input type="email" id="email" bind:value={email} required autocomplete="email" class="auth-input" placeholder="nama@email.com" />
   </div>
 
   {#if mode === 'login'}
-    <div style="margin-bottom: 10px;">
+    <div class="field field--password">
       <label for="password" class="auth-label">Password</label>
       <div class="password-wrap">
         <input
@@ -123,6 +125,7 @@
           id="password"
           bind:value={password}
           required
+          autocomplete="current-password"
           class="auth-input"
           placeholder="••••••••"
         />
@@ -144,11 +147,11 @@
     </div>
     <button type="button" class="link-button" onclick={() => { mode = 'forgot'; errorMsg = ''; successMsg = ''; }}>Lupa password?</button>
   {:else if mode === 'reset'}
-    <div style="margin-bottom: 16px;">
+    <div class="field">
       <label for="reset-code" class="auth-label">Kode Reset</label>
       <input type="text" id="reset-code" bind:value={resetCode} required maxlength={6} class="auth-input" placeholder="000000" />
     </div>
-    <div style="margin-bottom: 24px;">
+    <div class="field field--reset-password">
       <label for="new-password" class="auth-label">Password Baru</label>
       <div class="password-wrap">
         <input
@@ -157,6 +160,7 @@
           bind:value={newPassword}
           required
           minlength={6}
+          autocomplete="new-password"
           class="auth-input"
           placeholder="Minimal 6 karakter"
         />
@@ -191,7 +195,7 @@
 
   </button>
 
-  <p style="text-align: center; font-size: 13px; color: #64748B; margin: 20px 0 0 0; font-family: Inter, sans-serif;">
+  <p class="form-footer">
     {#if mode === 'login'}
       Belum punya akun? <a href="/register" class="auth-link">Daftar sekarang</a>
     {:else}
@@ -201,7 +205,14 @@
 </form>
 
 <style>
-  .auth-title { font-size: 22px; font-weight: 900; color: #30435F; margin: 0 0 24px; font-family: 'Nunito', sans-serif; }
+  .form-heading { margin-bottom:24px; }
+  .eyebrow { display:block; margin-bottom:6px; color:#2563eb; font:900 10px 'Nunito',sans-serif; letter-spacing:.12em; }
+  .auth-title { font-size:23px; font-weight:900; color:#172033; margin:0 0 5px; letter-spacing:-.025em; font-family:'Nunito',sans-serif; }
+  .form-heading p { margin:0; color:#64748b; font:600 12px/1.5 'Nunito',sans-serif; }
+  .field { margin-bottom:16px; }
+  .field--password { margin-bottom:10px; }
+  .field--reset-password { margin-bottom:24px; }
+  .form-footer { text-align:center; font:600 12px 'Nunito',sans-serif; color:#64748b; margin:20px 0 0; }
   .link-button {
     display: block;
     margin: 0 0 24px auto;

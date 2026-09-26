@@ -4,12 +4,16 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
+  import { toast } from '$lib/toast.svelte';
 
   let folders = $state<any[]>([]);
   let selectedFolder = $state<string | null>(null);
   let notes = $state<any[]>([]);
   let loading = $state(true);
   let notesLoading = $state(false);
+  let errorMsg = $state('');
+  let notesError = $state('');
+  let folderSaving = $state(false);
 
   let showFolderModal = $state(false);
   let folderName = $state('');
@@ -21,42 +25,56 @@
 
   async function fetchFolders() {
     loading = true;
+    errorMsg = '';
     try {
       const res = await fetch(`${API_URL}/folders`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
+      if (res.status === 401) { auth.logout(); goto('/login'); return; }
       if (!res.ok) throw new Error('Gagal memuat folder');
       const data = await readApiJson<{ folders?: any[] }>(res);
       folders = data.folders || [];
-      if (folders.length > 0 && !selectedFolder) {
+      if (folders.length > 0 && (!selectedFolder || !folders.some(folder => String(folder.id) === String(selectedFolder)))) {
         selectedFolder = folders[0].id;
         await fetchNotes(selectedFolder!);
-      } else { loading = false; }
-    } catch(e) { loading = false; }
+      }
+    } catch(e) { errorMsg = e instanceof Error ? e.message : 'Folder belum bisa dimuat.'; }
+    finally { loading = false; }
   }
 
   async function fetchNotes(folderId: string) {
     selectedFolder = folderId;
     notesLoading = true;
+    notesError = '';
     try {
-      const res = await fetch(`${API_URL}/notes?folder_id=${folderId}`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
+      const res = await fetch(`${API_URL}/notes?folder_id=${encodeURIComponent(folderId)}`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
+      if (res.status === 401) { auth.logout(); goto('/login'); return; }
       if (!res.ok) throw new Error('Gagal memuat catatan');
       const data = await readApiJson<{ notes?: any[] }>(res);
       notes = data.notes || [];
-    } catch(e) {} finally { notesLoading = false; loading = false; }
+    } catch(e) { notesError = e instanceof Error ? e.message : 'Catatan belum bisa dimuat.'; }
+    finally { notesLoading = false; loading = false; }
   }
 
   async function createFolder(e: Event) {
     e.preventDefault();
+    if (!folderName.trim() || folderSaving) return;
+    folderSaving = true;
     try {
       const res = await fetch(`${API_URL}/folders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
-        body: JSON.stringify({ name: folderName, emoji: 'folder' })
+        body: JSON.stringify({ name: folderName.trim() })
       });
+      if (res.status === 401) { auth.logout(); goto('/login'); return; }
       if (!res.ok) throw new Error('Gagal membuat folder');
+      const data = await readApiJson<{ id?: string | number }>(res);
       showFolderModal = false;
       folderName = '';
+      if (data.id != null) selectedFolder = String(data.id);
       await fetchFolders();
-    } catch(e) {}
+      if (selectedFolder) await fetchNotes(selectedFolder);
+      toast.success('Folder berhasil dibuat');
+    } catch(e) { toast.error(e instanceof Error ? e.message : 'Folder belum bisa dibuat.'); }
+    finally { folderSaving = false; }
   }
 
   let selectedFolderData = $derived(folders.find(f => f.id === selectedFolder));
@@ -90,11 +108,12 @@
             Kembali
           </button>
           <p class="header-sub">Ruang Tulis</p>
-          <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
+          <h1 class="header-title">
             Catatan <Icon name="notes" size={24} />
           </h1>
+          <p class="header-description">Ide, cerita, dan rencana kecil kalian tersimpan di sini.</p>
         </div>
-        <button class="new-folder-btn" onclick={() => showFolderModal = true}>
+        <button type="button" class="new-folder-btn" onclick={() => showFolderModal = true}>
           + Folder
         </button>
       </div>
@@ -104,7 +123,7 @@
         <div class="folder-tabs">
           {#each folders as f}
             <button
-              class="folder-tab {selectedFolder === f.id ? 'folder-tab--active' : ''}"
+              class="folder-tab {String(selectedFolder) === String(f.id) ? 'folder-tab--active' : ''}"
               onclick={() => fetchNotes(f.id)}
             >
               <Icon name="folder" size={14} />
@@ -122,10 +141,18 @@
     {#if loading}
       <div class="loading-wrap"><div class="spinner"></div></div>
 
+    {:else if errorMsg}
+      <div class="empty-state" role="alert">
+        <div class="empty-icon"><Icon name="folder" size={36} /></div>
+        <p class="empty-title">Catatan belum bisa dimuat</p>
+        <p class="empty-sub">{errorMsg}</p>
+        <button type="button" class="empty-cta" onclick={fetchFolders}>Coba lagi</button>
+      </div>
+
     {:else if folders.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          <Icon name="folder" size={56} />
+          <Icon name="folder" size={36} />
         </div>
         <p class="empty-title">Belum ada folder</p>
         <p class="empty-sub">Buat folder pertama untuk mulai menulis</p>
@@ -146,7 +173,7 @@
             </div>
           </div>
           {#if selectedFolder}
-            <a href="/notes/new?folder_id={selectedFolder}" class="new-note-btn" role="button" aria-label="Buat catatan baru">
+            <a href="/notes/new?folder_id={selectedFolder}" class="new-note-btn" aria-label="Buat catatan baru">
               + Catatan
             </a>
           {/if}
@@ -160,6 +187,13 @@
           {/each}
         </div>
 
+      {:else if notesError}
+        <div class="empty-notes" role="alert">
+          <p class="empty-notes-title">Catatan belum bisa dimuat</p>
+          <p class="empty-notes-sub">{notesError}</p>
+          {#if selectedFolder}<button type="button" class="empty-cta" onclick={() => fetchNotes(selectedFolder!)}>Coba lagi</button>{/if}
+        </div>
+
       {:else if notes.length === 0}
         <div class="empty-notes">
           <div style="margin-bottom:12px; display: flex; justify-content: center; color: #94A3B8;">
@@ -168,7 +202,7 @@
           <p class="empty-notes-title">Folder ini masih kosong</p>
           <p class="empty-notes-sub">Yuk mulai menulis catatan pertama!</p>
           {#if selectedFolder}
-            <a href="/notes/new?folder_id={selectedFolder}" class="empty-cta" role="button" aria-label="Buat catatan baru">+ Buat Catatan</a>
+            <a href="/notes/new?folder_id={selectedFolder}" class="empty-cta" aria-label="Buat catatan baru">+ Buat Catatan</a>
           {/if}
         </div>
 
@@ -201,7 +235,7 @@
 
   <!-- Modal Buat Folder -->
   {#if showFolderModal}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showFolderModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Buat folder baru" tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showFolderModal = false; }} onkeydown={(e) => { if (e.key === 'Escape') showFolderModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -216,8 +250,9 @@
 
         <form class="modal-form" onsubmit={createFolder}>
           <div class="form-group">
-            <label class="form-label">Nama Folder</label>
+            <label class="form-label" for="folder-name">Nama Folder</label>
             <input
+              id="folder-name"
               type="text"
               bind:value={folderName}
               required
@@ -227,7 +262,7 @@
           </div>
           <div class="modal-actions">
             <button type="button" class="modal-cancel" onclick={() => showFolderModal = false}>Batal</button>
-            <button type="submit" class="modal-submit">Buat Folder</button>
+            <button type="submit" class="modal-submit" disabled={folderSaving}>{folderSaving ? 'Membuat...' : 'Buat Folder'}</button>
           </div>
         </form>
       </div>
@@ -245,20 +280,24 @@
     background: transparent;
   }
 
-  /* Header — clean minimal (subtle Apple-like glass) */
+  /* Header */
   .header {
-    padding: 26px 20px 18px;
+    padding: 24px 22px 20px;
     position: relative;
+    border-radius:0 0 28px 28px;
+    background:linear-gradient(155deg,#1D4ED8,#2563EB 55%,#3B82F6);
+    box-shadow:0 12px 26px rgba(37,99,235,.18);
   }
-  .header-inner { position: relative; }
-  .header-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #1976D2; padding: 0; margin-bottom: 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-  .back-btn:hover { color: #2b5f9e; }
-  .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; }
-  .header-title { font-size: 26px; font-weight: 800; color: #1F2937; margin: 0; letter-spacing: -0.02em; }
+  .header-inner { position: relative; max-width:760px; margin:auto; }
+  .header-row { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:18px; }
+  .back-btn { display:inline-flex; align-items:center; gap:5px; border:0; background:transparent; color:#DBEAFE; padding:0; margin-bottom:22px; font:700 13px 'Nunito',sans-serif; cursor:pointer; }
+  .back-btn:hover { color:#fff; }
+  .header-sub { font-size:10px; color:#BFDBFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
+  .header-title { display:flex; align-items:center; gap:8px; font-size:29px; font-weight:900; color:#fff; margin:0; letter-spacing:-.03em; }
+  .header-description { max-width:250px; margin:8px 0 0; color:#DBEAFE; font-size:12px; line-height:1.4; font-weight:600; }
   .new-folder-btn {
-    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
-    border: none;
+    background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.35);
     color: #ffffff;
     border-radius: 12px;
     padding: 8px 14px;
@@ -268,10 +307,7 @@
     cursor: pointer;
     white-space: nowrap;
     transition: filter 0.2s, transform 0.15s;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
+    box-shadow:0 5px 14px rgba(15,55,140,.13);
   }
   .new-folder-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
 
@@ -290,9 +326,9 @@
     gap: 6px;
     padding: 7px 14px;
     border-radius: 99px;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    background: #ffffff;
-    color: #64748B;
+    border:1px solid rgba(255,255,255,.35);
+    background:rgba(255,255,255,.13);
+    color:#DBEAFE;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
     font-weight: 600;
@@ -300,20 +336,20 @@
     white-space: nowrap;
     transition: all 0.15s;
   }
-  .folder-tab--active { background: #ffffff; color: #1976D2; border-color: rgba(33, 150, 243, 0.4); box-shadow: 0 1px 3px rgba(33, 150, 243,0.18); }
+  .folder-tab--active { background:#fff; color:#1D4ED8; border-color:#fff; box-shadow:0 5px 12px rgba(15,55,140,.13); }
 
   /* Body */
-  .body { padding: 8px 20px; }
+  .body { max-width:760px; margin:auto; padding:24px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
-  .empty-state { text-align: center; padding: 60px 20px; }
-  .empty-icon { margin-bottom: 14px; color: #94A3B8; display: flex; justify-content: center; }
-  .empty-title { font-size: 16px; font-weight: 800; color: #1F2937; margin: 0 0 6px; }
-  .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
+  .empty-state { text-align:center; padding:60px 20px; background:rgba(255,255,255,.7); border-radius:22px; }
+  .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563EB; display:grid; place-items:center; border-radius:22px; background:#E7F1FF; }
+  .empty-title { font-size:17px; font-weight:900; color:#172033; margin:0 0 6px; }
+  .empty-sub { font-size:12px; line-height:1.5; color:#64748B; margin:0 0 22px; }
   .empty-cta {
     display: inline-block;
     background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
@@ -354,14 +390,14 @@
   }
   .new-note-btn:active { transform: scale(0.96); }
 
-  /* Notes grid — 2 kolom */
-  .notes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .notes-grid { display:grid; grid-template-columns:1fr; gap:10px; }
+  @media (min-width:600px) { .notes-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 
   .note-card {
     /* Apple-like glass card: translucent white + subtle specular top edge */
     background: #FFFFFF;
-    border-radius: 24px;
-    padding: 14px;
+    border-radius:20px;
+    padding:16px;
     text-decoration: none;
     border: none;
     box-shadow:
@@ -373,7 +409,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    min-height: 110px;
+    min-height:116px;
   }
   .note-card:hover { border-color: rgba(33, 150, 243, 0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 10px rgba(31,41,55,0.08); }
   .note-card:active { transform: scale(0.97); }
@@ -390,8 +426,8 @@
   }
   .note-type-badge--check { background: rgba(79, 191, 163, 0.12); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10); color: #2F9A80; }
   .note-date { font-size: 10px; color: #94A3B8; font-weight: 600; }
-  .note-title { font-size: 13px; font-weight: 700; color: #1F2937; margin: 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .note-preview { font-size: 11px; color: #64748B; margin: 0; font-weight: 500; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .note-title { font-size:16px; font-weight:900; color:#172033; margin:0; line-height:1.35; display:-webkit-box; line-clamp:2; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .note-preview { font-size:12px; color:#64748B; margin:0; font-weight:600; line-height:1.5; display:-webkit-box; line-clamp:3; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 
   /* Empty notes */
   .empty-notes { text-align: center; padding: 48px 20px; background: #ffffff; border-radius: 18px; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 1px 2px rgba(31,41,55,0.04); }
@@ -463,9 +499,10 @@
   .modal-actions { display: flex; gap: 12px; }
   .modal-cancel { flex: 1; padding: 14px; background: #F1F5F9; color: #64748B; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
   .modal-submit { flex: 2; padding: 14px; background: #2196F3; color: white; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .modal-submit:disabled { opacity:.6; cursor:wait; }
 
   .note-card, .empty-notes, .empty-state { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); border-radius: 16px; }
-  .new-folder-btn, .new-note-btn, .empty-cta, .modal-submit { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); border-radius: 12px; }
+  .new-note-btn, .empty-cta, .modal-submit { background:#2563EB; box-shadow:0 8px 18px rgba(37,99,235,.2); border-radius:12px; }
   .folder-tab { border-radius: 10px; }
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }

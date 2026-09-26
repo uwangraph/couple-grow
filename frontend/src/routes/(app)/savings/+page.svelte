@@ -9,6 +9,7 @@
 
   let savings = $state<any[]>([]);
   let loading = $state(true);
+  let loadError = $state('');
 
   let showModal = $state(false);
   let name = $state('');
@@ -51,14 +52,17 @@
 
   async function fetchSavings() {
     if (!auth.token) return;
+    loadError = '';
     try {
       const res = await fetch(`${API_URL}/savings`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      const data = await readApiJson<{ savings?: any[] }>(res);
-      if (res.ok) savings = data.savings || [];
-    } catch(e) {} finally { loading = false; }
+      const data = await readApiJson<{ savings?: any[]; error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || 'Gagal memuat tabungan');
+      savings = data.savings || [];
+    } catch(e) { loadError = e instanceof Error ? e.message : 'Tabungan belum bisa dimuat.'; }
+    finally { loading = false; }
   }
 
   async function createSaving(e: Event) {
@@ -256,7 +260,7 @@
     return `${num}`;
   }
   function pct(current: number, target: number) {
-    return Math.min(Math.floor((current / target) * 100), 100);
+    return target > 0 ? Math.max(0, Math.min(Math.floor((current / target) * 100), 100)) : 0;
   }
 
   let totalSaved = $derived(savings.reduce((a, s) => a + s.current_amount, 0));
@@ -272,9 +276,10 @@
         <div class="header-top">
         <div>
           <p class="header-sub">Target Bersama</p>
-          <h1 class="header-title" style="display: flex; align-items: center; gap: 8px;">
+          <h1 class="header-title">
             Tabungan <Icon name="wallet" size={24} />
           </h1>
+          <p class="header-description">Setiap langkah kecil membawa kalian lebih dekat ke tujuan.</p>
         </div>
         <button class="create-btn" onclick={() => showModal = true}>
           + Buat Target
@@ -282,7 +287,7 @@
       </div>
 
       <!-- Overall Summary Card -->
-      {#if savings.length > 0}
+      {#if !loading && !loadError && savings.length > 0}
         <div class="summary-card">
           <div class="summary-row">
             <div>
@@ -298,7 +303,7 @@
             <div class="summary-fill" style="width:{overallPct}%"></div>
           </div>
           <div class="summary-meta">
-            <span>{savings.length} target aktif</span>
+            <span>{savings.length} target bersama</span>
             <span class="summary-pct">{overallPct}% tercapai</span>
           </div>
         </div>
@@ -313,10 +318,18 @@
         <div class="spinner"></div>
       </div>
 
+    {:else if loadError}
+      <div class="empty-state" role="alert">
+        <div class="empty-icon"><Icon name="savings" size={36} /></div>
+        <p class="empty-title">Tabungan belum bisa dimuat</p>
+        <p class="empty-sub">{loadError}</p>
+        <button type="button" class="empty-cta" onclick={fetchSavings}>Coba lagi</button>
+      </div>
+
     {:else if savings.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          <Icon name="empty" size={56} />
+          <Icon name="savings" size={36} />
         </div>
         <p class="empty-title">Belum ada target tabungan</p>
         <p class="empty-sub">Yuk buat target impian bersama!</p>
@@ -327,13 +340,12 @@
       <div class="savings-list">
         {#each savings as s}
           {@const percent = pct(s.current_amount, s.target_amount)}
-          {@const remaining = s.target_amount - s.current_amount}
+          {@const remaining = Math.max(0, s.target_amount - s.current_amount)}
           {@const isDone = percent >= 100}
 
-          <div 
+          <a href="/savings/{s.id}"
             class="saving-card {isDone ? 'saving-card--done' : ''}"
-            onclick={() => goto(`/savings/${s.id}`)}
-            style="cursor: pointer;"
+            aria-label="Lihat tabungan {s.name}, {percent}% tercapai"
           >
             <!-- Card Header -->
             <div class="saving-header">
@@ -394,7 +406,7 @@
                 Target tercapai! Selamat!
               </div>
             {/if}
-          </div>
+          </a>
         {/each}
       </div>
     {/if}
@@ -784,23 +796,27 @@
     background: transparent;
   }
 
-  /* Header — clean & minimal */
+  /* Header */
   .header {
-    padding: 26px 18px 18px;
+    padding:24px 22px 28px;
     position: relative;
     flex-shrink: 0;
     font-family: 'Nunito', sans-serif;
+    border-radius:0 0 28px 28px;
+    background:linear-gradient(155deg,#1D4ED8,#2563EB 55%,#3B82F6);
+    box-shadow:0 12px 26px rgba(37,99,235,.18);
   }
 
-  .header-inner { position: relative; }
-  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
-  .header-sub { font-size: 12px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-  .header-title { font-size: 24px; font-weight: 800; color: #1F2937; margin: 0; }
+  .header-inner { position:relative; max-width:760px; margin:auto; }
+  .header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:18px; }
+  .header-sub { font-size:10px; color:#BFDBFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
+  .header-title { display:flex; align-items:center; gap:8px; font-size:29px; font-weight:900; color:#fff; margin:0; letter-spacing:-.03em; }
+  .header-description { max-width:260px; margin:8px 0 0; color:#DBEAFE; font-size:12px; line-height:1.4; font-weight:600; }
 
   .create-btn {
-    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
+    background:rgba(255,255,255,.18);
     color: #ffffff;
-    border: none;
+    border:1px solid rgba(255,255,255,.35);
     border-radius: 12px;
     padding: 10px 16px;
     font-family: 'Nunito', sans-serif;
@@ -810,42 +826,39 @@
     white-space: nowrap;
     transition: transform 0.15s, filter 0.2s;
     flex-shrink: 0;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
+    box-shadow:0 5px 14px rgba(15,55,140,.13);
   }
   .create-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
   .create-btn:active { transform: scale(0.96); }
 
   /* Summary Card */
   .summary-card {
-    background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 1px 2px rgba(31,41,55,0.04);
+    background:rgba(255,255,255,.17);
+    border:1px solid rgba(255,255,255,.28);
+    border-radius:20px;
+    padding:17px;
+    box-shadow:0 8px 22px rgba(15,55,140,.12);
   }
-  .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
-  .summary-label { font-size: 10px; color: #94A3B8; margin: 0 0 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-  .summary-amount { font-size: 18px; font-weight: 800; color: #1F2937; margin: 0; }
-  .summary-track { height: 11px; background: #DAEBFA; border-radius: 99px; padding: 2px; box-shadow: inset 3px 3px 6px rgba(25, 118, 210, 0.20), inset -2px -2px 5px rgba(255, 255, 255, 0.95); margin-bottom: 8px; }
-  .summary-fill { height: 100%; background: linear-gradient(145deg, #64B5F6 0%, #2196F3 60%, #1976D2 100%); border-radius: 99px; transition: width 0.6s ease; box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.5), inset -1px -2px 4px rgba(13, 71, 161, 0.3); }
-  .summary-meta { display: flex; justify-content: space-between; font-size: 12px; color: #64748B; font-weight: 600; }
-  .summary-pct { color: #2F9A80; font-weight: 700; }
+  .summary-row { display:flex; justify-content:space-between; gap:14px; margin-bottom:14px; }
+  .summary-label { font-size:10px; color:#BFDBFE; margin:0 0 4px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+  .summary-amount { font-size:18px; font-weight:900; color:#fff; margin:0; }
+  .summary-track { height:10px; background:rgba(255,255,255,.22); border-radius:99px; padding:2px; margin-bottom:10px; }
+  .summary-fill { height:100%; background:#fff; border-radius:99px; transition:width .6s ease; }
+  .summary-meta { display:flex; justify-content:space-between; gap:8px; font-size:11px; color:#DBEAFE; font-weight:700; }
+  .summary-pct { color:#fff; font-weight:900; }
 
   /* Body */
-  .body { padding: 18px 16px; }
+  .body { max-width:760px; margin:auto; padding:24px 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Empty */
-  .empty-state { text-align: center; padding: 60px 20px; }
-  .empty-icon { margin-bottom: 14px; color: #94A3B8; display: flex; justify-content: center; }
-  .empty-title { font-size: 16px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
-  .empty-sub { font-size: 13px; color: #94A3B8; margin: 0 0 22px; }
+  .empty-state { text-align:center; padding:60px 20px; border-radius:22px; background:rgba(255,255,255,.7); }
+  .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563EB; display:grid; place-items:center; border-radius:22px; background:#E7F1FF; }
+  .empty-title { font-size:17px; font-weight:900; color:#172033; margin:0 0 6px; }
+  .empty-sub { font-size:12px; line-height:1.5; color:#64748B; margin:0 0 22px; }
   .empty-cta {
     background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: white;
@@ -869,13 +882,18 @@
 
   /* Saving Card */
   .saving-card {
+    display:block;
+    color:inherit;
+    text-decoration:none;
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.8);
     border-radius: 16px;
     padding: 18px;
     box-shadow: 0 1px 2px rgba(31,41,55,0.04);
-    transition: transform 0.15s;
+    transition: transform 0.15s, box-shadow 0.15s;
   }
+  .saving-card:hover { transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.11); }
+  .saving-card:focus-visible { outline:3px solid #60A5FA; outline-offset:2px; }
   .saving-card--done {
     border-color: rgba(79, 191, 163, 0.4);
     background: #ffffff;
@@ -1522,7 +1540,7 @@
   }
 
   /* Refined product surface */
-  .saving-card, .summary-card, .empty-state, .contrib-card {
+  .saving-card, .empty-state, .contrib-card {
     border: 1px solid rgba(255,255,255,.92);
     box-shadow: 0 8px 20px rgba(30,64,175,.06);
   }
