@@ -58,20 +58,12 @@
 </div>
 
 <style>
-  .auth-shell { flex-direction: column; gap: 14px; background: linear-gradient(135deg, #EEF2FE 0%, #F2F0FE 100%); font-family: 'Nunito', sans-serif; }
-  .auth-card { background: #FFFFFF;  border: none; border-radius: 28px; padding: 36px 32px; box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06); }
-  .logo-mark { width: 78px; height: 78px; background: linear-gradient(135deg, #EEF2FE, #F6F4FE); border: 2px solid rgba(33,150,243,.4); box-shadow: 0 8px 24px rgba(33,150,243,.22), 0 0 0 4px rgba(255,255,255,.45); overflow: hidden; }
+  .auth-shell { flex-direction: column; gap: 14px; background: #F6F9FD; font-family: 'Nunito', sans-serif; }
+  .auth-card { background: rgba(255,255,255,.86); border: 1px solid rgba(255,255,255,.92); border-radius: 24px; padding: 34px 30px; box-shadow: 0 16px 40px rgba(30,64,175,.10); backdrop-filter: blur(20px); }
+  .logo-mark { width: 78px; height: 78px; background: #EFF6FF; border: 1px solid rgba(37,99,235,.22); box-shadow: 0 10px 24px rgba(37,99,235,.14); overflow: hidden; }
   .logo-mark img { width: 76px; height: 76px; object-fit: contain; }
   .apk-download-section { width: 100%; max-width: 384px; text-align: center; }
-  .apk-download-btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 16px; box-sizing: border-box; border: 1.5px solid rgba(33,150,243,.45); border-radius: 22px; background: #FFFFFF;  color: #4F96E5; box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06); font: 800 14px 'Nunito', sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease; }
+  .apk-download-btn { display: flex; align-items: center; justify-content: center; width: 100%; padding: 13px 16px; box-sizing: border-box; border: 1px solid rgba(37,99,235,.24); border-radius: 14px; background: rgba(255,255,255,.82); color: #2563EB; box-shadow: 0 7px 18px rgba(30,64,175,.07); font: 800 14px 'Nunito', sans-serif; text-decoration: none; transition: transform .15s ease, background .15s ease; }
   .apk-download-btn:hover { background: rgba(255,255,255,.82); transform: translateY(-1px); }
   .apk-download-btn:active { transform: scale(.98); }
   .apk-download-btn:disabled { cursor: wait; opacity: .65; }
@@ -84,24 +76,20 @@
   :global(.auth-input) {
     width: 100%;
     padding: 13px 16px;
-    border: none;
-    border-radius: 20px;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
     font-size: 14px;
     font-family: 'Nunito', sans-serif;
     color: #30435F;
-    background: #E6F2FD;
+    background: rgba(248,250,252,.9);
     outline: none;
     box-sizing: border-box;
     transition: box-shadow 0.2s ease;
-    box-shadow:
-      inset 4px 4px 8px rgba(25, 118, 210, 0.13),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+    box-shadow: none;
   }
   :global(.auth-input:focus) {
-    box-shadow:
-      inset 4px 4px 8px rgba(25, 118, 210, 0.18),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.95),
-      0 0 0 3px rgba(33, 150, 243, 0.18);
+    border-color: #60A5FA;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.12);
   }
   :global(.auth-label) {
     display: block;
@@ -117,15 +105,15 @@
     width: 100%;
     padding: 14px;
     border: none;
-    border-radius: 14px;
+    border-radius: 12px;
     font-size: 15px;
     font-weight: 600;
     font-family: 'Nunito', sans-serif;
     color: white;
     cursor: pointer;
     transition: all 0.2s ease;
-    background: linear-gradient(135deg, #2196F3, #1976D2);
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.35);
+    background: #2563EB;
+    box-shadow: 0 8px 18px rgba(37,99,235,.24);
   }
   :global(.auth-btn:hover:not(:disabled)) {
     transform: translateY(-1px);

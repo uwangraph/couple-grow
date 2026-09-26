@@ -1,11 +1,11 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-primary: #2196F3;       /* Biru brand - dominan */
-  --color-primary-dark: #1976D2;
-  --color-primary-light: #64B5F6;
-  --color-primary-lighter: #D2E9FB;
-  --color-primary-bg: #EAF4FE;
+  --color-primary: #2563EB;
+  --color-primary-dark: #1D4ED8;
+  --color-primary-light: #60A5FA;
+  --color-primary-lighter: #DBEAFE;
+  --color-primary-bg: #EFF6FF;
   
   --color-secondary: #4FC3F7;     /* Sky Leaf dari logo - aksen kedua */
   --color-secondary-dark: #29B6F6;
@@ -13,8 +13,8 @@
   --color-secondary-bg: #E7F4FE;
   
   --color-accent: #4FBFA3;        /* Emerald - money / success */
-  --color-background: #EFF7FE;
-  --color-text-navy: #1F2937;
+  --color-background: #F6F9FD;
+  --color-text-navy: #172033;
   --color-text-secondary: #64748B;
   --color-success: #4FBFA3;
   --color-warning: #F59E0B;
@@ -31,9 +31,9 @@
   --clay-tint: #D2E9FB;             /* isian clay biru muda */
   --clay-shadow: 190 60% 45%;       /* nada bayangan (biru) */
 
-  --clay-radius-sm: 18px;
-  --clay-radius: 26px;
-  --clay-radius-lg: 34px;
+  --clay-radius-sm: 14px;
+  --clay-radius: 20px;
+  --clay-radius-lg: 28px;
   --clay-radius-tile: 32%;          /* squircle untuk ubin ikon */
 }
 
@@ -55,9 +55,9 @@
     /* Gradien biru dari warna brand #2196F3 — hangat di atas, sedikit lebih
        terang di bawah, tanpa nada lavender. */
     background:
-      radial-gradient(110% 85% at 85% 0%, rgba(33, 150, 243, 0.30) 0%, transparent 55%),
-      radial-gradient(100% 80% at 0% 100%, rgba(79, 195, 247, 0.24) 0%, transparent 55%),
-      linear-gradient(160deg, #E8F4FE 0%, #E3F1FD 45%, #E9F6FE 100%);
+      radial-gradient(90% 55% at 100% 0%, rgba(96, 165, 250, 0.18) 0%, transparent 62%),
+      radial-gradient(75% 55% at 0% 100%, rgba(125, 211, 252, 0.12) 0%, transparent 62%),
+      #F6F9FD;
     background-attachment: fixed;
     background-size: 100% 100%, 100% 100%, cover;
     color: #1F2937;
@@ -88,19 +88,19 @@
 
   /* Card + Glass Utilities — clean & refined */
   .glass-panel {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(22px) saturate(140%);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04), 0 8px 24px rgba(31, 41, 55, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 12px 28px rgba(30, 64, 175, 0.07);
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.78);
-    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(18px) saturate(135%);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04), 0 6px 18px rgba(31, 41, 55, 0.06);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 22px rgba(30, 64, 175, 0.06);
   }
 
   /* ── Claymorphism ──────────────────────────────────────────────
@@ -109,11 +109,7 @@
   .clay-card {
     background: var(--clay-surface-raised);
     border-radius: var(--clay-radius);
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 12px 26px rgba(30, 64, 175, 0.07);
   }
 
   /* Kartu dengan isian biru — untuk blok yang perlu menonjol */
@@ -191,10 +187,10 @@
   }
 
   .glass-nav {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-top: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 -4px 20px rgba(31, 41, 55, 0.06);
+    box-shadow: 0 -8px 28px rgba(30, 64, 175, 0.08);
   }
 }

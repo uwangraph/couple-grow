@@ -693,4 +693,10 @@
       5px 9px 18px rgba(21, 101, 192, 0.26); transition: transform 0.12s;
   }
   .modal-submit:active { transform: scale(0.97); }
+
+  .wish-card, .empty-state { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); border-radius: 18px; }
+  .create-btn, .empty-cta, .modal-submit { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); border-radius: 12px; }
+  .menu-btn { border-radius: 10px; box-shadow: none; }
+  .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
+  .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 </style>

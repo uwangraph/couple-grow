@@ -66,4 +66,6 @@
   .icon { width:42px; height:42px; display:grid; place-items:center; flex-shrink:0; border-radius:12px; background:rgba(33, 150, 243,0.1); color:#1976D2; }
   .content { flex:1; display:flex; flex-direction:column; gap:3px; }.content strong { font-size:14px; font-weight:700; color:#1F2937; }.content span { font-size:13px; color:#64748B; }.content small { font-size:10px; color:#94A3B8; }
   .empty { min-height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#94A3B8; text-align:center; }.empty strong { color:#64748B; }.empty span { max-width:260px; font-size:13px; }
+  .header { background: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.9); box-shadow: 0 8px 20px rgba(30,64,175,.05); }
+  .item { border-color: rgba(255,255,255,.92); box-shadow: 0 7px 16px rgba(30,64,175,.05); border-radius: 14px; }
 </style>

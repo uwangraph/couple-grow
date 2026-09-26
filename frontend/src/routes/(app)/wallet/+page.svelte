@@ -637,13 +637,13 @@
   /* Header — clean & minimal */
   .header {
     position: relative;
-    padding: 28px 20px 24px;
+    padding: 28px 20px 22px;
     flex-shrink: 0;
   }
   .header-inner { position: relative; }
-  .balance-label { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px; }
+  .balance-label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px; }
   .balance-amount {
-    font-size: 36px; font-weight: 800; color: #1F2937; margin: 0 0 20px;
+    font-size: 36px; font-weight: 800; color: #172033; margin: 0 0 20px;
     letter-spacing: -0.02em;
   }
   .balance-row { display: flex; gap: 10px; }
@@ -653,14 +653,10 @@
     align-items: center;
     gap: 12px;
     padding: 13px 15px;
-    border-radius: 22px;
-    background: #FFFFFF;
-    border: none;
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
+    border-radius: 16px;
+    background: rgba(255,255,255,.84);
+    border: 1px solid rgba(255,255,255,.94);
+    box-shadow: 0 7px 18px rgba(30,64,175,.06);
     transition: transform 0.1s ease;
   }
   .balance-chip:active {
@@ -699,20 +695,16 @@
   .tab {
     flex: 1;
     padding: 10px 0;
-    border-radius: 18px;
+    border-radius: 12px;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
     font-weight: 600;
-    border: none;
+    border: 1px solid rgba(148,163,184,.22);
     cursor: default;
     transition: all 0.2s;
     background: #FFFFFF;
     color: #475569;
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
+    box-shadow: 0 5px 14px rgba(30,64,175,.05);
   }
   .tab--active {
     background: rgba(255, 255, 255, 0.9);
@@ -722,7 +714,7 @@
   }
   .add-btn {
     padding: 10px 16px;
-    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
+    background: #2563EB;
     color: #ffffff;
     border: none;
     border-radius: 12px;
@@ -732,10 +724,7 @@
     cursor: pointer;
     white-space: nowrap;
     transition: transform 0.15s, filter 0.2s;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
+    box-shadow: 0 7px 16px rgba(37,99,235,.22);
   }
   .add-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
   .add-btn:active { transform: scale(0.97); }
@@ -820,13 +809,10 @@
     align-items: center;
     background: #FFFFFF;
     border: none;
-    border-radius: 22px;
+    border-radius: 18px;
     padding: 12px 14px;
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
+    border: 1px solid rgba(255,255,255,.9);
+    box-shadow: 0 7px 18px rgba(30,64,175,.06);
   }
   .detail-amount { margin: 8px 0 20px; font-size: 30px; font-weight: 800; text-align: center; }
   .detail-amount--in { color: #2F9A80; }
@@ -836,11 +822,8 @@
   .detail-list > div:last-child { border-bottom: 0; }
   .detail-list span { color: #94A3B8; }.detail-list strong { color: #1F2937; text-align: right; }
   .detail-close { width: 100%; }
-  .tx-icon { width: 40px; height: 40px; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;
-    box-shadow:
-      inset 3px 3px 6px rgba(255, 255, 255, 0.5),
-      inset -3px -4px 8px rgba(13, 71, 161, 0.32),
-      4px 6px 13px rgba(21, 101, 192, 0.22);
+  .tx-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(30,64,175,.1);
     color: #fff;
   }
   .tx-icon--in { background: linear-gradient(145deg, #8ED9C6 0%, #4FBFA3 55%, #35A88C 100%); }
@@ -863,11 +846,7 @@
 
   /* Stats */
   .stats-list { display: flex; flex-direction: column; gap: 14px; }
-  .stat-card { background: #FFFFFF;  border: none; border-radius: 24px; padding: 18px; box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06); }
+  .stat-card { background: rgba(255,255,255,.84); border: 1px solid rgba(255,255,255,.92); border-radius: 18px; padding: 18px; box-shadow: 0 7px 18px rgba(30,64,175,.06); }
   .stat-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
   .stat-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .stat-card-icon--blue { background: #EAF4FE; color: #1976D2; }
@@ -975,11 +954,7 @@
     max-width: 540px;
     padding: 20px 22px 36px;
     animation: slide-up 0.25s ease;
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
+    box-shadow: 0 14px 30px rgba(15,23,42,.12);
   }
   @keyframes slide-up {
     from { transform: translateY(40px); opacity: 0; }
@@ -1025,7 +1000,7 @@
   .form-input {
     padding: 12px 14px;
     border: none;
-    border-radius: 20px;
+    border-radius: 12px;
     font-size: 14px;
     font-weight: 700;
     color: #1E293B;
@@ -1035,15 +1010,12 @@
     transition: border-color 0.2s;
     width: 100%;
     box-sizing: border-box;
-    box-shadow:
-      inset 4px 4px 8px rgba(25, 118, 210, 0.13),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+    border: 1px solid #E2E8F0;
+    box-shadow: none;
   }
   .form-input:focus {
-    box-shadow:
-      inset 4px 4px 8px rgba(25, 118, 210, 0.18),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.95),
-      0 0 0 3px rgba(33, 150, 243, 0.16);
+    border-color: #60A5FA;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.12);
   }
   .form-input--amount { font-size: 22px; font-weight: 900; }
 

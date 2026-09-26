@@ -1520,4 +1520,18 @@
   .milestone-btn:active {
     transform: scale(0.95);
   }
+
+  /* Refined product surface */
+  .saving-card, .summary-card, .empty-state, .contrib-card {
+    border: 1px solid rgba(255,255,255,.92);
+    box-shadow: 0 8px 20px rgba(30,64,175,.06);
+  }
+  .saving-card { border-radius: 18px; }
+  .saving-progress .progress-track, .contrib-bar-wrap { box-shadow: none; background: #E8EEF7; }
+  .progress-fill, .contrib-bar { background: #2563EB; box-shadow: none; }
+  .action-btn { border-radius: 10px; box-shadow: none; }
+  .modal { box-shadow: 0 14px 30px rgba(15,23,42,.12); }
+  .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
+  .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .modal-submit, .milestone-btn { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.22); border-radius: 14px; }
 </style>

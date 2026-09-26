@@ -520,7 +520,7 @@
       {/if}
     </div>
 
-    <div class="card">
+    <div class="card card--action">
       <p class="section-label section-label--card">Pengaturan Profil</p>
       {#if isEditingProfile}
         <div class="edit-form">
@@ -548,7 +548,7 @@
       {/if}
     </div>
 
-    <div class="card">
+    <div class="card card--action">
       <p class="section-label section-label--card">Keamanan Akun</p>
       {#if isChangingPassword}
         <div class="edit-form">
@@ -1040,6 +1040,31 @@
   }
   .section-label--card { margin-bottom: 10px; }
 
+  .card--action {
+    padding: 16px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,.84);
+    border-color: rgba(255,255,255,.94);
+    box-shadow: 0 7px 18px rgba(30,64,175,.06);
+  }
+  .card--action .section-label--card { margin: 0 0 10px; color: #64748B; }
+  .card--action .btn--outline {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 52px;
+    padding: 12px 14px;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    background: #F8FAFC;
+    color: #2563EB;
+    box-shadow: none;
+    text-align: left;
+  }
+  .card--action .btn--outline:hover { border-color: #93C5FD; background: #EFF6FF; }
+  .card--action .btn--outline :global(svg) { flex: 0 0 auto; }
+
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
   .form-input {
     padding: 11px 14px;
@@ -1227,4 +1252,10 @@
     gap: 12px;
   }
   .disconnect-actions .btn { flex: 1; padding: 14px; font-size: 14px; }
+
+  .hero { background: linear-gradient(145deg,#2563EB,#1D4ED8); box-shadow: 0 14px 30px rgba(37,99,235,.2); }
+  .card, .pairing-panel { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); border-radius: 18px; }
+  .form-input, .code-input { border: 1px solid #E2E8F0; background: #F8FAFC; box-shadow: none; border-radius: 12px; }
+  .form-input:focus, .code-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .btn--primary, .btn--success { background: #2563EB; box-shadow: 0 7px 16px rgba(37,99,235,.2); }
 </style>

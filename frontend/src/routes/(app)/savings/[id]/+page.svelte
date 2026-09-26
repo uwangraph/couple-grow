@@ -598,10 +598,11 @@
   .ms-pct{font-size:52px;font-weight:900;background:linear-gradient(135deg,#2196F3,#F59E0B);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0;line-height:1;}
   .ms-name{font-size:15px;font-weight:800;color:#64748B;margin:8px 0 10px;}
   .ms-msg{font-size:14px;color:#1E293B;font-weight:700;margin:0 0 20px;}
-  .ms-btn{background: linear-gradient(145deg, #2196F3,#4F96E5);color:white;border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:900;cursor:pointer;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
-  }
+  .ms-btn{background: linear-gradient(145deg, #2196F3,#4F96E5);color:white;border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:900;cursor:pointer;box-shadow:0 8px 18px rgba(37,99,235,.2);}
+
+  .saving-detail-card, .log-card { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); }
+  .modal { box-shadow: 0 14px 30px rgba(15,23,42,.12); }
+  .minput { border: 1px solid #E2E8F0; background: #F8FAFC; box-shadow: none; border-radius: 12px; }
+  .minput:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .mbtn, .ms-btn { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); }
 </style>

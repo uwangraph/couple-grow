@@ -463,4 +463,10 @@
   .modal-actions { display: flex; gap: 12px; }
   .modal-cancel { flex: 1; padding: 14px; background: #F1F5F9; color: #64748B; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
   .modal-submit { flex: 2; padding: 14px; background: #2196F3; color: white; border: none; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  .note-card, .empty-notes, .empty-state { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); border-radius: 16px; }
+  .new-folder-btn, .new-note-btn, .empty-cta, .modal-submit { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); border-radius: 12px; }
+  .folder-tab { border-radius: 10px; }
+  .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
+  .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 </style>

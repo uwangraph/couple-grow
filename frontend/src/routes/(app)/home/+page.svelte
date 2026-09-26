@@ -226,13 +226,6 @@
         <span>Catat Pemasukan</span>
       </button>
       
-      <button class="quick-btn quick-btn--saving" onclick={() => goto('/savings')}>
-        <div class="quick-icon quick-icon--blue">
-          <Icon name="savings" size={20} />
-        </div>
-        <span>Nabung</span>
-      </button>
-      
       <button class="quick-btn quick-btn--wish" onclick={() => goto('/wishlist')}>
         <div class="quick-icon quick-icon--pink">
           <Icon name="sparkles" size={20} />
@@ -332,7 +325,7 @@
      Home Header — clean & minimal
      ----------------------------------------------------------- */
   .header {
-    padding: 24px 20px 6px;
+    padding: 28px 20px 8px;
     position: relative;
     overflow: hidden;
     font-family: 'Nunito', sans-serif;
@@ -345,15 +338,13 @@
     margin-bottom: 22px;
   }
   .notification-btn {
-    border-radius: var(--clay-radius-tile);
-    box-shadow:
-      inset 4px 4px 8px rgba(255, 255, 255, 0.95),
-      inset -3px -5px 10px rgba(33, 150, 243, 0.14),
-      4px 7px 14px rgba(21, 101, 192, 0.12);
+    border-radius: 13px;
+    box-shadow: 0 5px 14px rgba(30,64,175,.08);
     display: grid; place-items: center; width: 42px; height: 42px;
     border: none;
-    background: linear-gradient(150deg, #FFFFFF 0%, #EAF4FE 100%);
-    color: #1976D2;
+    background: rgba(255,255,255,.82);
+    border: 1px solid rgba(255,255,255,.9);
+    color: #2563EB;
     cursor: pointer;
     transition: transform 0.14s ease, box-shadow 0.14s ease;
   }
@@ -365,7 +356,7 @@
       1px 2px 5px rgba(21, 101, 192, 0.08);
   }
   .greeting-sub { font-size: 13px; color: #64748B; margin: 0 0 2px; font-weight: 600; }
-  .greeting-name { font-size: 26px; font-weight: 800; color: #1F2937; margin: 0 0 10px; letter-spacing: -0.02em; }
+  .greeting-name { font-size: 25px; font-weight: 800; color: #172033; margin: 0 0 10px; letter-spacing: -0.03em; }
   .partner-line { font-size: 13px; margin: 0; display: flex; align-items: center; gap: 5px; font-weight: 600; }
   .partner-chip {
     display: inline-flex; align-items: center; gap: 6px;
@@ -380,19 +371,16 @@
 
   /* Balance Card — Apple liquid glass */
   .balance-card {
-    background: linear-gradient(150deg, #E7F3FD 0%, #D2E9FB 100%);
-    border-radius: var(--clay-radius-lg);
-    padding: 22px;
-    box-shadow:
-      inset 6px 6px 12px rgba(255, 255, 255, 0.85),
-      inset -5px -7px 14px rgba(25, 118, 210, 0.14),
-      6px 10px 22px rgba(21, 101, 192, 0.12),
-      2px 3px 6px rgba(21, 101, 192, 0.07);
+    background: linear-gradient(145deg, #2563EB 0%, #1D4ED8 100%);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 14px 30px rgba(37,99,235,.22);
   }
   .balance-label {
     font-size: 11px;
     font-weight: 700;
-    color: #94A3B8;
+    color: rgba(255,255,255,.72);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin: 0 0 8px;
@@ -400,7 +388,7 @@
   .balance-amount {
     font-size: 36px;
     font-weight: 800;
-    color: #1F2937;
+    color: #fff;
     margin: 0 0 20px;
     letter-spacing: -0.02em;
   }
@@ -415,34 +403,31 @@
   }
   .balance-item {
     border-radius: var(--clay-radius-sm);
-    box-shadow:
-      inset 3px 3px 7px rgba(25, 118, 210, 0.13),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255,255,255,.16);
   }
-  .balance-item--in { background: rgba(79, 191, 163, 0.14); }
-  .balance-item--out { background: rgba(239, 124, 151, 0.14); }
+  .balance-item--in { background: rgba(255,255,255,.12); }
+  .balance-item--out { background: rgba(255,255,255,.12); }
   .balance-item-sep { width: 8px; }
   .balance-item-icon { font-size: 16px; font-weight: 800; }
-  .balance-item--in .balance-item-icon { color: #35A88C; }
-  .balance-item--out .balance-item-icon { color: #E2637F; }
-  .balance-item-label { font-size: 11px; font-weight: 600; color: #64748B; margin: 0 0 2px; }
-  .balance-item--in .balance-item-val { color: #2F9A80; }
-  .balance-item--out .balance-item-val { color: #D2566F; }
+  .balance-item--in .balance-item-icon { color: #86EFAC; }
+  .balance-item--out .balance-item-icon { color: #FDA4AF; }
+  .balance-item-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.7); margin: 0 0 2px; }
+  .balance-item--in .balance-item-val, .balance-item--out .balance-item-val { color: #fff; }
   .balance-item-val { font-size: 14px; font-weight: 700; margin: 0; }
 
   /* Quick Actions */
   .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
     margin-bottom: 26px;
   }
 
   .quick-btn {
-    background: linear-gradient(150deg, #FFFFFF 0%, #EAF4FE 100%);
-    border: none;
-    border-radius: var(--clay-radius);
-    padding: 15px 6px;
+    background: rgba(255,255,255,.8);
+    border: 1px solid rgba(255,255,255,.92);
+    border-radius: 16px;
+    padding: 13px 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -453,10 +438,7 @@
     font-weight: 700;
     color: #1F2937;
     text-align: center;
-    box-shadow:
-      inset 4px 4px 8px rgba(255, 255, 255, 0.95),
-      inset -3px -5px 10px rgba(33, 150, 243, 0.13),
-      4px 7px 16px rgba(21, 101, 192, 0.11);
+    box-shadow: 0 6px 16px rgba(30,64,175,.06);
     transition: transform 0.14s ease, box-shadow 0.14s ease;
   }
   .quick-btn:active {
@@ -468,19 +450,15 @@
   }
 
   .quick-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--clay-radius-tile);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     transition: transform 0.2s;
-    box-shadow:
-      inset 3px 3px 6px rgba(255, 255, 255, 0.55),
-      inset -3px -4px 8px rgba(13, 71, 161, 0.35),
-      4px 7px 14px rgba(21, 101, 192, 0.26),
-      1px 2px 4px rgba(21, 101, 192, 0.16);
+    box-shadow: 0 5px 12px rgba(30,64,175,.14);
   }
   .quick-btn:hover .quick-icon { transform: scale(1.06) rotate(-3deg); }
 
@@ -494,28 +472,25 @@
 
   /* Body */
   .body {
-    padding: 22px 20px 0;
+    padding: 18px 20px 0;
     position: relative;
     z-index: 1;
   }
 
   /* Sections */
-  .section { margin-bottom: 28px; }
+  .section { margin-bottom: 24px; }
   .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-  .section-title { font-size: 16px; font-weight: 800; color: #1F2937; margin: 0; letter-spacing: -0.01em; }
+  .section-title { font-size: 15px; font-weight: 800; color: #172033; margin: 0; letter-spacing: -0.01em; }
   .section-more { font-size: 13px; font-weight: 600; color: #1976D2; text-decoration: none; }
 
   /* Savings */
   .savings-list { display: flex; flex-direction: column; gap: 10px; }
   .savings-card {
-    background: #FFFFFF;
-    border-radius: var(--clay-radius);
-    padding: 17px;
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
+    background: rgba(255,255,255,.84);
+    border: 1px solid rgba(255,255,255,.92);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 7px 18px rgba(30,64,175,.06);
   }
   .savings-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
   .savings-name { font-weight: 700; color: #1F2937; font-size: 14px; margin: 0 0 3px; }
@@ -524,14 +499,11 @@
     font-size: 14px;
     font-weight: 800;
     color: #fff;
-    background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
+    background: #2563EB;
     padding: 5px 12px;
     border-radius: 14px;
     flex-shrink: 0;
-    box-shadow:
-      inset 2px 2px 4px rgba(255, 255, 255, 0.4),
-      inset -2px -3px 6px rgba(13, 71, 161, 0.3),
-      2px 4px 9px rgba(21, 101, 192, 0.22);
+    box-shadow: 0 4px 10px rgba(37,99,235,.18);
   }
   /* Track dibuat cekung, isian dibuat menonjol */
   .progress-track {
@@ -562,11 +534,8 @@
     padding: 13px 15px;
     margin-bottom: 10px;
     text-decoration: none;
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      5px 8px 18px rgba(21, 101, 192, 0.09),
-      2px 3px 6px rgba(21, 101, 192, 0.05);
+    border: 1px solid rgba(255,255,255,.92);
+    box-shadow: 0 6px 16px rgba(30,64,175,.055);
     transition: transform 0.14s ease, box-shadow 0.14s ease;
   }
   .tx-row:active {
@@ -581,10 +550,7 @@
     height: 42px;
     border-radius: var(--clay-radius-tile);
     color: #fff;
-    box-shadow:
-      inset 3px 3px 6px rgba(255, 255, 255, 0.5),
-      inset -3px -4px 8px rgba(13, 71, 161, 0.3),
-      3px 5px 11px rgba(21, 101, 192, 0.2);
+    box-shadow: 0 4px 10px rgba(30,64,175,.12);
     display: flex;
     align-items: center;
     justify-content: center;

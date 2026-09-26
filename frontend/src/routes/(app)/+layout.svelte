@@ -36,7 +36,8 @@
   const hideBottomNav = $derived(
     currentPath === '/chat' ||
     currentPath.startsWith('/notes') ||
-    currentPath.startsWith('/wishlist')
+    currentPath.startsWith('/wishlist') ||
+    currentPath.startsWith('/notifications')
   );
   let showUpdateModal = $state(false);
   let latestVersionName = $state('');
@@ -170,15 +171,14 @@
     justify-content: space-around;
     align-items: center;
     gap: 2px;
-    height: 74px;
-    padding: 0 6px;
-    border-radius: 30px;
-    background: linear-gradient(150deg, #FFFFFF 0%, #EDF6FE 100%);
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.95),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.12),
-      8px 14px 30px rgba(21, 101, 192, 0.16),
-      2px 4px 10px rgba(21, 101, 192, 0.08);
+    height: 68px;
+    padding: 0 8px;
+    border: 1px solid rgba(255,255,255,.9);
+    border-radius: 22px;
+    background: rgba(255,255,255,.82);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: 0 12px 30px rgba(30,64,175,.12), 0 2px 5px rgba(15,23,42,.04);
     z-index: 50;
   }
   .nav-tab {
@@ -187,7 +187,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     height: 100%;
     text-decoration: none;
     color: #94A3B8;
@@ -196,26 +196,23 @@
   .nav-tile {
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 32%;
+    width: 36px;
+    height: 30px;
+    border-radius: 10px;
     transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.22s ease, background 0.22s ease;
   }
   .nav-label {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.01em;
   }
-  /* Tab aktif diangkat sebagai ubin clay */
+  /* Active tab uses a quiet blue pill instead of a heavy 3D tile. */
   .nav-tab--active { color: #1976D2; }
   .nav-tab--active .nav-tile {
     color: #fff;
-    transform: translateY(-3px);
-    background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%);
-    box-shadow:
-      inset 3px 3px 6px rgba(255, 255, 255, 0.5),
-      inset -3px -4px 8px rgba(13, 71, 161, 0.35),
-      4px 7px 14px rgba(21, 101, 192, 0.3);
+    transform: translateY(-1px);
+    background: #DBEAFE;
+    box-shadow: none;
   }
   .nav-tab--active .nav-label { font-weight: 800; }
   .nav-tab:active .nav-tile { transform: translateY(1px) scale(0.94); }
