@@ -20,6 +20,8 @@
   let stats = $state<{ monthly: any[]; categories: any[] }>({ monthly: [], categories: [] });
   let loading = $state(true);
   let loadError = $state('');
+  let statsLoading = $state(true);
+  let statsError = $state('');
   let activeTab = $state<'history' | 'stats'>('history');
 
   // Add transaction modal
@@ -47,6 +49,7 @@
   onMount(async () => {
     if (!auth.token) { goto('/login'); return; }
     const requestedType = page.url.searchParams.get('new');
+    const requestedTransaction = page.url.searchParams.get('transaction');
     if (requestedType === 'expense' || requestedType === 'income') {
       type = requestedType;
       activeTab = 'history';
@@ -54,6 +57,11 @@
       replaceState('/wallet', page.state);
     }
     await Promise.all([fetchTransactions(), fetchStats()]);
+    if (requestedTransaction && !loadError) {
+      const transaction = transactions.find(tx => String(tx.id) === requestedTransaction);
+      if (transaction) openDetail(transaction);
+      replaceState('/wallet', page.state);
+    }
   });
 
   function handleUnauthorized() {
@@ -79,14 +87,18 @@
 
   async function fetchStats() {
     if (!auth.token) return;
+    statsLoading = true;
+    statsError = '';
     try {
       const res = await fetch(`${API_URL}/transactions/stats`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
       const data = await readApiJson<{ monthly?: any[]; categories?: any[] }>(res);
-      if (res.ok) stats = { monthly: data.monthly || [], categories: data.categories || [] };
-    } catch(e) {}
+      if (!res.ok) throw new Error('Statistik belum bisa dimuat.');
+      stats = { monthly: data.monthly || [], categories: data.categories || [] };
+    } catch(e) { statsError = e instanceof Error ? e.message : 'Statistik belum bisa dimuat.'; }
+    finally { statsLoading = false; }
   }
 
   async function addTransaction(e: Event) {
@@ -251,6 +263,12 @@
   <!-- Content -->
   <div class="content">
 
+    <a href="/budget" class="budget-entry">
+      <span class="budget-entry-icon"><Icon name="wallet" size={20} /></span>
+      <span class="budget-entry-copy"><strong>Anggaran bulanan</strong><small>Atur batas agar pengeluaran tetap terjaga</small></span>
+      <span class="budget-entry-arrow" aria-hidden="true">→</span>
+    </a>
+
     {#if loading}
       <div class="loading-wrap">
         <div class="spinner"></div>
@@ -324,6 +342,15 @@
 
     {:else}
       <!-- Stats -->
+      {#if statsLoading}
+        <div class="loading-wrap" aria-label="Memuat statistik"><div class="spinner"></div></div>
+      {:else if statsError}
+        <div class="empty-state error-state" role="alert">
+          <Icon name="error" size={32} />
+          <p>{statsError}</p>
+          <button type="button" class="empty-link" onclick={fetchStats}>Coba lagi</button>
+        </div>
+      {:else}
       <div class="stats-list">
 
         <!-- Bar Chart → Line Chart SVG -->
@@ -492,6 +519,7 @@
           {/if}
         </div>
       </div>
+      {/if}
     {/if}
   </div>
 
@@ -1129,6 +1157,13 @@
   .delete-title { font-size: 18px; font-weight: 900; color: #1E293B; margin: 0 0 8px; }
   .delete-msg { font-size: 13px; color: #64748B; line-height: 1.5; margin: 0 0 20px; font-weight: 600; }
   .delete-msg strong { color: #1E293B; font-weight: 900; }
+  .budget-entry { display:flex; align-items:center; gap:12px; min-height:74px; margin-bottom:18px; padding:12px 14px; border:1px solid #dbeafe; border-radius:16px; background:linear-gradient(115deg,#fff,#eff6ff); box-shadow:0 7px 18px rgba(30,64,175,.06); color:inherit; text-decoration:none; }
+  .budget-entry-icon { width:42px; height:42px; flex:none; display:grid; place-items:center; border-radius:12px; color:#2563eb; background:#dbeafe; }
+  .budget-entry-copy { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .budget-entry-copy strong { color:#172033; font-size:13px; font-weight:900; }
+  .budget-entry-copy small { color:#64748b; font-size:11px; line-height:1.35; }
+  .budget-entry-arrow { color:#2563eb; font-size:20px; }
+  .budget-entry:hover { border-color:#93c5fd; }
   .header-inner,.content,.tab-bar { width:100%; max-width:760px; margin-inline:auto; }
   .balance-amount { font-weight:900; overflow-wrap:anywhere; }
   .balance-chip { min-width:0; }

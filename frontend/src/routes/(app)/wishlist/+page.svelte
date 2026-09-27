@@ -9,6 +9,7 @@
   let wishlists = $state<any[]>([]);
   let savings = $state<any[]>([]);
   let loading = $state(true);
+  let loadError = $state('');
 
   let showModal = $state(false);
   let editingWishlist = $state<any>(null);
@@ -29,16 +30,18 @@
   }
 
   async function fetchWishlists() {
+    loading = true;
+    loadError = '';
     try {
       const res = await fetch(`${API_URL}/wishlists`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
-      if (res.ok) {
-        const data = await readApiJson<{ wishlists?: any[] }>(res);
-        wishlists = data.wishlists || [];
-      }
-    } catch(e) {} finally { loading = false; }
+      if (!res.ok) throw new Error('Wishlist belum bisa dimuat.');
+      const data = await readApiJson<{ wishlists?: any[] }>(res);
+      wishlists = data.wishlists || [];
+    } catch(e) { loadError = e instanceof Error ? e.message : 'Wishlist belum bisa dimuat.'; }
+    finally { loading = false; }
   }
 
   async function fetchSavings() {
@@ -191,8 +194,16 @@
   <!-- Body -->
   <div class="body">
     {#if loading}
-      <div class="loading-wrap">
-        <div class="spinner"></div>
+      <div class="wishlist-grid" aria-label="Memuat wishlist">
+        {#each [1, 2] as _}<div class="wish-skeleton"><div></div><div></div><div></div></div>{/each}
+      </div>
+
+    {:else if loadError}
+      <div class="empty-state" role="alert">
+        <div class="empty-icon"><Icon name="sparkles" size={38} /></div>
+        <p class="empty-title">Wishlist belum bisa dimuat</p>
+        <p class="empty-sub">{loadError}</p>
+        <button type="button" class="empty-cta" onclick={fetchWishlists}>Coba lagi</button>
       </div>
 
     {:else if wishlists.length === 0}
@@ -201,8 +212,8 @@
           <Icon name="sparkles" size={38} />
         </div>
         <p class="empty-title">Belum ada wishlist</p>
-        <p class="empty-sub">Yuk catat impian yang pengen diwujudkan berdua!</p>
-        <button class="empty-cta" onclick={openCreateModal}>+ Tambah Wishlist</button>
+        <p class="empty-sub">Simpan satu rencana kecil yang ingin kalian wujudkan bersama.</p>
+        <button class="empty-cta" onclick={openCreateModal}>Tambah impian pertama</button>
       </div>
 
     {:else}
@@ -487,9 +498,11 @@
 
   .body { max-width:760px; margin:auto; padding:24px 16px; }
 
-  .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .wish-skeleton { display:flex; flex-direction:column; gap:12px; min-height:138px; padding:18px; border:1px solid #e3edfa; border-radius:18px; background:rgba(255,255,255,.85); }
+  .wish-skeleton div { height:13px; width:70%; border-radius:8px; background:linear-gradient(100deg,#e8f1fb,#f8fbff,#e8f1fb); background-size:200% 100%; animation:wish-shimmer 1.4s ease-in-out infinite; }
+  .wish-skeleton div:first-child { width:42px; height:42px; border-radius:12px; }
+  .wish-skeleton div:last-child { width:45%; height:10px; }
+  @keyframes wish-shimmer { to { background-position-x:-200%; } }
 
   .empty-state { text-align:center; padding:64px 20px; background:rgba(255,255,255,.66); border-radius:24px; }
   .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563eb; display:grid; place-items:center; border-radius:22px; background:#e7f1ff; }

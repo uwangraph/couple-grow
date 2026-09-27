@@ -168,6 +168,7 @@
   <!-- Header -->
   <div class="header">
     <div class="header-inner">
+      <a href="/wallet" class="back-link"><Icon name="back" size={18} /> Kembali ke Dompet</a>
       <div class="header-top">
         <div>
           <p class="header-sub">Kelola Pengeluaran</p>
@@ -209,8 +210,14 @@
   <!-- Body -->
   <div class="body">
     {#if loading}
-      <div class="loading-wrap">
-        <div class="spinner"></div>
+      <div class="budget-list" aria-label="Memuat anggaran">
+        {#each [1, 2] as _}
+          <div class="budget-skeleton">
+            <div class="budget-skeleton-icon"></div>
+            <div class="budget-skeleton-copy"><div></div><div></div></div>
+            <div class="budget-skeleton-track"></div>
+          </div>
+        {/each}
       </div>
 
     {:else if loadError}
@@ -226,9 +233,9 @@
         <div class="empty-icon">
           <Icon name="wallet" size={36} />
         </div>
-        <p class="empty-title">Belum ada budget</p>
-        <p class="empty-sub">Yuk atur budget bulanan per kategori!</p>
-        <button class="empty-cta" onclick={openCreateModal}>+ Set Budget Pertama</button>
+        <p class="empty-title">Belum ada anggaran</p>
+        <p class="empty-sub">Mulai dari satu kategori agar pengeluaran bulanan lebih terarah.</p>
+        <button class="empty-cta" onclick={openCreateModal}>Atur anggaran pertama</button>
       </div>
 
     {:else}
@@ -381,6 +388,8 @@
   }
 
   .header-inner { position:relative; max-width:760px; margin:auto; }
+  .back-link { display:inline-flex; align-items:center; gap:6px; min-height:44px; margin-bottom:10px; color:#dbeafe; font-size:12px; font-weight:900; text-decoration:none; }
+  .back-link:hover { color:#fff; }
   .header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:18px; }
   .header-sub { font-size:10px; color:#BFDBFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
   .header-title { display:flex; align-items:center; gap:8px; font-size:29px; font-weight:900; color:#fff; margin:0; letter-spacing:-.03em; }
@@ -422,11 +431,7 @@
   .summary-pct--warning { color:#FDE68A; }
 
   /* Body */
-  .body { max-width:760px; margin:auto; padding:24px 16px; }
-
-  .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #E0E7FF; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .body { max-width:760px; margin:auto; padding:24px 16px calc(24px + env(safe-area-inset-bottom)); }
 
   /* Empty */
   .empty-state { text-align:center; padding:60px 20px; border-radius:22px; background:rgba(255,255,255,.7); }
@@ -664,6 +669,14 @@
     border: 1px solid rgba(255,255,255,.92);
     box-shadow: 0 8px 20px rgba(30,64,175,.06);
   }
+  .budget-skeleton { display:grid; grid-template-columns:48px 1fr; column-gap:13px; row-gap:17px; min-height:126px; padding:18px; border:1px solid #e3edfa; border-radius:18px; background:rgba(255,255,255,.85); }
+  .budget-skeleton-icon,.budget-skeleton-copy div,.budget-skeleton-track { background:linear-gradient(100deg,#e8f1fb,#f8fbff,#e8f1fb); background-size:200% 100%; animation:budget-shimmer 1.4s ease-in-out infinite; }
+  .budget-skeleton-icon { width:48px; height:48px; border-radius:14px; }
+  .budget-skeleton-copy { display:flex; flex-direction:column; justify-content:center; gap:9px; }
+  .budget-skeleton-copy div { width:65%; height:12px; border-radius:7px; }
+  .budget-skeleton-copy div:last-child { width:42%; height:9px; }
+  .budget-skeleton-track { grid-column:1 / -1; height:9px; border-radius:99px; }
+  @keyframes budget-shimmer { to { background-position-x:-200%; } }
   .budget-card { border-radius: 18px; }
   .budget-track { box-shadow:none; background:#E8EEF7; }
   .budget-fill, .budget-fill--warning, .budget-fill--over { background:#2563EB; box-shadow:none; }

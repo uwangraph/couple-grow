@@ -1241,7 +1241,29 @@
   }
   .disconnect-actions .btn { flex: 1; padding: 14px; font-size: 14px; }
 
-  .hero { background: linear-gradient(145deg,#2563EB,#1D4ED8); box-shadow: 0 14px 30px rgba(37,99,235,.2); }
+  .hero { overflow:hidden; padding-top:calc(30px + env(safe-area-inset-top)); border-radius:0 0 28px 28px; background: radial-gradient(circle at 96% 4%,rgba(255,255,255,.22),transparent 38%),linear-gradient(145deg,#3187ee,#1d4ed8); box-shadow: 0 14px 30px rgba(37,99,235,.2); }
+  .hero-name { color:#fff; }
+  .hero-email { color:rgba(255,255,255,.85); }
+  .avatar-ring { border-color:rgba(255,255,255,.8); box-shadow:0 10px 24px rgba(10,48,126,.24); }
+  .partner-chip--connected { color:#fff; background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.42); }
+  .partner-chip--pending { color:#fff; background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.35); }
+  .settings-action { min-height:72px; padding:12px; }
+  .settings-action:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
+  .settings-action-copy small { font-size:12px; line-height:1.35; }
+  .settings-action-icon { width:44px; height:44px; }
+  .info-row > div:last-child { min-width:0; }
+  .info-key { color:#71849b; font-size:11px; font-weight:800; }
+  .info-val { font-size:15px; font-weight:800; overflow-wrap:anywhere; }
+  .info-emoji { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; color:#2563eb; background:#eff6ff; }
+  .form-input { min-height:46px; font-size:16px; }
+  .btn-row .btn,.input-row .btn,.logout-btn,.btn-disconnect { min-height:44px; }
+  .crop-close-btn { width:44px; height:44px; }
+  .crop-ctrl-btn { min-height:44px; }
+  @media (max-width:360px) {
+    .hero-content { gap:12px; }
+    .avatar-ring { width:66px; height:66px; }
+    .settings-action { gap:9px; }
+  }
   .card, .pairing-panel { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); border-radius: 18px; }
   .form-input, .code-input { border: 1px solid #E2E8F0; background: #F8FAFC; box-shadow: none; border-radius: 12px; }
   .form-input:focus, .code-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }

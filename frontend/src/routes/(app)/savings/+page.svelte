@@ -322,8 +322,14 @@
   <!-- Body -->
   <div class="body">
     {#if loading}
-      <div class="loading-wrap">
-        <div class="spinner"></div>
+      <div class="savings-list" aria-label="Memuat target tabungan">
+        {#each [1, 2] as _}
+          <div class="saving-skeleton">
+            <div class="saving-skeleton-icon"></div>
+            <div class="saving-skeleton-copy"><div></div><div></div></div>
+            <div class="saving-skeleton-track"></div>
+          </div>
+        {/each}
       </div>
 
     {:else if loadError}
@@ -340,8 +346,8 @@
           <Icon name="savings" size={36} />
         </div>
         <p class="empty-title">Belum ada target tabungan</p>
-        <p class="empty-sub">Yuk buat target impian bersama!</p>
-        <button class="empty-cta" onclick={() => showModal = true}>+ Buat Target Pertama</button>
+        <p class="empty-sub">Liburan, rumah, atau hal kecil yang kalian tunggu—mulai dengan satu tujuan.</p>
+        <button class="empty-cta" onclick={() => showModal = true}>Buat target pertama</button>
       </div>
 
     {:else}
@@ -1560,6 +1566,14 @@
     border: 1px solid rgba(255,255,255,.92);
     box-shadow: 0 8px 20px rgba(30,64,175,.06);
   }
+  .saving-skeleton { display:grid; grid-template-columns:48px 1fr; column-gap:13px; row-gap:17px; min-height:126px; padding:18px; border:1px solid #e3edfa; border-radius:18px; background:rgba(255,255,255,.85); }
+  .saving-skeleton-icon,.saving-skeleton-copy div,.saving-skeleton-track { background:linear-gradient(100deg,#e8f1fb,#f8fbff,#e8f1fb); background-size:200% 100%; animation:saving-shimmer 1.4s ease-in-out infinite; }
+  .saving-skeleton-icon { width:48px; height:48px; border-radius:14px; }
+  .saving-skeleton-copy { display:flex; flex-direction:column; justify-content:center; gap:9px; }
+  .saving-skeleton-copy div { width:65%; height:12px; border-radius:7px; }
+  .saving-skeleton-copy div:last-child { width:42%; height:9px; }
+  .saving-skeleton-track { grid-column:1 / -1; height:9px; border-radius:99px; }
+  @keyframes saving-shimmer { to { background-position-x:-200%; } }
   .saving-card { border-radius: 18px; }
   .saving-progress .progress-track, .contrib-bar-wrap { box-shadow: none; background: #E8EEF7; }
   .progress-fill, .contrib-bar { background: #2563EB; box-shadow: none; }

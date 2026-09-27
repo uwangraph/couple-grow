@@ -52,6 +52,10 @@
   }
 
   async function saveNote() {
+    if (!title.trim()) {
+      errorMessage = 'Isi judul catatan terlebih dahulu.';
+      return;
+    }
     loading = true;
     errorMessage = '';
     saved = false;
@@ -105,6 +109,7 @@
       <Icon name="arrow" size={20} style="transform: rotate(180deg)" />
     </button>
 
+    <span class="topbar-title">Edit catatan</span>
     <div class="topbar-actions">
       {#if id !== 'new'}
         <button type="button" class="delete-btn" onclick={deleteNote}>Hapus</button>
@@ -121,6 +126,12 @@
       {#if id !== 'new' && !title && !content}<button type="button" onclick={fetchNote}>Coba lagi</button>{/if}
     </div>
   {/if}
+
+  <div class="editor-intro">
+    <p class="eyebrow">CATATAN KALIAN</p>
+    <h1>Teruskan ceritanya.</h1>
+    <p>Perbarui ide dan rencana kalian di satu tempat.</p>
+  </div>
 
   <!-- Title Area -->
   <div class="title-area">
@@ -243,9 +254,12 @@
   .editor-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: linear-gradient(180deg, #eef7ff 0%, #f8fbff 220px, #fff 390px);
+    background: linear-gradient(180deg, #eaf5ff 0%, #f8fbff 260px, #fff 420px);
     display: flex;
     flex-direction: column;
+    width:100%;
+    max-width:760px;
+    margin:0 auto;
   }
 
   /* Topbar */
@@ -253,12 +267,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 22px 10px;
+    padding: calc(14px + env(safe-area-inset-top)) 18px 10px;
     flex-shrink: 0;
   }
   .back-btn {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     border-radius: 14px;
     background: linear-gradient(150deg, #FFFFFF 0%, #EAF4FE 100%);
     border: none;
@@ -282,6 +296,11 @@
       1px 1px 3px rgba(21, 101, 192, 0.06);
   }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .topbar-title { min-width:0; margin-left:10px; margin-right:auto; color:#1e293b; font-size:14px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .editor-intro { padding:22px 20px 0; }
+  .editor-intro .eyebrow { margin:0 0 5px; color:#2563eb; font-size:10px; font-weight:900; letter-spacing:.13em; }
+  .editor-intro h1 { margin:0 0 5px; color:#172033; font-size:clamp(23px,6vw,30px); font-weight:900; line-height:1.18; letter-spacing:-.035em; }
+  .editor-intro > p:last-child { margin:0; color:#64748b; font-size:12px; font-weight:600; line-height:1.5; }
   .editor-alert {
     display: flex;
     align-items: center;
@@ -298,6 +317,7 @@
   }
   .editor-alert button { border: 0; background: transparent; color: #be123c; font: inherit; text-decoration: underline; cursor: pointer; white-space: nowrap; }
   .delete-btn {
+    min-height: 44px;
     padding: 8px 14px;
     border-radius: 12px;
     border: none;
@@ -311,6 +331,7 @@
   }
   .delete-btn:hover { background: rgba(239, 124, 151, 0.14); }
   .save-btn {
+    min-height: 44px;
     padding: 8px 20px;
     border-radius: 12px;
     border: none;
@@ -331,7 +352,7 @@
   }
 
   /* Title */
-  .title-area { padding: 24px 22px 18px; }
+  .title-area { margin:24px 18px 0; padding:22px 20px 12px; border:1px solid #e3edfa; border-bottom:0; border-radius:20px 20px 0 0; background:rgba(255,255,255,.9); }
   .section-kicker { display: block; margin-bottom: 8px; color: #6485a5; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
   .title-input {
     width: 100%;
@@ -345,6 +366,7 @@
     margin-bottom: 12px;
   }
   .title-input::placeholder { color: #CBD5E1; }
+  .title-input:focus-visible { outline:2px solid #60a5fa; outline-offset:4px; border-radius:6px; }
   .title-meta { display: flex; gap: 8px; flex-wrap: wrap; }
   .meta-pill {
     font-size: 11px;
@@ -361,7 +383,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 22px 18px;
+    margin:0 18px;
+    padding:8px 20px 14px;
+    border-left:1px solid #e3edfa;
+    border-right:1px solid #e3edfa;
+    background:rgba(255,255,255,.9);
     flex-wrap: wrap;
   }
   .tab-pill {
@@ -406,11 +432,12 @@
   .content-area {
     flex: 1;
     overflow-y: auto;
-    padding: 22px 22px 40px;
-    margin: 0 14px 18px;
-    background: #fff;
-    border: 1px solid #e7eef6;
-    border-radius: 24px;
+    padding: 12px 20px 32px;
+    margin: 0 18px 18px;
+    background: rgba(255,255,255,.9);
+    border: 1px solid #e3edfa;
+    border-top:0;
+    border-radius: 0 0 20px 20px;
     box-shadow: 0 10px 30px rgba(38, 91, 145, .07);
   }
   .content-area--sheet { padding: 12px; }
@@ -435,8 +462,8 @@
   .check-item:focus-within { border-color: rgba(33, 150, 243, 0.4); }
 
   .check-bubble {
-    width: 26px;
-    height: 26px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: 2.5px solid #94A3B8;
     background: white;
@@ -455,7 +482,8 @@
     outline: none;
     background: transparent;
     font-family: 'Nunito', sans-serif;
-    font-size: 14px;
+    min-width:0;
+    font-size: 16px;
     font-weight: 600;
     color: #1F2937;
   }
@@ -463,8 +491,8 @@
   .check-text--done { text-decoration: line-through; color: #94A3B8; }
 
   .check-delete {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     border: none;
     background: transparent;
@@ -508,5 +536,13 @@
     font-weight: 700;
     color: #2F9A80;
     margin-top: 6px;
+  }
+  @media (max-width:360px) {
+    .topbar { padding-inline:14px; }
+    .topbar-title { font-size:13px; }
+    .title-area { margin-inline:12px; padding-inline:16px; }
+    .tab-bar { margin-inline:12px; padding-inline:16px; }
+    .content-area { margin-inline:12px; padding-inline:16px; }
+    .check-item { gap:8px; padding-inline:10px; }
   }
 </style>

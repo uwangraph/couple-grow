@@ -14,6 +14,7 @@
   let errorMsg = $state('');
   let notesError = $state('');
   let folderSaving = $state(false);
+  let notesRequestId = 0;
 
   let showFolderModal = $state(false);
   let folderName = $state('');
@@ -41,6 +42,7 @@
   }
 
   async function fetchNotes(folderId: string) {
+    const requestId = ++notesRequestId;
     selectedFolder = folderId;
     notesLoading = true;
     notesError = '';
@@ -49,9 +51,12 @@
       if (res.status === 401) { auth.logout(); goto('/login'); return; }
       if (!res.ok) throw new Error('Gagal memuat catatan');
       const data = await readApiJson<{ notes?: any[] }>(res);
-      notes = data.notes || [];
-    } catch(e) { notesError = e instanceof Error ? e.message : 'Catatan belum bisa dimuat.'; }
-    finally { notesLoading = false; loading = false; }
+      if (requestId === notesRequestId) notes = data.notes || [];
+    } catch(e) {
+      if (requestId === notesRequestId) notesError = e instanceof Error ? e.message : 'Catatan belum bisa dimuat.';
+    } finally {
+      if (requestId === notesRequestId) { notesLoading = false; loading = false; }
+    }
   }
 
   async function createFolder(e: Event) {
@@ -80,7 +85,8 @@
   let selectedFolderData = $derived(folders.find(f => String(f.id) === String(selectedFolder)));
 
   function getNotePreview(note: any): string {
-    if (note.content) return note.content.slice(0, 80);
+    if (note.content?.startsWith('__SHEET__:')) return 'Spreadsheet bersama';
+    if (note.content) return note.content.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|\u00a0/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
     try {
       const cl = JSON.parse(note.checklist || '[]');
       if (cl.length > 0) return cl.map((i: any) => (i.is_done ? '✓' : '○') + ' ' + i.text).join('  ').slice(0, 80);
@@ -88,7 +94,8 @@
     return '';
   }
 
-  function getNoteType(note: any): 'text' | 'checklist' {
+  function getNoteType(note: any): 'text' | 'checklist' | 'spreadsheet' {
+    if (note.content?.startsWith('__SHEET__:')) return 'spreadsheet';
     try {
       const cl = JSON.parse(note.checklist || '[]');
       return cl.length > 0 ? 'checklist' : 'text';
@@ -215,7 +222,7 @@
             <a href="/notes/{note.id}" class="note-card">
               <div class="note-card-top">
                 <span class="note-type-badge {type === 'checklist' ? 'note-type-badge--check' : ''}">
-                  <Icon name={type === 'checklist' ? 'check' : 'edit'} size={14} />
+                  <Icon name={type === 'checklist' ? 'check' : type === 'spreadsheet' ? 'wallet' : 'edit'} size={14} />
                 </span>
                 <span class="note-date">
                   {new Date(note.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}

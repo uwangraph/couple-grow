@@ -35,6 +35,8 @@
   let currentPath = $derived(page.url.pathname);
   const hideBottomNav = $derived(
     currentPath === '/chat' ||
+    currentPath === '/analytics' ||
+    currentPath === '/budget' ||
     currentPath.startsWith('/notes') ||
     currentPath.startsWith('/wishlist') ||
     currentPath.startsWith('/notifications')

@@ -6,6 +6,7 @@
   import Icon from '$lib/Icon.svelte';
 
   let loading = $state(true);
+  let loadError = $state('');
   let spendingPattern = $state<any[]>([]);
   let categoryBreakdown = $state<any[]>([]);
   let monthComparison = $state<any>(null);
@@ -21,6 +22,7 @@
 
   async function fetchAnalytics() {
     loading = true;
+    loadError = '';
     try {
       // Fetch all analytics in parallel
       const [patternRes, breakdownRes, comparisonRes, velocityRes] = await Promise.all([
@@ -37,6 +39,15 @@
           headers: { 'Authorization': `Bearer ${auth.token}` }
         })
       ]);
+
+      if ([patternRes, breakdownRes, comparisonRes, velocityRes].some(res => res.status === 401)) {
+        auth.logout();
+        goto('/login');
+        return;
+      }
+      if ([patternRes, breakdownRes, comparisonRes, velocityRes].some(res => !res.ok)) {
+        loadError = 'Sebagian data analitik belum bisa dimuat.';
+      }
 
       if (patternRes.ok) {
         const data = await readApiJson<{ pattern?: any[] }>(patternRes);
@@ -58,31 +69,41 @@
         savingsVelocity = data.velocity || [];
       }
     } catch(e) {
-      console.error('Failed to fetch analytics:', e);
+      loadError = 'Analitik belum bisa dimuat. Periksa koneksi lalu coba lagi.';
     } finally {
       loading = false;
     }
   }
 
   async function changePatternPeriod(period: string) {
-    patternPeriod = period;
-    const res = await fetch(`${API_URL}/analytics/spending-pattern?period=${period}`, {
-      headers: { 'Authorization': `Bearer ${auth.token}` }
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(`${API_URL}/analytics/spending-pattern?period=${period}`, {
+        headers: { 'Authorization': `Bearer ${auth.token}` }
+      });
+      if (res.status === 401) { auth.logout(); goto('/login'); return; }
+      if (!res.ok) throw new Error('Periode pengeluaran belum bisa dimuat.');
       const data = await readApiJson<{ pattern?: any[] }>(res);
       spendingPattern = data.pattern || [];
+      patternPeriod = period;
+      if (loadError.startsWith('Periode')) loadError = '';
+    } catch {
+      loadError = 'Periode pengeluaran belum bisa dimuat. Coba lagi.';
     }
   }
 
   async function changeBreakdownPeriod(period: string) {
-    breakdownPeriod = period;
-    const res = await fetch(`${API_URL}/analytics/category-breakdown?period=${period}`, {
-      headers: { 'Authorization': `Bearer ${auth.token}` }
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(`${API_URL}/analytics/category-breakdown?period=${period}`, {
+        headers: { 'Authorization': `Bearer ${auth.token}` }
+      });
+      if (res.status === 401) { auth.logout(); goto('/login'); return; }
+      if (!res.ok) throw new Error('Periode kategori belum bisa dimuat.');
       const data = await readApiJson<{ breakdown?: any[] }>(res);
       categoryBreakdown = data.breakdown || [];
+      breakdownPeriod = period;
+      if (loadError.startsWith('Periode')) loadError = '';
+    } catch {
+      loadError = 'Periode kategori belum bisa dimuat. Coba lagi.';
     }
   }
 
@@ -129,6 +150,13 @@
         <div class="spinner"></div>
       </div>
     {:else}
+
+      {#if loadError}
+        <div class="analytics-alert" role="alert">
+          <span>{loadError}</span>
+          <button type="button" onclick={fetchAnalytics}>Coba lagi</button>
+        </div>
+      {/if}
 
       <!-- Month Comparison Card -->
       {#if monthComparison}
@@ -350,14 +378,16 @@
   }
 
   .header-inner { position: relative; }
-  .back-link { display:inline-flex; align-items:center; gap:6px; padding:0; margin:0 0 24px; border:0; background:none; color:#dbeafe; font:700 13px 'Nunito',sans-serif; cursor:pointer; }
+  .back-link { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 8px 0 0; margin:0 0 14px; border:0; background:none; color:#dbeafe; font:800 13px 'Nunito',sans-serif; cursor:pointer; }
   .header-top { display: flex; align-items: flex-start; justify-content: space-between; }
   .header-sub { font-size: 11px; color: #bfdbfe; margin: 0 0 7px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; }
   .header-title { display:flex; align-items:center; gap:9px; font-size: 30px; font-weight: 900; color: #fff; margin: 0; letter-spacing:-.03em; }
   .header-description { max-width:330px; margin:8px 0 0; color:#dbeafe; font-size:13px; line-height:1.5; font-weight:600; }
 
   /* Body */
-  .body { width:100%; box-sizing:border-box; padding:20px 16px 36px; max-width:760px; margin:auto; }
+  .body { width:100%; box-sizing:border-box; padding:20px 16px calc(36px + env(safe-area-inset-bottom)); max-width:760px; margin:auto; }
+  .analytics-alert { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; padding:14px 16px; border:1px solid #fecdd3; border-radius:14px; color:#9f1239; background:#fffafb; font-size:12px; font-weight:800; line-height:1.4; }
+  .analytics-alert button { flex:none; min-height:40px; padding:0 12px; border:1px solid #fecdd3; border-radius:10px; color:#be123c; background:#fff; font:900 12px 'Nunito',sans-serif; cursor:pointer; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }

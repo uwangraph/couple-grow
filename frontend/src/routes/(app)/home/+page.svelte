@@ -169,9 +169,9 @@
             </span>
           </button>
         {:else if auth.user?.partner_id}
-          <button class="partner-line" style="background:none; border:none; cursor:pointer; padding:0; text-align:left;" onclick={() => showPartnerModal = true}>
+          <a href="/profile" class="partner-line partner-line--link">
             <span class="partner-chip"><Icon name="couple" size={14} /> Terhubung dengan pasangan</span>
-          </button>
+          </a>
         {:else}
           <a href="/partner" class="partner-cta">
             <Icon name="link" size={14} /> Hubungkan pasangan →
@@ -249,7 +249,12 @@
     </div>
 
     <!-- Active Savings -->
-    {#if savingsError}
+    {#if loading}
+      <div class="section" aria-label="Memuat tabungan">
+        <div class="section-header"><p class="section-title">Tabungan Bersama</p></div>
+        <div class="skeleton skeleton--saving"></div>
+      </div>
+    {:else if savingsError}
       <div class="section-error" role="alert">Tabungan belum bisa dimuat. <button type="button" onclick={fetchSavings}>Coba lagi</button></div>
     {:else if savings.length > 0}
       <div class="section">
@@ -275,6 +280,17 @@
           {/each}
         </div>
       </div>
+    {:else}
+      <div class="section">
+        <div class="section-header">
+          <p class="section-title">Tabungan Bersama</p>
+        </div>
+        <a href="/savings" class="savings-empty">
+          <span class="savings-empty-icon"><Icon name="savings" size={23} /></span>
+          <span class="savings-empty-copy"><strong>Mulai dari satu impian</strong><small>Buat target pertama untuk kalian capai bersama.</small></span>
+          <span class="savings-empty-arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
     {/if}
 
     <!-- Recent Transactions -->
@@ -296,12 +312,12 @@
       {:else if transactions.length === 0}
         <div class="empty-state">
           <Icon name="empty" size={36} style="opacity:0.5;margin-bottom:10px;" />
-          <p>Belum ada transaksi.</p>
-          <a href="/wallet" class="empty-link">Catat sekarang →</a>
+          <p>Belum ada transaksi. Mulai catat agar saldo bersama terlihat jelas.</p>
+          <a href="/wallet?new=expense" class="empty-link">Catat transaksi pertama →</a>
         </div>
       {:else}
         {#each transactions.slice(0, 5) as t}
-          <a href="/wallet" class="tx-row">
+          <a href="/wallet?transaction={encodeURIComponent(t.id)}" class="tx-row" aria-label="Lihat detail transaksi {t.category}">
             <div class="tx-icon {t.type === 'income' ? 'tx-icon--in' : 'tx-icon--out'}">
               <Icon name={t.type === 'income' ? 'income' : 'expense'} size={18} />
             </div>
@@ -483,6 +499,7 @@
     box-shadow: 0 5px 12px rgba(30,64,175,.14);
   }
   .quick-btn:hover .quick-icon { transform: scale(1.06) rotate(-3deg); }
+  .partner-line--link { text-decoration:none; }
   .insights-link { display:flex; align-items:center; gap:13px; padding:16px; border-radius:20px; margin:2px 0 8px; text-decoration:none; color:#173457; background:linear-gradient(115deg,rgba(255,255,255,.94),rgba(226,240,255,.85)); border:1px solid rgba(255,255,255,.95); box-shadow:0 8px 22px rgba(30,64,175,.08); }
   .insights-icon { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:14px; color:#fff; background:linear-gradient(145deg,#60a5fa,#1976d2); box-shadow:0 5px 14px rgba(37,99,235,.2); }
   .insights-copy { min-width:0; display:flex; flex:1; flex-direction:column; gap:3px; }
@@ -514,6 +531,13 @@
 
   /* Savings */
   .savings-list { display: flex; flex-direction: column; gap: 10px; }
+  .savings-empty { display:flex; align-items:center; gap:12px; min-height:90px; padding:16px; border:1px solid #dbeafe; border-radius:18px; background:linear-gradient(120deg,#fff,#eff6ff); color:inherit; text-decoration:none; box-shadow:0 8px 22px rgba(30,64,175,.06); }
+  .savings-empty-icon { display:grid; place-items:center; flex:none; width:48px; height:48px; border-radius:14px; color:#2563eb; background:#dbeafe; }
+  .savings-empty-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:3px; }
+  .savings-empty-copy strong { color:#172033; font-size:14px; font-weight:900; }
+  .savings-empty-copy small { color:#64748b; font-size:12px; line-height:1.4; }
+  .savings-empty-arrow { color:#2563eb; font-size:21px; }
+  .savings-empty:hover { border-color:#93c5fd; }
   .savings-card {
     display:block;
     text-decoration:none;
@@ -621,6 +645,12 @@
   .skeleton { border-radius: 12px; background: linear-gradient(90deg, #EEF2F7 25%, #E2E8F0 50%, #EEF2F7 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
   .skeleton--balance { height: 36px; width: 60%; margin-bottom: 18px; }
   .skeleton--row { height: 60px; margin-bottom: 8px; }
+  .skeleton--saving { height:94px; border-radius:18px; }
+  @media (max-width:420px) {
+    .quick-actions { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:24px; }
+    .quick-btn { min-height:68px; flex-direction:row; justify-content:flex-start; gap:10px; padding:11px; text-align:left; font-size:12px; line-height:1.25; }
+    .quick-icon { width:38px; height:38px; flex:none; }
+  }
 
   /* Modal Styles */
   .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(30,41,59,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index:100; display:flex; align-items:flex-end; justify-content:center; }

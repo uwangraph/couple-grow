@@ -95,7 +95,11 @@
       <div class="empty-state">
         <span class="empty-icon"><Icon name="bell" size={32} /></span>
         <strong>Belum ada kabar baru</strong>
-        <span>Saat ada aktivitas bersama pasangan, kabarnya akan muncul di sini.</span>
+        <span>Aktivitas kalian akan muncul di sini. Mulai dari rencana kecil bersama.</span>
+        <div class="empty-actions">
+          <a href="/notes">Buat catatan</a>
+          <a href="/wishlist">Lihat wishlist</a>
+        </div>
       </div>
     {:else}
       <div class="list-heading"><h2>Terbaru</h2><span>{notifications.length} kabar</span></div>
@@ -118,9 +122,9 @@
 
 <style>
   .page { min-height:100%; color:#172033; font-family:'Nunito',sans-serif; }
-  .header { padding:24px 22px 28px; border-radius:0 0 28px 28px; background:linear-gradient(155deg,#1d4ed8,#2563eb 55%,#3b82f6); box-shadow:0 12px 26px rgba(37,99,235,.18); }
+  .header { padding:calc(24px + env(safe-area-inset-top)) 22px 28px; border-radius:0 0 28px 28px; background:linear-gradient(155deg,#1d4ed8,#2563eb 55%,#3b82f6); box-shadow:0 12px 26px rgba(37,99,235,.18); }
   .header-inner { max-width:760px; margin:auto; }
-  .back { display:inline-flex; align-items:center; gap:6px; margin:0 0 24px; padding:0; border:0; background:none; color:#dbeafe; font:700 13px 'Nunito',sans-serif; cursor:pointer; }
+  .back { display:inline-flex; align-items:center; gap:6px; min-height:44px; margin:0 0 14px; padding:0 8px 0 0; border:0; background:none; color:#dbeafe; font:800 13px 'Nunito',sans-serif; cursor:pointer; }
   .title-row { display:flex; align-items:center; gap:13px; }
   .title-icon { width:49px; height:49px; flex:none; display:grid; place-items:center; border:1px solid rgba(255,255,255,.3); border-radius:16px; color:white; background:rgba(255,255,255,.15); }
   .title-row p { margin:0 0 3px; color:#bfdbfe; font-size:10px; font-weight:900; letter-spacing:.12em; }
@@ -146,11 +150,14 @@
   .item-actor { max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#2563eb; font-weight:900; }
   .item-date { color:#64748b; font-weight:700; }
   .item-arrow { align-self:center; color:#60a5fa; font-size:21px; }
-  .empty-state { min-height:350px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px; text-align:center; }
+  .empty-state { min-height:min(460px,60svh); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px; padding:28px 20px; border:1px solid rgba(255,255,255,.85); border-radius:24px; background:rgba(255,255,255,.52); box-shadow:0 10px 28px rgba(30,64,175,.04); text-align:center; }
   .empty-icon { width:76px; height:76px; display:grid; place-items:center; margin-bottom:6px; border:1px solid rgba(255,255,255,.95); border-radius:24px; background:rgba(255,255,255,.75); color:#60a5fa; box-shadow:0 12px 25px rgba(30,64,175,.08); }
   .empty-state strong { font-size:17px; font-weight:900; }
   .empty-state > span:last-of-type { max-width:255px; color:#64748b; font-size:12px; line-height:1.6; }
-  .retry { margin-top:7px; padding:10px 18px; border:0; border-radius:11px; background:#2563eb; color:#fff; font:800 12px 'Nunito',sans-serif; cursor:pointer; }
+  .empty-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:8px; }
+  .empty-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 15px; border:1px solid #bfdbfe; border-radius:12px; color:#1d4ed8; background:#fff; text-decoration:none; font-size:12px; font-weight:900; }
+  .empty-actions a:first-child { border-color:#2563eb; color:#fff; background:#2563eb; }
+  .retry { min-height:44px; margin-top:7px; padding:10px 18px; border:0; border-radius:11px; background:#2563eb; color:#fff; font:800 12px 'Nunito',sans-serif; cursor:pointer; }
   .loading-list { display:grid; gap:10px; }
   .skeleton { height:88px; border-radius:18px; background:linear-gradient(100deg,rgba(255,255,255,.6),rgba(255,255,255,.95),rgba(255,255,255,.6)); background-size:200% 100%; animation:shimmer 1.4s infinite; }
   @keyframes shimmer { to { background-position-x:-200%; } }

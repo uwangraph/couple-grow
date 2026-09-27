@@ -460,19 +460,23 @@
   /* One calm writing surface instead of separate raised controls. */
   .topbar { background:rgba(255,255,255,.84); }
   .back-btn { border:1px solid #dbeafe; border-radius:12px; background:#eff6ff; box-shadow:none; }
-  .save-btn { min-height:38px; font-weight:900; box-shadow:0 6px 14px rgba(37,99,235,.18); }
+  .back-btn { width:44px; height:44px; }
+  .save-btn { min-height:44px; font-weight:900; box-shadow:0 6px 14px rgba(37,99,235,.18); }
   .save-btn--saved { background:#0f9f83; box-shadow:none; }
   .title-area { margin:24px 18px 0; padding:22px 20px 12px; border-radius:20px 20px 0 0; border-color:#e3edfa; }
   .title-input { font-size:clamp(21px,5vw,26px); letter-spacing:-.025em; }
   .title-input::placeholder,.text-area::placeholder,.check-text::placeholder { color:#94a3b8; }
   .meta-pill,.tab-badge { color:#1d4ed8; background:#eaf3ff; box-shadow:none; font-weight:800; }
   .tab-bar { margin:0 18px; padding:8px 20px 14px; border-color:#e3edfa; }
-  .tab-pill { min-height:36px; border-radius:10px; font-weight:800; }
+  .tab-pill { min-height:44px; border-radius:10px; font-weight:800; }
   .tab-pill--active { border-color:#bfdbfe; background:#eff6ff; color:#1d4ed8; box-shadow:none; }
   .tab-progress-fill { background:#2563eb; box-shadow:none; }
   .content-area { border-color:#e3edfa; padding:12px 20px 26px; }
-  .text-area { min-height:320px; font-size:15px; line-height:1.7; }
+  .text-area { min-height:320px; font-size:16px; line-height:1.7; }
   .check-item { border-color:#e3edfa; background:#f8fbff; }
+  .check-bubble,.check-delete { width:36px; height:36px; }
+  .check-text { min-width:0; font-size:16px; }
+  .title-input:focus-visible { outline:2px solid #60a5fa; outline-offset:4px; border-radius:6px; }
   .check-bubble--done { background:#168f78; border-color:#168f78; }
   .add-item-btn { color:#2563eb; border-color:#bfdbfe; font-weight:800; }
   @media (max-width:360px) {
