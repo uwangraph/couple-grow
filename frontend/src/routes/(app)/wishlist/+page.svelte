@@ -281,6 +281,12 @@
                 {#if wish.estimated_price}
                   <p class="wish-price">{formatRp(wish.estimated_price)}</p>
                 {/if}
+                {#if wish.linked_saving_id}
+                  {@const saving = savings.find(s => s.id === wish.linked_saving_id)}
+                  {#if saving}
+                    <div class="wish-saving"><Icon name="savings" size={14} /><span>Tabungan: {saving.name}</span></div>
+                  {/if}
+                {/if}
               </div>
             {/each}
           </div>
@@ -315,6 +321,12 @@
                 {/if}
                 {#if wish.estimated_price}
                   <p class="wish-price">{formatRp(wish.estimated_price)}</p>
+                {/if}
+                {#if wish.linked_saving_id}
+                  {@const saving = savings.find(s => s.id === wish.linked_saving_id)}
+                  {#if saving}
+                    <div class="wish-saving"><Icon name="savings" size={14} /><span>Tabungan: {saving.name}</span></div>
+                  {/if}
                 {/if}
               </div>
             {/each}
@@ -707,4 +719,21 @@
   .menu-btn { border-radius: 10px; box-shadow: none; }
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .priority-badge { font-weight:900; font-size:11px; letter-spacing:.02em; }
+  .wish-card { display:flex; flex-direction:column; min-width:0; }
+  .wish-name,.wish-saving span { overflow-wrap:anywhere; }
+  .wish-price { margin-top:auto; color:#1d4ed8; }
+  .wish-saving { align-self:flex-start; color:#1d4ed8; background:#eff6ff; border:1px solid #dbeafe; font-weight:800; }
+  .wish-check { width:42px; height:42px; }
+  .wish-menu { gap:8px; }
+  .menu-btn { width:40px; height:40px; background:#eff6ff; color:#2563eb; border:1px solid #dbeafe; }
+  .menu-btn:hover { background:#dbeafe; }
+  .menu-btn--delete,.menu-btn--delete:hover { background:#fff1f2; color:#e11d48; border-color:#ffe4e6; }
+  .modal { box-shadow:0 -18px 40px rgba(15,55,140,.14); padding-bottom:max(24px,env(safe-area-inset-bottom)); max-height:calc(100dvh - 32px); }
+  .modal-cancel { color:#475569; background:#f1f5f9; border-radius:12px; }
+  @media (max-width:380px) {
+    .header { padding-inline:18px; }
+    .create-btn { padding:10px 12px; }
+    .modal { padding-inline:18px; }
+  }
 </style>

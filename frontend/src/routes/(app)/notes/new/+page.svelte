@@ -71,6 +71,12 @@
 
   {#if errorMsg}<p class="save-error" role="alert">{errorMsg}</p>{/if}
 
+  <div class="editor-intro">
+    <p class="eyebrow">RUANG UNTUK IDE KALIAN</p>
+    <h1>Tulis yang berarti.</h1>
+    <p>Simpan cerita, rencana, atau daftar kecil untuk dikerjakan bersama.</p>
+  </div>
+
   <!-- Title Area -->
   <div class="title-area">
     <input
@@ -93,12 +99,14 @@
     <button
       class="tab-pill {activeTab === 'text' ? 'tab-pill--active' : ''}"
       onclick={() => activeTab = 'text'}
+      aria-pressed={activeTab === 'text'}
     >
       <Icon name="edit" size={14} /> Teks
     </button>
     <button
       class="tab-pill {activeTab === 'checklist' ? 'tab-pill--active' : ''}"
       onclick={() => activeTab = 'checklist'}
+      aria-pressed={activeTab === 'checklist'}
     >
       <Icon name="check" size={14} /> Checklist
       {#if checklist.length > 0}
@@ -181,6 +189,9 @@
     background: transparent;
     display: flex;
     flex-direction: column;
+    width:100%;
+    max-width:760px;
+    margin:0 auto;
   }
 
   /* Topbar */
@@ -195,6 +206,10 @@
     flex-shrink: 0;
   }
   .topbar-title { font-size:14px; font-weight:800; color:#172033; }
+  .editor-intro { padding:26px 20px 2px; }
+  .eyebrow { margin:0 0 6px; color:#2563eb; font-size:10px; font-weight:900; letter-spacing:.13em; }
+  .editor-intro h1 { margin:0 0 5px; color:#172033; font-size:clamp(23px,6vw,30px); line-height:1.18; font-weight:900; letter-spacing:-.035em; }
+  .editor-intro > p:last-child { margin:0; color:#64748b; font-size:12px; font-weight:600; line-height:1.5; }
   .save-error { margin:14px 20px 0; padding:11px 13px; border-radius:12px; background:#fff1f2; color:#be123c; font-size:12px; font-weight:700; }
   .back-btn {
     width: 38px;
@@ -440,5 +455,29 @@
     font-weight: 700;
     color: #2F9A80;
     margin-top: 6px;
+  }
+
+  /* One calm writing surface instead of separate raised controls. */
+  .topbar { background:rgba(255,255,255,.84); }
+  .back-btn { border:1px solid #dbeafe; border-radius:12px; background:#eff6ff; box-shadow:none; }
+  .save-btn { min-height:38px; font-weight:900; box-shadow:0 6px 14px rgba(37,99,235,.18); }
+  .save-btn--saved { background:#0f9f83; box-shadow:none; }
+  .title-area { margin:24px 18px 0; padding:22px 20px 12px; border-radius:20px 20px 0 0; border-color:#e3edfa; }
+  .title-input { font-size:clamp(21px,5vw,26px); letter-spacing:-.025em; }
+  .title-input::placeholder,.text-area::placeholder,.check-text::placeholder { color:#94a3b8; }
+  .meta-pill,.tab-badge { color:#1d4ed8; background:#eaf3ff; box-shadow:none; font-weight:800; }
+  .tab-bar { margin:0 18px; padding:8px 20px 14px; border-color:#e3edfa; }
+  .tab-pill { min-height:36px; border-radius:10px; font-weight:800; }
+  .tab-pill--active { border-color:#bfdbfe; background:#eff6ff; color:#1d4ed8; box-shadow:none; }
+  .tab-progress-fill { background:#2563eb; box-shadow:none; }
+  .content-area { border-color:#e3edfa; padding:12px 20px 26px; }
+  .text-area { min-height:320px; font-size:15px; line-height:1.7; }
+  .check-item { border-color:#e3edfa; background:#f8fbff; }
+  .check-bubble--done { background:#168f78; border-color:#168f78; }
+  .add-item-btn { color:#2563eb; border-color:#bfdbfe; font-weight:800; }
+  @media (max-width:360px) {
+    .editor-intro { padding-top:20px; }
+    .tab-bar { padding-inline:14px; }
+    .tab-pill { padding:7px 10px; }
   }
 </style>

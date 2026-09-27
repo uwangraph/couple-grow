@@ -77,7 +77,7 @@
     finally { folderSaving = false; }
   }
 
-  let selectedFolderData = $derived(folders.find(f => f.id === selectedFolder));
+  let selectedFolderData = $derived(folders.find(f => String(f.id) === String(selectedFolder)));
 
   function getNotePreview(note: any): string {
     if (note.content) return note.content.slice(0, 80);
@@ -125,6 +125,7 @@
             <button
               class="folder-tab {String(selectedFolder) === String(f.id) ? 'folder-tab--active' : ''}"
               onclick={() => fetchNotes(f.id)}
+              aria-pressed={String(selectedFolder) === String(f.id)}
             >
               <Icon name="folder" size={14} />
               {f.name}
@@ -169,7 +170,7 @@
             </div>
             <div>
               <p class="section-title">{selectedFolderData.name}</p>
-              <p class="section-sub">{notes.length} catatan</p>
+              <p class="section-sub">{notesLoading ? 'Memuat catatan...' : `${notes.length} catatan`}</p>
             </div>
           </div>
           {#if selectedFolder}
@@ -506,4 +507,28 @@
   .folder-tab { border-radius: 10px; }
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .notes-root { width:100%; }
+  .folder-tab { min-height:38px; font-weight:800; }
+  .new-folder-btn { min-height:40px; font-weight:900; }
+  .section-header { gap:12px; }
+  .section-title-group { min-width:0; }
+  .section-title { overflow-wrap:anywhere; font-weight:900; }
+  .section-sub { color:#64748b; font-weight:700; }
+  .section-emoji { width:42px; height:42px; display:grid; place-items:center; flex:none; border-radius:13px; color:#2563eb; background:#eaf3ff; }
+  .new-note-btn { min-height:40px; display:inline-flex; align-items:center; padding-inline:14px; font-weight:900; }
+  .note-card { min-width:0; min-height:132px; border-color:#e3edfa; background:rgba(255,255,255,.94); }
+  .note-card:hover { border-color:#bfdbfe; transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.1); }
+  .note-type-badge,.note-type-badge--check { width:32px; height:32px; border-radius:10px; background:#eaf3ff; color:#2563eb; box-shadow:none; }
+  .note-type-badge--check { background:#e7f8f3; color:#168f78; }
+  .note-date { color:#64748b; font-weight:800; }
+  .note-title { overflow-wrap:anywhere; }
+  .modal { max-height:calc(100dvh - 32px); overflow-y:auto; padding-bottom:max(24px,env(safe-area-inset-bottom)); box-shadow:0 -18px 40px rgba(15,55,140,.14); }
+  .modal-icon-circle { border-radius:16px; background:#eaf3ff; color:#2563eb; box-shadow:none; }
+  .modal-cancel { color:#475569; font-weight:800; }
+  @media (max-width:380px) {
+    .header { padding-inline:18px; }
+    .body { padding-inline:14px; }
+    .new-folder-btn { padding-inline:10px; }
+    .modal { padding-inline:18px; }
+  }
 </style>

@@ -1568,4 +1568,28 @@
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
   .modal-submit, .milestone-btn { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.22); border-radius: 14px; }
+  .summary-row > div,.saving-amounts .amount-item { min-width:0; max-width:50%; }
+  .summary-amount,.amount-val { overflow-wrap:anywhere; }
+  .saving-card { min-width:0; border-color:#e3edfa; background:rgba(255,255,255,.94); }
+  .saving-card:hover { border-color:#bfdbfe; transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.1); }
+  .saving-meta { min-width:0; }
+  .saving-name,.saving-creator { overflow-wrap:anywhere; }
+  .saving-creator { color:#64748b; font-weight:700; }
+  .amount-label { color:#64748b; font-weight:800; }
+  .amount-val { font-size:clamp(12px,3.8vw,16px); font-weight:900; }
+  .amount-val--collected { color:#1d4ed8; }
+  .amount-val--remaining { color:#475569; }
+  .progress-track { padding:0; height:9px; }
+  .progress-fill--done { background:#168f78; }
+  .modal { max-height:calc(100dvh - 32px); overflow-y:auto; padding-bottom:max(24px,env(safe-area-inset-bottom)); box-shadow:0 -18px 40px rgba(15,55,140,.14); }
+  .form-input:not(.form-input--amount) { min-height:48px; font-size:16px; }
+  .modal-cancel { color:#475569; background:#f1f5f9; border-radius:12px; }
+  .modal-submit--green { background:#168f78; box-shadow:0 7px 16px rgba(22,143,120,.2); }
+  .modal-submit--red { background:#df4264; box-shadow:0 7px 16px rgba(223,66,100,.2); }
+  @media (max-width:380px) {
+    .header { padding-inline:18px; }
+    .body { padding-inline:14px; }
+    .create-btn { padding-inline:10px; }
+    .modal { padding-inline:18px; }
+  }
 </style>

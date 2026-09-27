@@ -9,6 +9,8 @@
   let transactions = $state<any[]>([]);
   let savings = $state<any[]>([]);
   let loading = $state(true);
+  let transactionsError = $state(false);
+  let savingsError = $state(false);
   let onboarding: any;
 
   const hour = new Date().getHours();
@@ -33,6 +35,7 @@
 
   async function fetchTransactions() {
     if (!auth.token) return;
+    transactionsError = false;
     try {
       const res = await fetch(`${API_URL}/transactions`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
@@ -41,11 +44,12 @@
       if (!res.ok) throw new Error('Gagal memuat transaksi');
       const data = await readApiJson<{ transactions?: any[] }>(res);
       if (res.ok) transactions = data.transactions || [];
-    } catch(e) {}
+    } catch(e) { transactionsError = true; }
   }
 
   async function fetchSavings() {
     if (!auth.token) return;
+    savingsError = false;
     try {
       const res = await fetch(`${API_URL}/savings`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
@@ -54,7 +58,7 @@
       if (!res.ok) throw new Error('Gagal memuat tabungan');
       const data = await readApiJson<{ savings?: any[] }>(res);
       if (res.ok) savings = data.savings || [];
-    } catch(e) {}
+    } catch(e) { savingsError = true; }
   }
 
   let totalBalance = $derived(
@@ -185,14 +189,14 @@
       {#if loading}
         <div class="skeleton skeleton--balance"></div>
       {:else}
-        <h2 class="balance-amount">{formatRp(totalBalance)}</h2>
+        <h2 class="balance-amount">{transactionsError ? '—' : formatRp(totalBalance)}</h2>
       {/if}
       <div class="balance-split">
         <div class="balance-item balance-item--in">
           <span class="balance-item-icon">↑</span>
           <div>
             <p class="balance-item-label">Masuk</p>
-            <p class="balance-item-val">{loading ? '...' : formatCompact(totalIncome)}</p>
+            <p class="balance-item-val">{loading ? '...' : transactionsError ? '—' : formatCompact(totalIncome)}</p>
           </div>
         </div>
         <div class="balance-item-sep"></div>
@@ -200,10 +204,13 @@
           <span class="balance-item-icon">↓</span>
           <div>
             <p class="balance-item-label">Keluar</p>
-            <p class="balance-item-val">{loading ? '...' : formatCompact(totalExpense)}</p>
+            <p class="balance-item-val">{loading ? '...' : transactionsError ? '—' : formatCompact(totalExpense)}</p>
           </div>
         </div>
       </div>
+      {#if transactionsError}
+        <button type="button" class="balance-retry" onclick={fetchTransactions}>Saldo belum termuat · Coba lagi</button>
+      {/if}
     </div>
   </div>
 
@@ -212,14 +219,14 @@
 
     <!-- Quick Actions -->
     <div class="quick-actions">
-      <button class="quick-btn quick-btn--expense" onclick={() => goto('/wallet')}>
+      <button class="quick-btn quick-btn--expense" onclick={() => goto('/wallet?new=expense')}>
         <div class="quick-icon quick-icon--red">
           <Icon name="expense" size={20} />
         </div>
         <span>Catat Pengeluaran</span>
       </button>
       
-      <button class="quick-btn quick-btn--income" onclick={() => goto('/wallet')}>
+      <button class="quick-btn quick-btn--income" onclick={() => goto('/wallet?new=income')}>
         <div class="quick-icon quick-icon--green">
           <Icon name="income" size={20} />
         </div>
@@ -242,7 +249,9 @@
     </div>
 
     <!-- Active Savings -->
-    {#if savings.length > 0}
+    {#if savingsError}
+      <div class="section-error" role="alert">Tabungan belum bisa dimuat. <button type="button" onclick={fetchSavings}>Coba lagi</button></div>
+    {:else if savings.length > 0}
       <div class="section">
         <div class="section-header">
           <p class="section-title">Tabungan Aktif</p>
@@ -250,8 +259,8 @@
         </div>
         <div class="savings-list">
           {#each savings.slice(0, 2) as s}
-            {@const pct = Math.min(Math.round((s.current_amount / s.target_amount) * 100), 100)}
-            <div class="savings-card">
+            {@const pct = s.target_amount > 0 ? Math.max(0, Math.min(Math.round((s.current_amount / s.target_amount) * 100), 100)) : 0}
+            <a href="/savings/{s.id}" class="savings-card" aria-label="Lihat tabungan {s.name}, {pct}% tercapai">
               <div class="savings-row">
                 <div>
                   <p class="savings-name">{s.name}</p>
@@ -262,7 +271,7 @@
               <div class="progress-track">
                 <div class="progress-fill" style="width:{pct}%"></div>
               </div>
-            </div>
+            </a>
           {/each}
         </div>
       </div>
@@ -279,6 +288,11 @@
         {#each [1,2,3] as _}
           <div class="skeleton skeleton--row"></div>
         {/each}
+      {:else if transactionsError}
+        <div class="empty-state" role="alert">
+          <p>Transaksi belum bisa dimuat.</p>
+          <button type="button" class="empty-link" onclick={fetchTransactions}>Coba lagi</button>
+        </div>
       {:else if transactions.length === 0}
         <div class="empty-state">
           <Icon name="empty" size={36} style="opacity:0.5;margin-bottom:10px;" />
@@ -420,6 +434,7 @@
   .balance-item-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.7); margin: 0 0 2px; }
   .balance-item--in .balance-item-val, .balance-item--out .balance-item-val { color: #fff; }
   .balance-item-val { font-size: 14px; font-weight: 700; margin: 0; }
+  .balance-retry { margin-top:12px; padding:8px 0 0; border:0; border-top:1px solid rgba(255,255,255,.25); width:100%; background:none; color:#fff; font:800 11px 'Nunito',sans-serif; text-align:left; cursor:pointer; }
 
   /* Quick Actions */
   .quick-actions {
@@ -494,10 +509,15 @@
   .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .section-title { font-size: 15px; font-weight: 800; color: #172033; margin: 0; letter-spacing: -0.01em; }
   .section-more { font-size: 13px; font-weight: 600; color: #1976D2; text-decoration: none; }
+  .section-error { margin-bottom:20px; padding:13px 15px; border:1px solid #fecdd3; border-radius:14px; background:#fffafb; color:#9f3450; font-size:12px; font-weight:700; }
+  .section-error button { margin-left:5px; padding:0; border:0; background:none; color:#1d4ed8; font:900 12px 'Nunito',sans-serif; cursor:pointer; }
 
   /* Savings */
   .savings-list { display: flex; flex-direction: column; gap: 10px; }
   .savings-card {
+    display:block;
+    text-decoration:none;
+    color:inherit;
     background: rgba(255,255,255,.84);
     border: 1px solid rgba(255,255,255,.92);
     border-radius: 18px;
@@ -505,6 +525,9 @@
     box-shadow: 0 7px 18px rgba(30,64,175,.06);
   }
   .savings-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .savings-row > div:first-child { min-width:0; }
+  .savings-name,.savings-sub { overflow-wrap:anywhere; }
+  .savings-card:hover { border-color:#bfdbfe; transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.1); }
   .savings-name { font-weight: 700; color: #1F2937; font-size: 14px; margin: 0 0 3px; }
   .savings-sub { font-size: 12px; color: #94A3B8; margin: 0; }
   .savings-pct-badge {

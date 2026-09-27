@@ -357,7 +357,7 @@
     </div>
     <form onsubmit={topupSaving} class="mform">
       <label class="mlabel" for="topup-amt">Nominal (Rp)</label>
-      <input id="topup-amt" type="number" bind:value={topupAmount} required placeholder="0" class="minput minput--big minput--green"/>
+      <input id="topup-amt" type="number" bind:value={topupAmount} required min="1" inputmode="numeric" placeholder="0" class="minput minput--big minput--green"/>
       <div class="mactions">
         <button type="button" class="mbtn-cancel" onclick={()=>showTopupModal=false}>Batal</button>
         <button type="submit" class="mbtn mbtn--green">Top Up</button>
@@ -375,7 +375,7 @@
     <div class="minfo-red"><span>Saldo tersedia</span><span class="mval-red">{fmt(saving.current_amount)}</span></div>
     <form onsubmit={deductSaving} class="mform">
       <label class="mlabel" for="deduct-amt">Nominal (Rp)</label>
-      <input id="deduct-amt" type="number" bind:value={deductAmount} required placeholder="0" max={saving.current_amount} class="minput minput--big minput--red"/>
+      <input id="deduct-amt" type="number" bind:value={deductAmount} required min="1" inputmode="numeric" placeholder="0" max={saving.current_amount} class="minput minput--big minput--red"/>
       <p class="mhint">Maksimal: {fmt(saving.current_amount)}</p>
       <label class="mlabel" for="deduct-note">Catatan (opsional)</label>
       <input id="deduct-note" type="text" bind:value={deductNote} placeholder="Pinjam untuk..." class="minput"/>
@@ -397,7 +397,7 @@
       <label class="mlabel" for="edit-name">Nama Target</label>
       <input id="edit-name" type="text" bind:value={editName} required placeholder="Nama tabungan" class="minput"/>
       <label class="mlabel" for="edit-target">Target Nominal (Rp)</label>
-      <input id="edit-target" type="number" bind:value={editTargetAmount} required placeholder="0" class="minput minput--big"/>
+      <input id="edit-target" type="number" bind:value={editTargetAmount} required min="1" inputmode="numeric" placeholder="0" class="minput minput--big"/>
       <label class="mlabel" for="edit-deadline">Deadline (opsional)</label>
       <input id="edit-deadline" type="date" bind:value={editDeadline} class="minput"/>
       <div class="mactions">
@@ -615,4 +615,29 @@
   .minput { border: 1px solid #E2E8F0; background: #F8FAFC; box-shadow: none; border-radius: 12px; }
   .minput:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
   .mbtn, .ms-btn { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); }
+  .inner,.body { width:100%; max-width:760px; margin-inline:auto; }
+  .icon-btn { width:44px; height:44px; border:1px solid rgba(255,255,255,.26); }
+  .saving-name { overflow-wrap:anywhere; }
+  .progress-card { background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.48); }
+  .act-btn { min-height:100px; border-color:#e3edfa; }
+  .act-btn:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+  .cbar-wrap { padding:0; box-shadow:none; background:#e8eef7; }
+  .cbar { background:#2563eb; }
+  .contrib-mid,.log-body { min-width:0; }
+  .contrib-name,.log-title,.log-note { overflow-wrap:anywhere; }
+  .contrib-right { flex:none; }
+  .modal { max-height:calc(100dvh - 32px); padding-bottom:max(24px,env(safe-area-inset-bottom)); box-shadow:0 -18px 40px rgba(15,55,140,.14); }
+  .minput { min-height:48px; font-size:16px; }
+  .minput--big { font-size:24px; }
+  .mbtn-cancel { color:#475569; background:#f1f5f9; }
+  .mbtn--green { background:#168f78; box-shadow:0 7px 16px rgba(22,143,120,.2); }
+  .mbtn--red { background:#df4264; box-shadow:0 7px 16px rgba(223,66,100,.2); }
+  @media (max-width:380px) {
+    .header { padding-inline:16px; }
+    .body { padding-inline:12px; }
+    .actions { gap:8px; }
+    .act-btn { padding:14px 5px; }
+    .act-icon { width:42px; height:42px; }
+    .modal { padding-inline:18px; }
+  }
 </style>

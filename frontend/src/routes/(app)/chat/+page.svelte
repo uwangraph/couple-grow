@@ -2770,4 +2770,19 @@
   .header-action, .send-btn, .cam-btn--primary { border-radius: 12px; box-shadow: 0 6px 14px rgba(37,99,235,.16); }
   .msg-input { border: 1px solid #E2E8F0; background: #F8FAFC; box-shadow: none; border-radius: 14px; }
   .msg-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .chat-header { padding-top:calc(14px + env(safe-area-inset-top)); }
+  .header-row { gap:9px; }
+  .header-title { font-weight:900; }
+  .header-status { font-size:11px; font-weight:800; white-space:nowrap; }
+  .back-btn { width:42px; height:42px; border:1px solid #dbeafe; border-radius:12px; background:#eff6ff; box-shadow:none; }
+  .header-avatar { width:42px; height:42px; border-radius:13px; box-shadow:0 6px 14px rgba(37,99,235,.16); }
+  .input-area { padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
+  .msg-input { min-height:44px; font-size:16px; }
+  .in-field-btn { box-shadow:none; }
+  .send-btn { width:44px; height:44px; }
+  @media (max-width:360px) {
+    .chat-header { padding-inline:10px; }
+    .input-area { padding-inline:10px; }
+    .header-row { gap:7px; }
+  }
 </style>

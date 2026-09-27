@@ -10,6 +10,7 @@
     type: string;
     title: string;
     message: string;
+    actor_name?: string | null;
     link?: string | null;
     created_at: string;
     is_read: number | boolean;
@@ -54,6 +55,16 @@
     }
     if (item.link?.startsWith('/') && !item.link.startsWith('//')) goto(item.link);
   }
+
+  function activityIcon(type: string) {
+    if (type === 'transaction') return 'wallet';
+    if (type === 'saving') return 'savings';
+    if (type === 'wishlist') return 'sparkles';
+    if (type === 'folder') return 'folder';
+    if (type === 'note') return 'notes';
+    if (type === 'chat') return 'chat';
+    return 'bell';
+  }
 </script>
 
 <div class="page">
@@ -91,11 +102,11 @@
       <div class="notification-list">
         {#each notifications as item (item.id)}
           <button type="button" class="item {item.is_read ? '' : 'unread'}" onclick={() => openNotification(item)}>
-            <span class="item-icon"><Icon name={item.type === 'transaction' ? 'wallet' : item.type === 'chat' ? 'chat' : 'bell'} size={20} /></span>
+            <span class="item-icon item-icon--{item.type}"><Icon name={activityIcon(item.type)} size={20} /></span>
             <span class="content">
               <span class="item-title">{item.title}{#if !item.is_read}<span class="unread-dot" aria-label="Belum dibaca"></span>{/if}</span>
               <span class="item-message">{item.message}</span>
-              <span class="item-date">{formatDate(item.created_at)}</span>
+              <span class="item-meta">{#if item.actor_name}<span class="item-actor">{item.actor_name}</span><span aria-hidden="true">·</span>{/if}<span class="item-date">{formatDate(item.created_at)}</span></span>
             </span>
             {#if item.link}<span class="item-arrow" aria-hidden="true">→</span>{/if}
           </button>
@@ -124,11 +135,16 @@
   .item:hover { transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.1); }
   .item.unread { border-color:#bfdbfe; background:linear-gradient(120deg,#fff,#eff6ff); }
   .item-icon { width:42px; height:42px; flex:none; display:grid; place-items:center; border-radius:13px; background:#e7f1ff; color:#2563eb; }
+  .item-icon--saving { background:#e8f8f4; color:#168f78; }
+  .item-icon--wishlist { background:#fff4e4; color:#b8680b; }
+  .item-icon--note,.item-icon--folder { background:#edf2ff; color:#4f5ecb; }
   .content { min-width:0; flex:1; display:flex; flex-direction:column; gap:4px; }
   .item-title { display:flex; align-items:center; gap:7px; color:#172033; font-size:13px; font-weight:900; line-height:1.35; }
   .unread-dot { width:7px; height:7px; flex:none; border-radius:50%; background:#2563eb; }
   .item-message { color:#64748b; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
-  .item-date { margin-top:2px; color:#94a3b8; font-size:10px; font-weight:700; }
+  .item-meta { display:flex; align-items:center; gap:6px; margin-top:4px; color:#94a3b8; font-size:10px; font-weight:700; }
+  .item-actor { max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#2563eb; font-weight:900; }
+  .item-date { color:#64748b; font-weight:700; }
   .item-arrow { align-self:center; color:#60a5fa; font-size:21px; }
   .empty-state { min-height:350px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px; text-align:center; }
   .empty-icon { width:76px; height:76px; display:grid; place-items:center; margin-bottom:6px; border:1px solid rgba(255,255,255,.95); border-radius:24px; background:rgba(255,255,255,.75); color:#60a5fa; box-shadow:0 12px 25px rgba(30,64,175,.08); }

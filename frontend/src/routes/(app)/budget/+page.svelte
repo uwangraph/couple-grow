@@ -671,4 +671,28 @@
   .empty-cta, .modal-submit { background:#2563EB; box-shadow:0 8px 18px rgba(37,99,235,.22); border-radius:14px; }
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .budget-card--over { border-color:#fecdd3; background:#fffafb; }
+  .budget-name { font-weight:900; overflow-wrap:anywhere; }
+  .budget-limit { overflow-wrap:anywhere; }
+  .budget-icon { border-radius:15px; box-shadow:0 6px 14px rgba(30,64,175,.14); }
+  .budget-menu { gap:8px; }
+  .menu-btn { width:40px; height:40px; border:1px solid #dbeafe; background:#eff6ff; color:#2563eb; }
+  .menu-btn:hover { background:#dbeafe; }
+  .menu-btn--delete,.menu-btn--delete:hover { border-color:#ffe4e6; background:#fff1f2; color:#e11d48; }
+  .budget-amount-item { min-width:0; max-width:50%; }
+  .budget-amount-val { font-size:clamp(12px,3.8vw,16px); font-weight:900; overflow-wrap:anywhere; }
+  .budget-amount-val--spent { color:#172033; }
+  .budget-amount-val--remaining { color:#1d4ed8; }
+  .budget-fill--warning { background:#f59e0b; }
+  .budget-fill--over { background:#e11d48; }
+  .modal { max-height:calc(100dvh - 32px); overflow-y:auto; padding-bottom:max(24px,env(safe-area-inset-bottom)); box-shadow:0 -18px 40px rgba(15,55,140,.14); }
+  .modal-cancel { color:#475569; background:#f1f5f9; border-radius:12px; }
+  @media (max-width:380px) {
+    .budget-card { padding:15px; }
+    .budget-header { gap:8px; }
+    .budget-icon { width:42px; height:42px; }
+    .budget-menu { gap:5px; }
+    .menu-btn { width:38px; height:38px; }
+    .modal { padding-inline:18px; }
+  }
 </style>

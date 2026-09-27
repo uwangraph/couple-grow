@@ -79,7 +79,7 @@
     </div>
   {/if}
   <!-- Main Content -->
-  <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : '104px'}; display: flex; flex-direction: column;">
+  <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : 'calc(96px + env(safe-area-inset-bottom))'}; display: flex; flex-direction: column;">
     {#if auth.user && !auth.user.partner_id}
       <div class="partner-banner">
         <Icon name="couple" size={16} />
@@ -113,7 +113,7 @@
 
   <!-- Bottom Tab Bar -->
   {#if !hideBottomNav}
-    <nav class="app-nav">
+    <nav class="app-nav" aria-label="Navigasi utama">
       {#each tabs as tab}
         {@const isActive = currentPath === tab.path || (tab.path !== '/home' && currentPath.startsWith(tab.path))}
         <a href={tab.path} class="nav-tab {isActive ? 'nav-tab--active' : ''}" aria-current={isActive ? 'page' : undefined}>
@@ -143,29 +143,25 @@
     max-width: 100%; /* Full width for mobile and tablet */
     background: transparent; /* Use body background */
   }
-  .partner-banner { display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; z-index:40; background:rgba(239,247,255,.94); border-bottom:1px solid #d8eafd; color:#36577b; font-size:12px; font-weight:700; }
+  .partner-banner { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 8px; padding:10px 14px; z-index:40; background:rgba(239,247,255,.94); border-bottom:1px solid #d8eafd; color:#36577b; font-size:12px; font-weight:700; text-align:center; }
   .partner-banner :global(svg) { flex-shrink:0; color:#1976d2; }
   .partner-banner a { color:#1565c0; text-decoration:none; font-weight:900; white-space:nowrap; }
   .partner-banner a:focus-visible, .nav-tab:focus-visible { outline:2px solid #1976d2; outline-offset:3px; border-radius:10px; }
 
   .update-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: rgba(30,41,59,.42); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-  .update-card { width: min(100%, 360px); padding: 28px 22px 22px; border: none; border-radius: 28px; background: #FFFFFF;  box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06); text-align: center; }
+  .update-card { width:min(100%,360px); max-height:calc(100dvh - 48px); overflow-y:auto; padding:28px 22px 22px; border:1px solid #e3edfa; border-radius:24px; background:#fff; box-shadow:0 24px 55px rgba(15,55,140,.16); text-align:center; }
   .update-icon { width: 58px; height: 58px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 18px; color: #2196F3; background: #E7F4FE; }
   .update-card h2 { margin: 0 0 8px; color: #1E293B; font-size: 20px; font-weight: 900; }
   .update-card p { margin: 0 0 22px; color: #64748B; font-size: 13px; line-height: 1.55; }
   .update-actions { display: flex; flex-direction: column; gap: 8px; }
   .update-primary, .update-secondary { display: block; width: 100%; padding: 13px; border: 0; border-radius: 14px; font: inherit; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
-  .update-primary { color: white; background: linear-gradient(135deg,#2196F3,#64B5F6); box-shadow: 0 8px 20px rgba(33,150,243,.3); }
-  .update-secondary { color: #64748B; background: rgba(226,232,240,.7); }
+  .update-primary { color:white; background:#2563eb; box-shadow:0 8px 18px rgba(37,99,235,.22); }
+  .update-secondary { color:#475569; background:#f1f5f9; }
 
   /* Dock clay mengambang — menggantikan bilah nav menempel di tepi layar */
   .app-nav {
     position: fixed;
-    bottom: max(14px, env(safe-area-inset-bottom));
+    bottom: calc(14px + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     width: calc(100% - 24px);
@@ -238,7 +234,7 @@
   /* Global Toast Styles */
   .toast-container {
     position: fixed;
-    top: 20px;
+    top: calc(20px + env(safe-area-inset-top));
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;

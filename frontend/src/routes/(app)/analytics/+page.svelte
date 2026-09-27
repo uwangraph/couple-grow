@@ -357,7 +357,7 @@
   .header-description { max-width:330px; margin:8px 0 0; color:#dbeafe; font-size:13px; line-height:1.5; font-weight:600; }
 
   /* Body */
-  .body { padding: 20px 16px; max-width:760px; margin:auto; }
+  .body { width:100%; box-sizing:border-box; padding:20px 16px 36px; max-width:760px; margin:auto; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
@@ -710,5 +710,26 @@
     font-size: 12px;
     color: #64748B;
     font-weight: 700;
+  }
+
+  /* Keep the insights readable on narrow phones, even with long rupiah amounts. */
+  .comparison-card { text-align:left; padding:22px 20px; }
+  .comparison-icon { margin:0 0 14px; border-radius:18px; }
+  .comparison-title, .section-title { font-weight:900; }
+  .comparison-details { gap:10px; justify-content:stretch; }
+  .comparison-item { min-width:0; max-width:none; padding:14px; border:1px solid #e3edfa; border-radius:14px; background:#f8fbff; }
+  .comparison-label { color:#64748b; }
+  .comparison-amount { font-size:clamp(14px, 4vw, 20px); font-weight:900; overflow-wrap:anywhere; }
+  .period-tabs { max-width:100%; overflow-x:auto; }
+  .period-tab { white-space:nowrap; font-weight:800; }
+  .period-tab--active { color:#1d4ed8; }
+  @media (max-width:480px) {
+    .section-header { align-items:stretch; flex-direction:column; }
+    .period-tabs { box-sizing:border-box; width:100%; }
+    .period-tab { flex:1; }
+    .section { padding:18px 16px; }
+    .comparison-details { gap:8px; }
+    .comparison-item { padding:12px 10px; }
+    .comparison-label { font-size:10px; }
   }
 </style>

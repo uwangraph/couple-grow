@@ -1,7 +1,8 @@
 <script lang="ts">
   import { auth } from '$lib/auth.svelte';
   import { API_URL, readApiJson } from '$lib/api';
-  import { goto } from '$app/navigation';
+  import { goto, replaceState } from '$app/navigation';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
   import Icon from '$lib/Icon.svelte';
   import { swipe } from '$lib/swipe';
@@ -45,6 +46,13 @@
 
   onMount(async () => {
     if (!auth.token) { goto('/login'); return; }
+    const requestedType = page.url.searchParams.get('new');
+    if (requestedType === 'expense' || requestedType === 'income') {
+      type = requestedType;
+      activeTab = 'history';
+      showModal = true;
+      replaceState('/wallet', page.state);
+    }
     await Promise.all([fetchTransactions(), fetchStats()]);
   });
 
@@ -597,10 +605,10 @@
         <form onsubmit={updateTransaction} class="modal-form">
           <!-- Type toggle -->
           <div class="type-toggle">
-            <button type="button" class="type-btn {editType === 'expense' ? 'type-btn--out' : ''}" onclick={() => editType = 'expense'}>
+            <button type="button" aria-pressed={editType === 'expense'} class="type-btn {editType === 'expense' ? 'type-btn--out' : ''}" onclick={() => editType = 'expense'}>
               Pengeluaran
             </button>
-            <button type="button" class="type-btn {editType === 'income' ? 'type-btn--in' : ''}" onclick={() => editType = 'income'}>
+            <button type="button" aria-pressed={editType === 'income'} class="type-btn {editType === 'income' ? 'type-btn--in' : ''}" onclick={() => editType = 'income'}>
               Pemasukan
             </button>
           </div>
@@ -1121,4 +1129,32 @@
   .delete-title { font-size: 18px; font-weight: 900; color: #1E293B; margin: 0 0 8px; }
   .delete-msg { font-size: 13px; color: #64748B; line-height: 1.5; margin: 0 0 20px; font-weight: 600; }
   .delete-msg strong { color: #1E293B; font-weight: 900; }
+  .header-inner,.content,.tab-bar { width:100%; max-width:760px; margin-inline:auto; }
+  .balance-amount { font-weight:900; overflow-wrap:anywhere; }
+  .balance-chip { min-width:0; }
+  .balance-chip > div:last-child { min-width:0; }
+  .chip-val { font-size:clamp(12px,3.7vw,16px); overflow-wrap:anywhere; }
+  .tab { min-height:42px; cursor:pointer; font-weight:800; }
+  .tab--active { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; box-shadow:none; }
+  .tx-row { min-width:0; }
+  .tx-amount { max-width:40%; overflow-wrap:anywhere; text-align:right; font-weight:900; }
+  .tx-cat { font-weight:900; }
+  .tx-added-by { color:#64748b; font-weight:700; }
+  .detail-list > div { align-items:flex-start; }
+  .detail-list strong { min-width:0; overflow-wrap:anywhere; }
+  .modal { max-height:calc(100dvh - 32px); overflow-y:auto; padding-bottom:max(24px,env(safe-area-inset-bottom)); }
+  .form-input:not(.form-input--amount),.modal-input:not(.modal-input--amount) { min-height:48px; font-size:16px; }
+  .modal-input { border:1px solid #e2e8f0; background:#f8fafc; box-shadow:none; border-radius:12px; }
+  .modal-input:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+  .modal-cancel { color:#475569; background:#f1f5f9; border-radius:12px; }
+  .modal-submit { background:#2563eb; box-shadow:0 8px 18px rgba(37,99,235,.2); border-radius:12px; }
+  .modal-submit--green { background:#168f78; box-shadow:0 7px 16px rgba(22,143,120,.2); }
+  .modal-submit--red { background:#df4264; box-shadow:0 7px 16px rgba(223,66,100,.2); }
+  @media (max-width:380px) {
+    .header,.content { padding-inline:14px; }
+    .tab-bar { padding-inline:14px; }
+    .balance-chip { padding:11px 9px; gap:7px; }
+    .chip-icon { width:32px; height:32px; }
+    .modal { padding-inline:18px; }
+  }
 </style>
