@@ -479,7 +479,6 @@
      agar tidak melawan warna brand. */
   .quick-icon--red { background: linear-gradient(145deg, #F7A9BC 0%, #EF7C97 55%, #E2637F 100%); }
   .quick-icon--green { background: linear-gradient(145deg, #8ED9C6 0%, #4FBFA3 55%, #35A88C 100%); }
-  .quick-icon--blue { background: linear-gradient(145deg, #64B5F6 0%, #2196F3 55%, #1976D2 100%); }
   .quick-icon--pink { background: linear-gradient(145deg, #7CC5F8 0%, #1E88E5 55%, #1565C0 100%); }
   .quick-icon--amber { background: linear-gradient(145deg, #B3E5FC 0%, #4FC3F7 55%, #29B6F6 100%); }
 
@@ -614,7 +613,6 @@
   .pm-avatar-img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 4px 20px rgba(99,102,241,0.2); }
   .pm-avatar-placeholder { width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, #EEF2FF, #E0E7FF); color: #7FA8EA; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
   .pm-name { font-size: 20px; font-weight: 900; color: #1E293B; margin: 0 0 6px; }
-  .pm-bio { font-size: 13px; color: #64748B; font-weight: 600; font-style: italic; margin: 0 0 20px; line-height: 1.5; }
   .pm-info-list { display: flex; flex-direction: column; margin-bottom: 24px; background: #F8FAFC; border-radius: 18px; overflow: hidden; text-align: left; }
   .pm-info-row { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid #F1F5F9; }
   .pm-info-row:last-child { border-bottom: none; }

@@ -62,7 +62,7 @@
 
 <div class="app-container">
   {#if showUpdateModal}
-    <div class="update-overlay" role="dialog" aria-modal="true">
+    <div class="update-overlay" role="dialog" aria-modal="true" aria-label="Pembaruan aplikasi tersedia" tabindex="-1">
       <div class="update-card">
         <div class="update-icon"><Icon name="savings" size={28} /></div>
         <h2>Update tersedia</h2>
@@ -71,9 +71,9 @@
           {#if latestVersionUrl}
             <a class="update-primary" href={latestVersionUrl} target="_blank" rel="noreferrer" download>Update Sekarang</a>
           {:else}
-            <button class="update-primary" onclick={() => showUpdateModal = false}>Update Sekarang</button>
+            <button type="button" class="update-primary" onclick={() => showUpdateModal = false}>Tutup</button>
           {/if}
-          <button class="update-secondary" onclick={() => showUpdateModal = false}>Nanti</button>
+          <button type="button" class="update-secondary" onclick={() => showUpdateModal = false}>Nanti</button>
         </div>
       </div>
     </div>
@@ -81,9 +81,10 @@
   <!-- Main Content -->
   <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : '104px'}; display: flex; flex-direction: column;">
     {#if auth.user && !auth.user.partner_id}
-      <div style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(33, 150, 243,0.2); color: #475569; padding: 10px 16px; text-align: center; font-size: 13px; font-weight: 600; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <span>🔗 Belum terhubung dengan pasangan.</span>
-        <a href="/profile" style="color: #1976D2; text-decoration: none; font-weight: 700; white-space: nowrap;">Hubungkan →</a>
+      <div class="partner-banner">
+        <Icon name="couple" size={16} />
+        <span>Belum terhubung dengan pasangan</span>
+        <a href="/profile">Hubungkan <span aria-hidden="true">→</span></a>
       </div>
     {/if}
 
@@ -95,9 +96,7 @@
   <!-- Global Toasts -->
   <div class="toast-container">
     {#each toast.toasts as t (t.id)}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="toast-item toast-item--{t.type}" onclick={() => toast.dismiss(t.id)}>
+      <button type="button" class="toast-item toast-item--{t.type}" onclick={() => toast.dismiss(t.id)} aria-label={`${t.message}. Tutup notifikasi`}>
         <span class="toast-icon">
           {#if t.type === 'success'}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -108,7 +107,7 @@
           {/if}
         </span>
         <span class="toast-message">{t.message}</span>
-      </div>
+      </button>
     {/each}
   </div>
 
@@ -117,7 +116,7 @@
     <nav class="app-nav">
       {#each tabs as tab}
         {@const isActive = currentPath === tab.path || (tab.path !== '/home' && currentPath.startsWith(tab.path))}
-        <a href={tab.path} class="nav-tab {isActive ? 'nav-tab--active' : ''}">
+        <a href={tab.path} class="nav-tab {isActive ? 'nav-tab--active' : ''}" aria-current={isActive ? 'page' : undefined}>
           <span class="nav-tile">
             <Icon name={tab.icon} size={21} />
           </span>
@@ -144,6 +143,10 @@
     max-width: 100%; /* Full width for mobile and tablet */
     background: transparent; /* Use body background */
   }
+  .partner-banner { display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; z-index:40; background:rgba(239,247,255,.94); border-bottom:1px solid #d8eafd; color:#36577b; font-size:12px; font-weight:700; }
+  .partner-banner :global(svg) { flex-shrink:0; color:#1976d2; }
+  .partner-banner a { color:#1565c0; text-decoration:none; font-weight:900; white-space:nowrap; }
+  .partner-banner a:focus-visible, .nav-tab:focus-visible { outline:2px solid #1976d2; outline-offset:3px; border-radius:10px; }
 
   .update-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: rgba(30,41,59,.42); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
   .update-card { width: min(100%, 360px); padding: 28px 22px 22px; border: none; border-radius: 28px; background: #FFFFFF;  box-shadow:
@@ -209,7 +212,7 @@
   /* Active tab uses a quiet blue pill instead of a heavy 3D tile. */
   .nav-tab--active { color: #1976D2; }
   .nav-tab--active .nav-tile {
-    color: #fff;
+    color: #1565c0;
     transform: translateY(-1px);
     background: #DBEAFE;
     box-shadow: none;

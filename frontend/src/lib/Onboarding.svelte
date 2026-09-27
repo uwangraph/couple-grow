@@ -7,40 +7,28 @@
 
   const steps = [
     {
-      title: 'Selamat Datang di CoupleGrow! 👋',
-      description: 'Aplikasi untuk kelola keuangan dan impian bersama pasangan',
+      title: 'Tumbuh bareng, mulai di sini.',
+      description: 'Satu ruang untuk merencanakan uang, tujuan, dan cerita kalian berdua.',
       icon: 'couple',
-      color: '#2196F3'
+      color: '#2563EB'
     },
     {
-      title: 'Dompet Bersama 💰',
-      description: 'Catat semua pemasukan dan pengeluaran berdua dalam satu tempat',
+      title: 'Keuangan lebih jelas.',
+      description: 'Catat pemasukan dan pengeluaran, lalu lihat siapa yang menambahkan atau memperbaruinya.',
       icon: 'wallet',
-      color: '#4FBFA3'
+      color: '#1683D8'
     },
     {
-      title: 'Tabungan & Target 🎯',
-      description: 'Buat target tabungan untuk impian bersama dan pantau progressnya',
+      title: 'Wujudkan tujuan bersama.',
+      description: 'Susun anggaran, tabungan, dan wishlist. Progres kecil pun terasa berarti.',
       icon: 'savings',
-      color: '#2196F3'
+      color: '#1571C9'
     },
     {
-      title: 'Wishlist Impian ✨',
-      description: 'Catat semua impian yang pengen diwujudkan bareng',
+      title: 'Siap melangkah berdua?',
+      description: 'Hubungkan pasanganmu, lalu mulai dari hal yang paling penting buat kalian.',
       icon: 'sparkles',
-      color: '#2196F3'
-    },
-    {
-      title: 'Budget & Analytics 📊',
-      description: 'Atur budget bulanan dan lihat analisis keuangan kalian',
-      icon: 'sparkles',
-      color: '#F59E0B'
-    },
-    {
-      title: 'Siap Mulai! 🚀',
-      description: 'Yuk mulai kelola keuangan bersama dengan lebih baik!',
-      icon: 'success',
-      color: '#4FBFA3'
+      color: '#2563EB'
     }
   ];
 
@@ -66,11 +54,21 @@
     finish();
   }
 
+  function previous() {
+    if (currentStep > 0) currentStep--;
+  }
+
   function finish() {
     if (browser) {
       localStorage.setItem('hasSeenOnboarding', 'true');
     }
     show = false;
+  }
+
+  function focusDialog(node: HTMLElement) {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    queueMicrotask(() => node.focus());
+    return { destroy: () => previousFocus?.focus() };
   }
 
   $effect(() => {
@@ -83,11 +81,12 @@
 </script>
 
 {#if show}
-  <div class="onboarding-overlay">
+  <div class="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Pengenalan CoupleGrow" tabindex="-1" use:focusDialog onkeydown={(e) => { if (e.key === 'Escape') skip(); }}>
     <div class="onboarding-content">
       <img class="onboarding-logo" src="/logo-couplegrow.png" alt="CoupleGrow" />
+      <p class="step-counter">KENALAN DULU · {currentStep + 1} / {steps.length}</p>
       <!-- Progress dots -->
-      <div class="progress-dots">
+      <div class="progress-dots" aria-hidden="true">
         {#each steps as _, i}
           <div class="dot {i === currentStep ? 'dot--active' : ''} {i < currentStep ? 'dot--done' : ''}"></div>
         {/each}
@@ -105,15 +104,19 @@
       <!-- Actions -->
       <div class="onboarding-actions">
         {#if currentStep < steps.length - 1}
-          <button class="btn-skip" onclick={skip}>Lewati</button>
-          <button class="btn-next" onclick={next}>
+          <button type="button" class="btn-skip" onclick={currentStep === 0 ? skip : previous}>{currentStep === 0 ? 'Lewati' : 'Kembali'}</button>
+          <button type="button" class="btn-next" onclick={next}>
             Lanjut
             <Icon name="arrow" size={16} />
           </button>
         {:else}
-          <button class="btn-finish" onclick={finish}>Mulai Sekarang!</button>
+          <button type="button" class="btn-skip" onclick={previous}>Kembali</button>
+          <button type="button" class="btn-next" onclick={finish}>Mulai sekarang <Icon name="arrow" size={16} /></button>
         {/if}
       </div>
+      {#if currentStep > 0 && currentStep < steps.length - 1}
+        <button type="button" class="skip-link" onclick={skip}>Lewati panduan</button>
+      {/if}
     </div>
   </div>
 {/if}
@@ -129,7 +132,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 32px;
+    padding: 20px;
     animation: fade-in 0.3s ease;
   }
 
@@ -140,20 +143,19 @@
 
   .onboarding-content {
     background: #FFFFFF;
-    border: none;
+    border: 1px solid rgba(255,255,255,.9);
     border-radius: 32px;
-    padding: 40px 32px;
+    padding: 28px 24px 24px;
     max-width: 420px;
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
     width: 100%;
     text-align: center;
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
+    box-shadow: 0 24px 55px rgba(21, 101, 192, 0.14);
     animation: slide-up 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
   .onboarding-logo { width: 78px; height: 78px; object-fit: contain; margin: -12px auto 14px; display: block; padding: 3px; border: 2px solid rgba(33,150,243,.45); border-radius: 20px; background: linear-gradient(135deg, #E7F4FE, #F5FAFF); box-shadow: 0 0 0 4px rgba(255,255,255,.45), 0 8px 20px rgba(33,150,243,.18); }
+  .step-counter { margin: 0 0 14px; color:#2563eb; font-size:10px; font-weight:900; letter-spacing:.14em; }
 
   @keyframes slide-up {
     from { transform: translateY(40px) scale(0.9); opacity: 0; }
@@ -164,7 +166,7 @@
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 32px;
+    margin-bottom: 26px;
   }
 
   .dot {
@@ -186,17 +188,17 @@
   }
 
   .step-content {
-    margin-bottom: 32px;
+    margin-bottom: 28px;
   }
 
   .step-icon {
-    width: 100px;
-    height: 100px;
-    border-radius: 28px;
+    width: 88px;
+    height: 88px;
+    border-radius: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 24px;
+    margin: 0 auto 20px;
     animation: bounce 0.6s ease;
   }
 
@@ -206,7 +208,7 @@
   }
 
   .step-title {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Nunito', sans-serif;
     font-size: 24px;
     font-weight: 800;
     color: #1E293B;
@@ -214,7 +216,7 @@
   }
 
   .step-desc {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Nunito', sans-serif;
     font-size: 16px;
     font-weight: 500;
     color: #64748B;
@@ -226,6 +228,7 @@
     display: flex;
     gap: 12px;
   }
+  .skip-link { margin-top:16px; border:0; background:transparent; color:#64748b; font:800 12px 'Nunito',sans-serif; cursor:pointer; }
 
   .btn-skip {
     flex: 1;
@@ -234,7 +237,7 @@
     color: #64748B;
     border: none;
     border-radius: 16px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Nunito', sans-serif;
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -252,7 +255,7 @@
     color: white;
     border: none;
     border-radius: 22px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Nunito', sans-serif;
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -276,30 +279,4 @@
     transform: translateY(0);
   }
 
-  .btn-finish {
-    width: 100%;
-    padding: 16px 24px;
-    background: linear-gradient(145deg, #2196F3, #64B5F6);
-    color: white;
-    border: none;
-    border-radius: 22px;
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
-    transition: all 0.2s;
-  }
-
-  .btn-finish:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(79,191,163,0.45);
-  }
-
-  .btn-finish:active {
-    transform: scale(0.98);
-  }
 </style>

@@ -13,7 +13,6 @@
   let { media, onClose }: { media: MediaPreviewItem | null, onClose: () => void } = $props();
 
   let fileName = $derived(media?.name || 'File');
-  let fileSize = $derived('');
   let isImage = $derived(media?.type === 'image' || (media?.type === 'file' && /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(media.url)));
   let isVideo = $derived(media?.type === 'file' && /\.(mp4|webm|ogg|mov|m4v)$/i.test(media.url));
   let isAudio = $derived(media?.type === 'audio' || (media?.type === 'file' && /\.(mp3|wav|ogg|oga|m4a|aac|flac)$/i.test(media.url)));
@@ -27,6 +26,12 @@
     return media.url;
   });
 
+  function focusDialog(node: HTMLElement) {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    queueMicrotask(() => node.focus());
+    return { destroy: () => previousFocus?.focus() };
+  }
+
   async function download() {
     if (!media) return;
     try {
@@ -38,7 +43,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     } catch {
       window.open(media.url, '_blank');
     }
@@ -48,12 +53,15 @@
 {#if media}
   <div
     class="media-overlay"
-    onclick={onClose}
+    onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    onkeydown={(e) => { if (e.key === 'Escape') onClose(); }}
     role="dialog"
     aria-modal="true"
     aria-label="Pratinjau media"
+    tabindex="-1"
+    use:focusDialog
   >
-    <div class="media-card" onclick={(e) => e.stopPropagation()}>
+    <div class="media-card">
       <!-- Header -->
       <div class="media-header">
         <div class="media-header__info">
@@ -70,7 +78,8 @@
         {#if isImage}
           <img src={media.url} alt={fileName} class="media-img" />
         {:else if isVideo}
-          <video src={media.url} controls class="media-img" />
+          <!-- svelte-ignore a11y_media_has_caption -- user-uploaded videos may not include captions -->
+          <video src={media.url} controls playsinline class="media-img"></video>
         {:else if isAudio}
           <div class="media-audio">
             <div class="media-audio__icon">
@@ -122,7 +131,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
     background: rgba(15, 23, 42, 0.45);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -132,11 +141,11 @@
     flex-direction: column;
     width: 100%;
     max-width: 480px;
-    max-height: 88vh;
-    border-radius: 20px;
+    max-height: min(88dvh, 760px);
+    border-radius: 24px;
     border: 1px solid rgba(255,255,255,0.75);
-    background: rgba(255,255,255,0.92);
-    box-shadow: 0 20px 50px -12px rgba(13,71,161,0.3);
+    background: rgba(255,255,255,0.96);
+    box-shadow: 0 24px 60px -12px rgba(13,71,161,0.28);
     overflow: hidden;
   }
   .media-header {
@@ -181,6 +190,7 @@
     color: #64748B;
     box-shadow: 0 2px 0 0 #E2E8F0;
     transition: all .15s ease;
+    cursor: pointer;
   }
   .media-close:hover { transform: translateY(1px); box-shadow: 0 1px 0 0 #E2E8F0; }
   .media-close:active { transform: translateY(1px); box-shadow: none; }
@@ -322,4 +332,9 @@
   }
   .media-btn--primary:hover { transform: translateY(1px); box-shadow: 0 2px 0 0 rgba(25,118,210,0.9); }
   .media-btn--primary:active { transform: translateY(2px); box-shadow: none; }
+  @media (max-width: 480px) {
+    .media-overlay { align-items: flex-end; padding: 0; }
+    .media-card { max-height: calc(100dvh - env(safe-area-inset-top) - 20px); border-radius: 24px 24px 0 0; }
+    .media-footer { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  }
 </style>

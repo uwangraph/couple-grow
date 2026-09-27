@@ -35,7 +35,7 @@
         <img src="/logo-couplegrow.png" alt="CoupleGrow" />
       </div>
       <h1 style="font-size: 25px; font-weight: 900; color: #30435F; margin: 0 0 4px 0; font-family: Nunito, sans-serif;">CoupleGrow</h1>
-      <p style="font-size: 13px; color: #64748B; margin: 0; font-family: Inter, sans-serif;">Tumbuh bersama, dari sekarang</p>
+      <p style="font-size: 13px; color: #64748B; margin: 0; font-family: Nunito, sans-serif;">Tumbuh bersama, dari sekarang</p>
     </div>
 
     {@render children()}
@@ -133,7 +133,7 @@
     border-radius: 12px;
     padding: 12px 14px;
     font-size: 13px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Nunito', sans-serif;
   }
   :global(.auth-success) {
     background: rgba(79, 191, 163, 0.08);
@@ -142,7 +142,7 @@
     border-radius: 12px;
     padding: 12px 14px;
     font-size: 13px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Nunito', sans-serif;
   }
   :global(.password-wrap) {
     position: relative;

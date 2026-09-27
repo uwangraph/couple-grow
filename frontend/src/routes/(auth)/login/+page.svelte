@@ -220,14 +220,14 @@
     border: none;
     background: transparent;
     color: #2196F3;
-    font: 600 13px Inter, sans-serif;
+    font: 600 13px Nunito, sans-serif;
     cursor: pointer;
   }
   .inline-auth-link {
     border: none;
     background: transparent;
     color: #2196F3;
-    font: 600 13px Inter, sans-serif;
+    font: 600 13px Nunito, sans-serif;
     cursor: pointer;
     padding: 0;
   }

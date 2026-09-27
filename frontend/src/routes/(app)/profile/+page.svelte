@@ -217,6 +217,18 @@
 
   function onCropMouseUp() { isDragging = false; }
 
+  function onCropKeyDown(e: KeyboardEvent) {
+    const step = e.shiftKey ? 20 : 8;
+    if (e.key === 'ArrowLeft') cropOffsetX -= step;
+    else if (e.key === 'ArrowRight') cropOffsetX += step;
+    else if (e.key === 'ArrowUp') cropOffsetY -= step;
+    else if (e.key === 'ArrowDown') cropOffsetY += step;
+    else if (e.key === '+' || e.key === '=') cropScale = Math.min(SCALE_MAX, cropScale + 0.1);
+    else if (e.key === '-') cropScale = Math.max(SCALE_MIN, cropScale - 0.1);
+    else return;
+    e.preventDefault();
+  }
+
   // Touch support
   let lastTouchDist = 0;
   function onCropTouchStart(e: TouchEvent) {
@@ -520,51 +532,62 @@
       {/if}
     </div>
 
-    <div class="card card--action">
-      <p class="section-label section-label--card">Pengaturan Profil</p>
+    <div class="card settings-card">
+      <p class="section-label section-label--card">Pengaturan akun</p>
       {#if isEditingProfile}
-        <div class="edit-form">
-          <input type="text" bind:value={editForm.name} placeholder="Nama" class="form-input" />
-          <input type="tel" bind:value={editForm.phone} placeholder="No. Telepon (opsional)" class="form-input" />
-          <textarea bind:value={editForm.bio} placeholder="Bio singkat..." class="form-input form-textarea"></textarea>
-          <label class="form-date-label"><Icon name="birthday" size={14} /> Tanggal Lahir</label>
-          <input type="date" bind:value={editForm.birthday} class="form-input" />
-          <label class="form-date-label"><Icon name="couple" size={14} /> Hari Jadian</label>
-          <input type="date" bind:value={editForm.anniversary} class="form-input" />
+        <div class="edit-form settings-form">
+          <h2 class="settings-form-title">Edit info profil</h2>
+          <label class="form-date-label" for="profile-name">Nama</label>
+          <input id="profile-name" type="text" bind:value={editForm.name} placeholder="Nama" class="form-input" />
+          <label class="form-date-label" for="profile-phone">Nomor telepon (opsional)</label>
+          <input id="profile-phone" type="tel" bind:value={editForm.phone} placeholder="Nomor telepon" class="form-input" />
+          <label class="form-date-label" for="profile-bio">Bio singkat (opsional)</label>
+          <textarea id="profile-bio" bind:value={editForm.bio} placeholder="Ceritakan sedikit tentang dirimu" class="form-input form-textarea"></textarea>
+          <label class="form-date-label" for="profile-birthday"><Icon name="birthday" size={14} /> Tanggal lahir</label>
+          <input id="profile-birthday" type="date" bind:value={editForm.birthday} class="form-input" />
+          <label class="form-date-label" for="profile-anniversary"><Icon name="couple" size={14} /> Hari jadian</label>
+          <input id="profile-anniversary" type="date" bind:value={editForm.anniversary} class="form-input" />
           <div class="btn-row">
-            <button class="btn btn--primary" onclick={updateProfile} disabled={pairLoading}>
+            <button type="button" class="btn btn--primary" onclick={updateProfile} disabled={pairLoading}>
               {pairLoading ? 'Menyimpan...' : 'Simpan'}
             </button>
-            <button class="btn btn--ghost" onclick={() => isEditingProfile = false}>Batal</button>
+            <button type="button" class="btn btn--ghost" onclick={() => isEditingProfile = false}>Batal</button>
           </div>
         </div>
       {:else}
         <button
-          class="btn btn--outline btn--block"
+          type="button"
+          class="settings-action"
           onclick={() => { isEditingProfile = true; editForm = { name: auth.user?.name || '', birthday: auth.user?.birthday || '', anniversary: auth.user?.anniversary || '', bio: auth.user?.bio || '', phone: (auth.user as any)?.phone || '' }; }}
         >
-          <Icon name="edit" size={16} style="margin-right: 8px;" /> Edit Info Profil
+          <span class="settings-action-icon"><Icon name="edit" size={18} /></span>
+          <span class="settings-action-copy"><strong>Edit info profil</strong><small>Nama, tanggal penting, dan bio</small></span>
+          <Icon name="arrow" size={18} />
         </button>
       {/if}
-    </div>
 
-    <div class="card card--action">
-      <p class="section-label section-label--card">Keamanan Akun</p>
+      <div class="settings-divider"></div>
       {#if isChangingPassword}
-        <div class="edit-form">
-          <input type="password" bind:value={passwordForm.current_password} placeholder="Password saat ini" class="form-input" />
-          <input type="password" bind:value={passwordForm.new_password} placeholder="Password baru" class="form-input" />
-          <input type="password" bind:value={passwordForm.confirm_password} placeholder="Ulangi password baru" class="form-input" />
+        <div class="edit-form settings-form">
+          <h2 class="settings-form-title">Ganti password</h2>
+          <label class="form-date-label" for="current-password">Password saat ini</label>
+          <input id="current-password" type="password" autocomplete="current-password" bind:value={passwordForm.current_password} class="form-input" />
+          <label class="form-date-label" for="new-password">Password baru</label>
+          <input id="new-password" type="password" autocomplete="new-password" bind:value={passwordForm.new_password} class="form-input" />
+          <label class="form-date-label" for="confirm-password">Ulangi password baru</label>
+          <input id="confirm-password" type="password" autocomplete="new-password" bind:value={passwordForm.confirm_password} class="form-input" />
           <div class="btn-row">
-            <button class="btn btn--primary" onclick={changePassword} disabled={passwordLoading}>
+            <button type="button" class="btn btn--primary" onclick={changePassword} disabled={passwordLoading}>
               {passwordLoading ? 'Menyimpan...' : 'Ganti Password'}
             </button>
-            <button class="btn btn--ghost" onclick={() => { isChangingPassword = false; passwordForm = { current_password: '', new_password: '', confirm_password: '' }; }}>Batal</button>
+            <button type="button" class="btn btn--ghost" onclick={() => { isChangingPassword = false; passwordForm = { current_password: '', new_password: '', confirm_password: '' }; }}>Batal</button>
           </div>
         </div>
       {:else}
-        <button class="btn btn--outline btn--block" onclick={() => { isChangingPassword = true; }}>
-          <Icon name="lock" size={16} style="margin-right: 8px;" /> Ganti Password
+        <button type="button" class="settings-action" onclick={() => { isChangingPassword = true; }}>
+          <span class="settings-action-icon"><Icon name="lock" size={18} /></span>
+          <span class="settings-action-copy"><strong>Ganti password</strong><small>Jaga keamanan akunmu</small></span>
+          <Icon name="arrow" size={18} />
         </button>
       {/if}
     </div>
@@ -579,7 +602,7 @@
 
 <!-- Modal Konfirmasi Putuskan Hubungan -->
 {#if showDisconnectConfirm}
-  <div class="modal-backdrop" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showDisconnectConfirm = false; }}>
+  <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Konfirmasi putuskan hubungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showDisconnectConfirm = false; }} onclick={(e) => { if (e.target === e.currentTarget) showDisconnectConfirm = false; }}>
     <div class="modal-sheet">
       <div class="modal-handle-bar"></div>
       <div class="disconnect-icon">
@@ -609,6 +632,8 @@
       </button>
     </div>
     <!-- Canvas area -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -- drag canvas also has keyboard controls -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -- crop workspace must receive arrow-key input -->
     <div
       class="crop-canvas-wrap"
       onmousedown={onCropMouseDown}
@@ -619,8 +644,10 @@
       ontouchstart={onCropTouchStart}
       ontouchmove={onCropTouchMove}
       ontouchend={onCropTouchEnd}
-      role="img"
-      aria-label="Atur foto profil"
+      onkeydown={onCropKeyDown}
+      role="application"
+      tabindex="0"
+      aria-label="Atur foto profil. Gunakan tombol panah untuk menggeser, plus dan minus untuk memperbesar atau memperkecil."
     >
       <canvas bind:this={cropCanvasEl} class="crop-canvas"></canvas>
       <p class="crop-hint">Geser atau cubit untuk menyesuaikan</p>
@@ -759,19 +786,6 @@
     z-index: 2;
   }
 
-  .toast {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 16px;
-    padding: 12px 16px;
-    margin-bottom: 14px;
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .toast--success { background: #F0F9F7; border: 1.5px solid #86EFAC; color: #2A8E77; }
-  .toast--error { background: #FDF4F6; border: 1.5px solid #FDA4AF; color: #C24A63; }
-
   .card {
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.8);
@@ -799,7 +813,6 @@
       inset -3px -4px 8px rgba(13, 71, 161, 0.32),
       4px 6px 13px rgba(21, 101, 192, 0.22);
   }
-  .card-icon { width: 22px; height: 22px; color: #1976D2; }
   .card-label-group { flex: 1; min-width: 0; }
   .card-label-title { font-size: 14px; font-weight: 700; color: #1F2937; margin: 0 0 2px; }
   .card-label-sub { font-size: 12px; color: #64748B; margin: 0; }
@@ -1040,30 +1053,17 @@
   }
   .section-label--card { margin-bottom: 10px; }
 
-  .card--action {
-    padding: 16px;
-    margin-bottom: 12px;
-    background: rgba(255,255,255,.84);
-    border-color: rgba(255,255,255,.94);
-    box-shadow: 0 7px 18px rgba(30,64,175,.06);
-  }
-  .card--action .section-label--card { margin: 0 0 10px; color: #64748B; }
-  .card--action .btn--outline {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    min-height: 52px;
-    padding: 12px 14px;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    background: #F8FAFC;
-    color: #2563EB;
-    box-shadow: none;
-    text-align: left;
-  }
-  .card--action .btn--outline:hover { border-color: #93C5FD; background: #EFF6FF; }
-  .card--action .btn--outline :global(svg) { flex: 0 0 auto; }
+  .settings-card { padding: 20px 16px; }
+  .settings-card .section-label--card { margin: 0 6px 10px; color: #6482a3; }
+  .settings-action { width: 100%; min-height: 66px; display:flex; align-items:center; gap:12px; padding:10px 8px; border:0; border-radius:14px; background:transparent; color:#68839f; font-family:inherit; text-align:left; cursor:pointer; transition:background .2s; }
+  .settings-action:hover, .settings-action:focus-visible { background:#eef7ff; outline:none; }
+  .settings-action-icon { width:40px; height:40px; display:grid; place-items:center; flex-shrink:0; border-radius:13px; color:#1767c7; background:#eaf4ff; }
+  .settings-action-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:2px; }
+  .settings-action-copy strong { color:#1e293b; font-size:14px; font-weight:900; }
+  .settings-action-copy small { color:#71849b; font-size:11px; font-weight:700; }
+  .settings-divider { height:1px; margin:4px 8px; background:#e7eef6; }
+  .settings-form { padding:8px 6px 12px; }
+  .settings-form-title { margin:0 0 6px; color:#1e293b; font-size:16px; font-weight:900; }
 
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
   .form-input {
@@ -1088,19 +1088,7 @@
       0 0 0 3px rgba(33, 150, 243, 0.16);
   }
   .form-textarea { resize: vertical; min-height: 72px; }
-  .form-date-label { font-size: 12px; font-weight: 700; color: #94A3B8; margin: 0; }
-  .file-label {
-    display: block;
-    padding: 14px;
-    background: #F0F4FF;
-    border: 2px dashed #BFDBFE;
-    border-radius: 14px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 700;
-    color: #2196F3;
-    cursor: pointer;
-  }
+  .form-date-label { display:flex; align-items:center; gap:5px; font-size: 12px; font-weight: 800; color: #64748B; margin: 2px 0 -4px; }
   .btn-row { display: flex; gap: 10px; }
 
   .btn {

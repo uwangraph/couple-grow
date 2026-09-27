@@ -40,6 +40,14 @@
   let contributions = $state<any[]>([]);
   let loadingHistory = $state(false);
 
+  function milestoneFromMetadata(value: unknown) {
+    try {
+      const metadata = typeof value === 'string' ? JSON.parse(value) : value;
+      const percentage = Number(metadata?.percentage);
+      return Number.isFinite(percentage) && percentage > 0 ? percentage : null;
+    } catch { return null; }
+  }
+
   onMount(async () => {
     if (!auth.token) { goto('/login'); return; }
     await fetchSavings();
@@ -416,7 +424,7 @@
 
   <!-- Modal Buat Tabungan -->
   {#if showModal}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Buat target tabungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -430,8 +438,9 @@
         </div>
         <form class="modal-form" onsubmit={createSaving}>
           <div class="form-group">
-            <label class="form-label">Nama Target</label>
+            <label class="form-label" for="saving-name">Nama Target</label>
             <input
+              id="saving-name"
               type="text"
               bind:value={name}
               required
@@ -440,9 +449,11 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">Target Nominal (Rp)</label>
+            <label class="form-label" for="saving-target">Target Nominal (Rp)</label>
             <input
+              id="saving-target"
               type="number"
+              min="1"
               bind:value={targetAmount}
               required
               placeholder="0"
@@ -460,7 +471,7 @@
 
   <!-- Modal Topup -->
   {#if showTopupModal && selectedSaving}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showTopupModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Top up tabungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showTopupModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showTopupModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -490,9 +501,11 @@
 
         <form class="modal-form" onsubmit={topupSaving}>
           <div class="form-group">
-            <label class="form-label">Nominal Top Up (Rp)</label>
+            <label class="form-label" for="saving-topup">Nominal Top Up (Rp)</label>
             <input
+              id="saving-topup"
               type="number"
+              min="1"
               bind:value={topupAmount}
               required
               placeholder="0"
@@ -510,7 +523,7 @@
 
   <!-- Modal Deduct/Tarik -->
   {#if showDeductModal && selectedDeductSaving}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showDeductModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Tarik tabungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showDeductModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showDeductModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -533,9 +546,11 @@
 
         <form class="modal-form" onsubmit={deductSaving}>
           <div class="form-group">
-            <label class="form-label">Nominal Tarik (Rp)</label>
+            <label class="form-label" for="saving-deduct">Nominal Tarik (Rp)</label>
             <input
+              id="saving-deduct"
               type="number"
+              min="1"
               bind:value={deductAmount}
               required
               placeholder="0"
@@ -545,8 +560,9 @@
             <p class="deduct-hint">Maksimal: {formatRp(selectedDeductSaving.current_amount)}</p>
           </div>
           <div class="form-group">
-            <label class="form-label">Catatan (opsional)</label>
+            <label class="form-label" for="saving-deduct-note">Catatan (opsional)</label>
             <input
+              id="saving-deduct-note"
               type="text"
               bind:value={deductNote}
               placeholder="Contoh: Pinjam dulu untuk bayar..."
@@ -564,7 +580,7 @@
 
   <!-- Modal Edit -->
   {#if showEditModal && selectedEditSaving}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit tabungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showEditModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -578,8 +594,9 @@
         </div>
         <form class="modal-form" onsubmit={editSaving}>
           <div class="form-group">
-            <label class="form-label">Nama Target</label>
+            <label class="form-label" for="saving-edit-name">Nama Target</label>
             <input
+              id="saving-edit-name"
               type="text"
               bind:value={editName}
               required
@@ -588,9 +605,11 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">Target Nominal (Rp)</label>
+            <label class="form-label" for="saving-edit-target">Target Nominal (Rp)</label>
             <input
+              id="saving-edit-target"
               type="number"
+              min="1"
               bind:value={editTargetAmount}
               required
               placeholder="0"
@@ -598,8 +617,9 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">Deadline (opsional)</label>
+            <label class="form-label" for="saving-edit-deadline">Deadline (opsional)</label>
             <input
+              id="saving-edit-deadline"
               type="date"
               bind:value={editDeadline}
               class="form-input"
@@ -616,7 +636,7 @@
 
   <!-- Konfirmasi Hapus -->
   {#if showDeleteConfirm && selectedDeleteSaving}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showDeleteConfirm = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Konfirmasi hapus tabungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showDeleteConfirm = false; }} onclick={(e) => { if (e.target === e.currentTarget) showDeleteConfirm = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="delete-confirm-icon">
@@ -629,8 +649,8 @@
           Aksi ini tidak bisa dibatalkan.
         </p>
         <div class="modal-actions">
-          <button class="modal-cancel" onclick={() => showDeleteConfirm = false}>Batal</button>
-          <button class="modal-submit modal-submit--red" onclick={deleteSaving}>Hapus</button>
+          <button type="button" class="modal-cancel" onclick={() => showDeleteConfirm = false}>Batal</button>
+          <button type="button" class="modal-submit modal-submit--red" onclick={deleteSaving}>Hapus</button>
         </div>
       </div>
     </div>
@@ -638,7 +658,7 @@
 
   <!-- Modal History & Contributions -->
   {#if showHistoryModal && selectedHistorySaving}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showHistoryModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Riwayat tabungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showHistoryModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showHistoryModal = false; }}>
       <div class="modal modal--large">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -706,6 +726,7 @@
             {:else}
               <div class="activities-list">
                 {#each activities as activity}
+                  {@const milestone = milestoneFromMetadata(activity.metadata)}
                   {@const actType = activity.type}
                   {@const actIcon = actType === 'topup' ? 'income' : actType === 'deduct' ? 'expense' : actType === 'milestone' ? 'sparkles' : actType === 'created' ? 'success' : 'edit'}
                   {@const actColor = actType === 'topup' ? 'green' : actType === 'deduct' ? 'red' : actType === 'milestone' ? 'yellow' : 'blue'}
@@ -725,12 +746,7 @@
                       {#if activity.note}
                         <p class="activity-note">{activity.note}</p>
                       {/if}
-                      {#if activity.metadata}
-                        {@const meta = JSON.parse(activity.metadata)}
-                        {#if meta.percentage}
-                          <p class="activity-milestone">Mencapai {meta.percentage}%!</p>
-                        {/if}
-                      {/if}
+                      {#if milestone}<p class="activity-milestone">Mencapai {milestone}%!</p>{/if}
                       <p class="activity-time">{new Date(activity.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                   </div>
@@ -741,7 +757,7 @@
         {/if}
 
         <div class="modal-actions">
-          <button class="modal-cancel" onclick={() => showHistoryModal = false}>Tutup</button>
+          <button type="button" class="modal-cancel" onclick={() => showHistoryModal = false}>Tutup</button>
         </div>
       </div>
     </div>
@@ -749,7 +765,7 @@
 
   <!-- Milestone Celebration -->
   {#if showMilestone}
-    <div class="milestone-overlay" onclick={() => showMilestone = false}>
+    <div class="milestone-overlay" role="dialog" aria-modal="true" aria-label="Pencapaian tabungan" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showMilestone = false; }} onclick={(e) => { if (e.target === e.currentTarget) showMilestone = false; }}>
       <div class="milestone-card">
         <div class="confetti-container">
           <!-- Confetti animation -->
@@ -778,7 +794,7 @@
           {/if}
         </div>
 
-        <button class="milestone-btn" onclick={() => showMilestone = false}>
+        <button type="button" class="milestone-btn" onclick={() => showMilestone = false}>
           Tutup
         </button>
       </div>

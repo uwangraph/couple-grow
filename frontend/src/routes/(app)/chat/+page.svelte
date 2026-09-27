@@ -1600,17 +1600,17 @@
               bind:value={newMessage}
               oninput={handleTyping}
               placeholder={pendingFiles.length > 0 ? 'Tambah keterangan...' : 'Ketik pesan...'}
-              class="msg-input"
+              class="msg-input" class:msg-input--compact={Boolean(newMessage.trim())}
               aria-label="Ketik pesan"
             />
           {/if}
 
           {#if !newMessage.trim()}
-            <button type="button" class="in-field-btn {showAttachMenu ? 'in-field-btn--active' : ''}" onclick={(e) => { e.stopPropagation(); toggleAttachMenu(); }} aria-label="Lampiran">
+            <button type="button" class="in-field-btn in-field-btn--attach {showAttachMenu ? 'in-field-btn--active' : ''}" onclick={(e) => { e.stopPropagation(); toggleAttachMenu(); }} aria-label="Lampiran">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>
             </button>
           {/if}
-          <button type="button" class="in-field-btn" onclick={openCamera} aria-label="Ambil foto">
+          <button type="button" class="in-field-btn in-field-btn--camera" onclick={openCamera} aria-label="Ambil foto">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
           </button>
         </div>
@@ -2183,8 +2183,8 @@
   }
   .in-field-btn:hover { background: #fff; color: #2196F3; }
   .in-field-btn:first-child { left: 6px; }
-  .in-field-btn:nth-child(3) { right: 42px; }
-  .in-field-btn:nth-child(4) { right: 6px; }
+  .in-field-btn--attach { right: 42px; }
+  .in-field-btn--camera { right: 6px; }
   .recording-indicator {
     flex: 1;
     display: flex;
@@ -2213,6 +2213,7 @@
       inset -3px -3px 7px rgba(255, 255, 255, 0.95);
     transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   }
+  .msg-input--compact { padding-right: 50px; }
   .msg-input::placeholder { color: #94A3B8; }
   .msg-input:focus {
     
@@ -2765,7 +2766,7 @@
 
   .cam-video--mirror { transform: scaleX(-1); }
 
-  .chat-header, .composer, .attach-menu, .emoji-picker { background: rgba(255,255,255,.86); border-color: rgba(255,255,255,.92); box-shadow: 0 8px 22px rgba(30,64,175,.07); backdrop-filter: blur(18px); }
+  .chat-header, .attach-menu, .emoji-picker { background: rgba(255,255,255,.86); border-color: rgba(255,255,255,.92); box-shadow: 0 8px 22px rgba(30,64,175,.07); backdrop-filter: blur(18px); }
   .header-action, .send-btn, .cam-btn--primary { border-radius: 12px; box-shadow: 0 6px 14px rgba(37,99,235,.16); }
   .msg-input { border: 1px solid #E2E8F0; background: #F8FAFC; box-shadow: none; border-radius: 14px; }
   .msg-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }

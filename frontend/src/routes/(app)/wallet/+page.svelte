@@ -18,6 +18,7 @@
   let transactions = $state<any[]>([]);
   let stats = $state<{ monthly: any[]; categories: any[] }>({ monthly: [], categories: [] });
   let loading = $state(true);
+  let loadError = $state('');
   let activeTab = $state<'history' | 'stats'>('history');
 
   // Add transaction modal
@@ -54,14 +55,18 @@
 
   async function fetchTransactions() {
     if (!auth.token) return;
+    loadError = '';
+    loading = true;
     try {
       const res = await fetch(`${API_URL}/transactions`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
       if (res.status === 401) { handleUnauthorized(); return; }
       const data = await readApiJson<{ transactions?: any[] }>(res);
-      if (res.ok) transactions = data.transactions || [];
-    } catch(e) {} finally { loading = false; }
+      if (!res.ok) throw new Error('Transaksi tidak dapat dimuat. Coba lagi.');
+      transactions = data.transactions || [];
+    } catch(e) { loadError = e instanceof Error ? e.message : 'Transaksi tidak dapat dimuat. Coba lagi.'; }
+    finally { loading = false; }
   }
 
   async function fetchStats() {
@@ -138,6 +143,7 @@
       const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal mengupdate transaksi');
       showEditModal = false;
+      editingTx = null;
       await Promise.all([fetchTransactions(), fetchStats()]);
       toast.success('Transaksi berhasil diupdate!');
     } catch(e: any) { toast.error(e.message || 'Gagal mengupdate transaksi'); }
@@ -154,6 +160,7 @@
       const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal menghapus transaksi');
       showDeleteConfirm = false;
+      deletingTx = null;
       await Promise.all([fetchTransactions(), fetchStats()]);
       toast.success('Transaksi berhasil dihapus!');
     } catch(e: any) { toast.error(e.message || 'Gagal menghapus transaksi'); }
@@ -187,8 +194,8 @@
   <!-- Balance Header -->
   <div class="header">
     <div class="header-inner">
-      <p class="balance-label">Total Saldo Bersama</p>
-      <h2 class="balance-amount">{formatRp(totalBalance)}</h2>
+      <p class="balance-label">Total saldo bersama</p>
+      <h2 class="balance-amount">{loadError ? '—' : formatRp(totalBalance)}</h2>
       <div class="balance-row">
         <div class="balance-chip balance-chip--in">
           <div class="chip-icon">
@@ -196,7 +203,7 @@
           </div>
           <div>
             <p class="chip-label">Masuk</p>
-            <p class="chip-val">{formatRp(totalIncome)}</p>
+            <p class="chip-val">{loadError ? '—' : formatRp(totalIncome)}</p>
           </div>
         </div>
         <div class="balance-chip balance-chip--out">
@@ -205,7 +212,7 @@
           </div>
           <div>
             <p class="chip-label">Keluar</p>
-            <p class="chip-val">{formatRp(totalExpense)}</p>
+            <p class="chip-val">{loadError ? '—' : formatRp(totalExpense)}</p>
           </div>
         </div>
       </div>
@@ -214,21 +221,21 @@
 
   <!-- Tabs + Add Button -->
   <div class="tab-bar">
-    <button
+    <button type="button" aria-pressed={activeTab === 'history'}
       class="tab {activeTab === 'history' ? 'tab--active' : ''}"
       onclick={() => activeTab = 'history'}
       style="display: flex; align-items: center; justify-content: center; gap: 6px;"
     >
       <NotesIcon size={16} /> Riwayat
     </button>
-    <button
+    <button type="button" aria-pressed={activeTab === 'stats'}
       class="tab {activeTab === 'stats' ? 'tab--active' : ''}"
       onclick={() => activeTab = 'stats'}
       style="display: flex; align-items: center; justify-content: center; gap: 6px;"
     >
       <TrendingUpIcon size={16} /> Statistik
     </button>
-    <button class="add-btn" onclick={() => showModal = true}>
+    <button type="button" class="add-btn" onclick={() => showModal = true}>
       + Catat
     </button>
   </div>
@@ -241,13 +248,20 @@
         <div class="spinner"></div>
       </div>
 
+    {:else if loadError}
+      <div class="empty-state error-state" role="alert">
+        <Icon name="error" size={32} />
+        <p>{loadError}</p>
+        <button type="button" class="empty-link" onclick={fetchTransactions}>Coba lagi</button>
+      </div>
+
     {:else if activeTab === 'history'}
       <div class="list">
         {#if transactions.length === 0}
           <div class="empty-state">
             <EmptyIcon size={40} aria-hidden="true" style="opacity:0.4;margin-bottom:12px;" />
             <p>Belum ada transaksi</p>
-            <button class="empty-link" onclick={() => showModal = true}>Catat sekarang →</button>
+            <button type="button" class="empty-link" onclick={() => showModal = true}>Catat sekarang →</button>
           </div>
         {/if}
         {#if transactions.length > 0}
@@ -475,7 +489,7 @@
 
   <!-- Modal -->
   {#if showModal}
-    <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Catat transaksi" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -491,14 +505,14 @@
         <!-- Type toggle -->
         <div class="type-toggle">
           <button
-            class="type-btn {type === 'expense' ? 'type-btn--out' : ''}"
+            type="button" aria-pressed={type === 'expense'} class="type-btn {type === 'expense' ? 'type-btn--out' : ''}"
             onclick={() => type = 'expense'}
           >
             <ExpenseIcon size={16} aria-hidden="true" />
             Pengeluaran
           </button>
           <button
-            class="type-btn {type === 'income' ? 'type-btn--in' : ''}"
+            type="button" aria-pressed={type === 'income'} class="type-btn {type === 'income' ? 'type-btn--in' : ''}"
             onclick={() => type = 'income'}
           >
             <IncomeIcon size={16} aria-hidden="true" />
@@ -508,9 +522,11 @@
 
         <form class="modal-form" onsubmit={addTransaction}>
           <div class="form-group">
-            <label class="form-label">Nominal (Rp)</label>
+            <label class="form-label" for="new-amount">Nominal (Rp)</label>
             <input
+              id="new-amount"
               type="number"
+              min="1"
               bind:value={amount}
               required
               placeholder="0"
@@ -520,12 +536,12 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Kategori</label>
-              <input type="text" bind:value={category} required placeholder="Contoh: Makan" class="form-input" />
+              <label class="form-label" for="new-category">Kategori</label>
+              <input id="new-category" type="text" bind:value={category} required placeholder="Contoh: Makan" class="form-input" />
             </div>
             <div class="form-group">
-              <label class="form-label">Catatan</label>
-              <input type="text" bind:value={note} placeholder="Opsional" class="form-input" />
+              <label class="form-label" for="new-note">Catatan</label>
+              <input id="new-note" type="text" bind:value={note} placeholder="Opsional" class="form-input" />
             </div>
           </div>
 
@@ -539,7 +555,7 @@
   {/if}
 
   {#if showDetailModal && detailTx}
-    <div class="modal-overlay" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Detail transaksi" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showDetailModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
       <div class="modal detail-modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -555,14 +571,18 @@
           <div><span>Catatan</span><strong>{detailTx.note || 'Tidak ada catatan'}</strong></div>
           <div><span>Ditambahkan oleh</span><strong>{detailTx.user_name || 'Kamu'}</strong></div>
         </div>
-        <button class="modal-cancel detail-close" onclick={() => showDetailModal = false}>Tutup</button>
+        <div class="detail-actions">
+          <button type="button" class="detail-action detail-action--edit" onclick={() => { showDetailModal = false; openEdit(detailTx); }}><Icon name="edit" size={16} /> Edit</button>
+          <button type="button" class="detail-action detail-action--delete" onclick={() => { showDetailModal = false; openDelete(detailTx); }}><Icon name="trash" size={16} /> Hapus</button>
+        </div>
+        <button type="button" class="modal-cancel detail-close" onclick={() => showDetailModal = false}>Tutup</button>
       </div>
     </div>
   {/if}
 
   <!-- Modal Edit Transaksi -->
   {#if showEditModal && editingTx}
-    <div class="modal-overlay" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit transaksi" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showEditModal = false; }} onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
       <div class="modal">
         <div class="modal-handle"></div>
         <div class="modal-icon-header">
@@ -585,7 +605,7 @@
             </button>
           </div>
           <label class="modal-label" for="edit-amount">Nominal (Rp)</label>
-          <input id="edit-amount" type="number" bind:value={editAmount} required placeholder="0" class="modal-input modal-input--amount" />
+          <input id="edit-amount" type="number" min="1" bind:value={editAmount} required placeholder="0" class="modal-input modal-input--amount" />
           <label class="modal-label" for="edit-category">Kategori</label>
           <input id="edit-category" type="text" bind:value={editCategory} required placeholder="Makan, Transportasi..." class="modal-input" />
           <label class="modal-label" for="edit-note">Catatan (opsional)</label>
@@ -601,7 +621,7 @@
 
   <!-- Konfirmasi Hapus -->
   {#if showDeleteConfirm && deletingTx}
-    <div class="modal-overlay" role="dialog" aria-modal="true" onclick={(e) => { if (e.target === e.currentTarget) showDeleteConfirm = false; }}>
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Konfirmasi hapus transaksi" tabindex="-1" onkeydown={(e) => { if (e.key === 'Escape') showDeleteConfirm = false; }} onclick={(e) => { if (e.target === e.currentTarget) showDeleteConfirm = false; }}>
       <div class="modal" style="text-align:center;">
         <div class="modal-handle"></div>
         <div class="delete-icon">
@@ -821,6 +841,10 @@
   .detail-list > div { display: flex; justify-content: space-between; gap: 16px; padding: 13px 15px; border-bottom: 1px solid #EEF2F7; font-size: 13px; }
   .detail-list > div:last-child { border-bottom: 0; }
   .detail-list span { color: #94A3B8; }.detail-list strong { color: #1F2937; text-align: right; }
+  .detail-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 10px; }
+  .detail-action { display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#155fc7; font:inherit; font-size:13px; font-weight:800; cursor:pointer; }
+  .detail-action--delete { border-color:#fecdd3; background:#fff1f2; color:#be3455; }
+  .detail-action:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
   .detail-close { width: 100%; }
   .tx-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;
     box-shadow: 0 4px 10px rgba(30,64,175,.1);
@@ -843,6 +867,9 @@
       6px 10px 22px rgba(21, 101, 192, 0.10),
       2px 3px 6px rgba(21, 101, 192, 0.06); color: #5B6B85; font-size: 13px; font-weight: 600; }
   .empty-link { color: #1976D2; font-weight: 700; background: none; border: none; font-family: 'Nunito', sans-serif; font-size: 13px; cursor: pointer; margin-top: 10px; display: block; }
+  .error-state { display:flex; flex-direction:column; align-items:center; gap:8px; color:#be3455; }
+  .error-state p { margin:0; color:#475569; }
+  .error-state .empty-link { margin:4px 0 0; }
 
   /* Stats */
   .stats-list { display: flex; flex-direction: column; gap: 14px; }
@@ -916,7 +943,6 @@
 
   /* Categories */
   .cat-list { display: flex; flex-direction: column; gap: 12px; }
-  .cat-item {}
   .cat-row {
     display: flex;
     align-items: center;

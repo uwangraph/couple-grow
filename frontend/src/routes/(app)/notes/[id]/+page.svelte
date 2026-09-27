@@ -17,6 +17,7 @@
   let activeTab = $state<'text' | 'checklist' | 'spreadsheet'>('text');
   let loading = $state(false);
   let saved = $state(false);
+  let errorMessage = $state('');
   let spreadsheetData = $state<string[][]>([]);
 
   onMount(async () => {
@@ -26,6 +27,7 @@
 
   async function fetchNote() {
     loading = true;
+    errorMessage = '';
     try {
       const res = await fetch(`${API_URL}/notes/${id}`, { headers: { 'Authorization': `Bearer ${auth.token}` } });
       const data = await readApiJson<{ note?: any; error?: string }>(res);
@@ -42,12 +44,17 @@
         } else if (checklist.length > 0) {
           activeTab = 'checklist';
         }
+      } else {
+        throw new Error(data.error || 'Catatan tidak dapat dimuat. Coba lagi.');
       }
-    } catch(e) {} finally { loading = false; }
+    } catch(e) { errorMessage = e instanceof Error ? e.message : 'Catatan tidak dapat dimuat. Coba lagi.'; }
+    finally { loading = false; }
   }
 
   async function saveNote() {
     loading = true;
+    errorMessage = '';
+    saved = false;
     // Serialize spreadsheet data into content field
     const contentToSave = activeTab === 'spreadsheet'
       ? `__SHEET__:${JSON.stringify(spreadsheetData)}`
@@ -69,7 +76,8 @@
       const data = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal menyimpan catatan');
       saved = true; setTimeout(() => goto('/notes'), 600);
-    } catch(e) {} finally { loading = false; }
+    } catch(e) { errorMessage = e instanceof Error ? e.message : 'Catatan gagal disimpan. Coba lagi.'; }
+    finally { loading = false; }
   }
 
   async function deleteNote() {
@@ -78,7 +86,7 @@
       const res = await fetch(`${API_URL}/notes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${auth.token}` } });
       if (!res.ok) throw new Error('Gagal menghapus catatan');
       goto('/notes');
-    } catch(e) {}
+    } catch(e) { errorMessage = e instanceof Error ? e.message : 'Catatan gagal dihapus. Coba lagi.'; }
   }
 
   function addCheckItem() { checklist = [...checklist, { text: '', is_done: false }]; }
@@ -93,23 +101,32 @@
 
   <!-- Top Bar -->
   <div class="topbar">
-    <button class="back-btn" onclick={() => goto('/notes')}>
+    <button type="button" class="back-btn" aria-label="Kembali ke catatan" onclick={() => goto('/notes')}>
       <Icon name="arrow" size={20} style="transform: rotate(180deg)" />
     </button>
 
     <div class="topbar-actions">
       {#if id !== 'new'}
-        <button class="delete-btn" onclick={deleteNote}>Hapus</button>
+        <button type="button" class="delete-btn" onclick={deleteNote}>Hapus</button>
       {/if}
-      <button class="save-btn {saved ? 'save-btn--saved' : ''}" onclick={saveNote} disabled={loading}>
+      <button type="button" class="save-btn {saved ? 'save-btn--saved' : ''}" onclick={saveNote} disabled={loading}>
         {#if saved}✓ Tersimpan{:else if loading}...{:else}Simpan{/if}
       </button>
     </div>
   </div>
 
+  {#if errorMessage}
+    <div class="editor-alert" role="alert">
+      <span>{errorMessage}</span>
+      {#if id !== 'new' && !title && !content}<button type="button" onclick={fetchNote}>Coba lagi</button>{/if}
+    </div>
+  {/if}
+
   <!-- Title Area -->
   <div class="title-area">
+    <label class="section-kicker" for="note-title">{id === 'new' ? 'CATATAN BARU' : 'EDIT CATATAN'}</label>
     <input
+      id="note-title"
       bind:value={title}
       placeholder="Judul catatan..."
       class="title-input"
@@ -121,20 +138,24 @@
         <span class="meta-pill meta-pill--progress">{doneCount}/{checklist.length} selesai</span>
       {/if}
       {#if id !== 'new'}
-        <span class="meta-pill">Diedit</span>
+        <span class="meta-pill">Bisa diedit</span>
       {/if}
     </div>
   </div>
 
   <!-- Tab Switcher -->
-  <div class="tab-bar">
+  <div class="tab-bar" aria-label="Format catatan">
     <button
+      type="button"
+      aria-pressed={activeTab === 'text'}
       class="tab-pill {activeTab === 'text' ? 'tab-pill--active' : ''}"
       onclick={() => activeTab = 'text'}
     >
       <Icon name="edit" size={14} /> Teks
     </button>
     <button
+      type="button"
+      aria-pressed={activeTab === 'checklist'}
       class="tab-pill {activeTab === 'checklist' ? 'tab-pill--active' : ''}"
       onclick={() => activeTab = 'checklist'}
     >
@@ -144,6 +165,8 @@
       {/if}
     </button>
     <button
+      type="button"
+      aria-pressed={activeTab === 'spreadsheet'}
       class="tab-pill {activeTab === 'spreadsheet' ? 'tab-pill--active' : ''}"
       onclick={() => activeTab = 'spreadsheet'}
     >
@@ -171,6 +194,8 @@
         {#each checklist as item, idx}
           <div class="check-item {item.is_done ? 'check-item--done' : ''}">
             <button
+              type="button"
+              aria-label={`Tandai item ${idx + 1} ${item.is_done ? 'belum selesai' : 'selesai'}`}
               class="check-bubble {item.is_done ? 'check-bubble--done' : ''}"
               onclick={() => toggleCheckItem(idx)}
             >
@@ -184,6 +209,8 @@
               class="check-text {item.is_done ? 'check-text--done' : ''}"
             />
             <button
+              type="button"
+              aria-label={`Hapus item ${idx + 1}`}
               class="check-delete"
               onclick={() => checklist = checklist.filter((_, i) => i !== idx)}
             >
@@ -193,7 +220,7 @@
         {/each}
 
         <!-- Add item -->
-        <button class="add-item-btn" onclick={addCheckItem}>
+        <button type="button" class="add-item-btn" onclick={addCheckItem}>
           <span class="add-item-plus">+</span>
           Tambah Item
         </button>
@@ -216,7 +243,7 @@
   .editor-root {
     font-family: 'Nunito', sans-serif;
     min-height: 100%;
-    background: white;
+    background: linear-gradient(180deg, #eef7ff 0%, #f8fbff 220px, #fff 390px);
     display: flex;
     flex-direction: column;
   }
@@ -226,8 +253,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    padding: 18px 22px 10px;
     flex-shrink: 0;
   }
   .back-btn {
@@ -256,6 +282,21 @@
       1px 1px 3px rgba(21, 101, 192, 0.06);
   }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .editor-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 8px 22px 0;
+    padding: 12px 14px;
+    border: 1px solid #fecdd3;
+    border-radius: 14px;
+    background: #fff1f2;
+    color: #9f1239;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .editor-alert button { border: 0; background: transparent; color: #be123c; font: inherit; text-decoration: underline; cursor: pointer; white-space: nowrap; }
   .delete-btn {
     padding: 8px 14px;
     border-radius: 12px;
@@ -290,20 +331,18 @@
   }
 
   /* Title */
-  .title-area { padding: 20px 22px 10px; }
+  .title-area { padding: 24px 22px 18px; }
+  .section-kicker { display: block; margin-bottom: 8px; color: #6485a5; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
   .title-input {
     width: 100%;
     border: none;
     outline: none;
     font-family: 'Nunito', sans-serif;
-    font-size: 24px;
+    font-size: clamp(25px, 7vw, 34px);
     font-weight: 800;
     color: #1F2937;
     background: transparent;
-    margin-bottom: 10px;
-    box-shadow:
-      inset 4px 4px 8px rgba(25, 118, 210, 0.13),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+    margin-bottom: 12px;
   }
   .title-input::placeholder { color: #CBD5E1; }
   .title-meta { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -322,17 +361,17 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 22px 14px;
+    padding: 0 22px 18px;
     flex-wrap: wrap;
   }
   .tab-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 16px;
+    padding: 10px 13px;
     border-radius: 99px;
     border: 1px solid rgba(226, 232, 240, 0.9);
-    background: #ffffff;
+    background: rgba(255,255,255,.7);
     color: #64748B;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
@@ -340,7 +379,7 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .tab-pill--active { background: #ffffff; border-color: rgba(33, 150, 243, 0.4); color: #1976D2; box-shadow: 0 1px 3px rgba(33, 150, 243,0.18); }
+  .tab-pill--active { background: #e3f1ff; border-color: #8bc7fa; color: #1565c0; box-shadow: 0 4px 12px rgba(33, 150, 243,0.12); }
   .tab-badge {
     background: rgba(33, 150, 243, 0.12); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10);
     color: #1976D2;
@@ -367,24 +406,14 @@
   .content-area {
     flex: 1;
     overflow-y: auto;
-    padding: 0 22px 32px;
+    padding: 22px 22px 40px;
+    margin: 0 14px 18px;
+    background: #fff;
+    border: 1px solid #e7eef6;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(38, 91, 145, .07);
   }
-
-  /* Text area */
-  .text-area {
-    width: 100%;
-    min-height: 360px;
-    border: none;
-    outline: none;
-    resize: none;
-    font-family: 'Nunito', sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    color: #374151;
-    line-height: 1.8;
-    background: transparent;
-  }
-  .text-area::placeholder { color: #CBD5E1; }
+  .content-area--sheet { padding: 12px; }
 
   /* Checklist */
   .checklist-wrap { display: flex; flex-direction: column; gap: 8px; }
@@ -394,9 +423,9 @@
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    background: #F8FAFC;
+    background: #f7faff;
     border-radius: 14px;
-    border: 1px solid transparent;
+    border: 1px solid #e7eef6;
     transition: all 0.15s;
   }
   .check-item--done {

@@ -7,12 +7,13 @@
   import { toast } from '$lib/toast.svelte';
 
   let { data } = $props();
-  const id = data.id;
+  let id = $derived(data.id);
 
   let saving = $state<any>(null);
   let activities = $state<any[]>([]);
   let contributions = $state<any[]>([]);
   let loading = $state(true);
+  let loadError = $state('');
 
   let showTopupModal = $state(false);
   let showDeductModal = $state(false);
@@ -30,9 +31,15 @@
 
   onMount(async () => {
     if (!auth.token) { goto('/login'); return; }
+    await loadDetail();
+  });
+
+  async function loadDetail() {
+    loading = true;
+    loadError = '';
     await Promise.all([fetchSaving(), fetchActivities(), fetchContributions()]);
     loading = false;
-  });
+  }
 
   async function fetchSaving() {
     try {
@@ -43,8 +50,11 @@
       if (res.ok) {
         const data = await readApiJson<{ saving?: any }>(res);
         saving = data.saving;
+        if (!saving) loadError = 'Detail tabungan tidak tersedia.';
+      } else {
+        loadError = 'Detail tabungan gagal dimuat. Coba lagi.';
       }
-    } catch(e) { console.error('fetchSaving error:', e); }
+    } catch(e) { loadError = 'Detail tabungan gagal dimuat. Periksa koneksi lalu coba lagi.'; }
   }
 
   async function fetchActivities() {
@@ -157,7 +167,14 @@
     if (n >= 1_000) return `${(n/1_000).toFixed(0)}rb`;
     return `${n}`;
   }
-  function pct(cur: number, tgt: number) { return Math.min(Math.floor((cur / tgt) * 100), 100); }
+  function pct(cur: number, tgt: number) { return tgt > 0 ? Math.min(Math.max(Math.floor((cur / tgt) * 100), 0), 100) : 0; }
+  function milestoneFromMetadata(value: unknown) {
+    try {
+      const metadata = typeof value === 'string' ? JSON.parse(value) : value;
+      const percentage = Number(metadata?.percentage);
+      return Number.isFinite(percentage) && percentage > 0 ? percentage : null;
+    } catch { return null; }
+  }
 </script>
 
 {#if loading}
@@ -166,8 +183,9 @@
 {:else if !saving}
   <div class="full-center" style="flex-direction:column;gap:16px;">
     <Icon name="empty" size={48} />
-    <p style="color:#94A3B8;font-weight:700;">Tabungan tidak ditemukan</p>
-    <button class="btn-back-plain" onclick={() => goto('/savings')}>← Kembali</button>
+    <p style="color:#64748B;font-weight:700;text-align:center;">{loadError || 'Tabungan tidak ditemukan'}</p>
+    {#if loadError}<button type="button" class="btn-back-plain" onclick={loadDetail}>Coba lagi</button>{/if}
+    <button type="button" class="btn-back-plain" onclick={() => goto('/savings')}>Kembali ke tabungan</button>
   </div>
 
 {:else}
@@ -185,14 +203,14 @@
 
       <!-- Top bar -->
       <div class="topbar">
-        <button class="icon-btn" onclick={() => goto('/savings')} aria-label="Kembali">
+        <button type="button" class="icon-btn" onclick={() => goto('/savings')} aria-label="Kembali">
           <Icon name="back" size={20} />
         </button>
         <div style="display:flex;gap:8px;">
-          <button class="icon-btn" onclick={openEdit} aria-label="Edit">
+          <button type="button" class="icon-btn" onclick={openEdit} aria-label="Edit tabungan">
             <Icon name="edit" size={18} />
           </button>
-          <button class="icon-btn icon-btn--red" onclick={() => showDeleteConfirm = true} aria-label="Hapus">
+          <button type="button" class="icon-btn icon-btn--red" onclick={() => showDeleteConfirm = true} aria-label="Hapus tabungan">
             <Icon name="trash" size={18} />
           </button>
         </div>
@@ -222,13 +240,13 @@
             <p class="label-small" style="color:rgba(255,255,255,.6)">Terkumpul</p>
             <p class="amount-white">{fmt(saving.current_amount)}</p>
           </div>
-          <p class="pct-big">{p}%</p>
           <div style="text-align:right">
             <p class="label-small" style="color:rgba(255,255,255,.6)">Target</p>
             <p class="amount-white">{fmt(saving.target_amount)}</p>
           </div>
         </div>
-        <div class="prog-track">
+        <div class="progress-status"><span>Progres bersama</span><strong>{p}%</strong></div>
+        <div class="prog-track" role="progressbar" aria-label="Progres tabungan" aria-valuenow={p} aria-valuemin="0" aria-valuemax="100">
           <div class="prog-fill" class:prog-fill--done={isDone} style="width:{p}%"></div>
         </div>
         {#if isDone}
@@ -246,19 +264,20 @@
 
     <!-- Actions -->
     <div class="actions">
-      <button class="act-btn act-btn--blue" onclick={() => showTopupModal = true}>
+      <button type="button" class="act-btn act-btn--blue" onclick={() => showTopupModal = true}>
         <div class="act-icon act-icon--blue"><Icon name="income" size={24} /></div>
         <span>Top Up</span>
       </button>
       <button
+        type="button"
         class="act-btn act-btn--red"
-        class:act-btn--disabled={saving.current_amount === 0}
-        onclick={() => saving.current_amount > 0 && (showDeductModal = true)}
+        disabled={saving.current_amount <= 0}
+        onclick={() => showDeductModal = true}
       >
         <div class="act-icon act-icon--red"><Icon name="expense" size={24} /></div>
         <span>Tarik</span>
       </button>
-      <button class="act-btn act-btn--purple" onclick={() => goto(`/chat?saving_id=${saving.id}&saving_name=${encodeURIComponent(saving.name)}`)}>
+      <button type="button" class="act-btn act-btn--purple" onclick={() => goto(`/chat?saving_id=${saving.id}&saving_name=${encodeURIComponent(saving.name)}`)}>
         <div class="act-icon act-icon--purple"><Icon name="chat" size={24} /></div>
         <span>Diskusi</span>
       </button>
@@ -298,6 +317,7 @@
       {:else}
         <div class="act-list">
           {#each activities as a}
+            {@const milestone = milestoneFromMetadata(a.metadata)}
             {@const iconName = a.type==='topup'?'income':a.type==='deduct'?'expense':a.type==='milestone'?'sparkles':a.type==='created'?'success':'edit'}
             {@const color = a.type==='topup'?'green':a.type==='deduct'?'red':a.type==='milestone'?'yellow':'blue'}
             {@const lbl = a.type==='topup'?'Top Up':a.type==='deduct'?'Tarik':a.type==='milestone'?'Milestone':a.type==='created'?'Dibuat':'Diupdate'}
@@ -309,10 +329,7 @@
                   {#if a.amount > 0 && a.type !== 'created'}<span class="log-amount">{fmt(a.amount)}</span>{/if}
                 </p>
                 {#if a.note}<p class="log-note">{a.note}</p>{/if}
-                {#if a.metadata}
-                  {@const meta = JSON.parse(a.metadata)}
-                  {#if meta.percentage}<p class="log-milestone">Mencapai {meta.percentage}%!</p>{/if}
-                {/if}
+                {#if milestone}<p class="log-milestone">Mencapai {milestone}%!</p>{/if}
                 <p class="log-time">{new Date(a.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
               </div>
             </div>
@@ -329,7 +346,7 @@
 <!-- MODALS -->
 
 {#if showTopupModal && saving}
-<div class="overlay" role="dialog" aria-modal="true" onclick={(e)=>{if(e.target===e.currentTarget)showTopupModal=false;}}>
+<div class="overlay" role="dialog" aria-modal="true" aria-label="Top up tabungan" tabindex="-1" onkeydown={(e)=>{if(e.key==='Escape')showTopupModal=false;}} onclick={(e)=>{if(e.target===e.currentTarget)showTopupModal=false;}}>
   <div class="modal">
     <div class="mhandle"></div>
     <div class="mhead"><div class="micon micon--green"><Icon name="income" size={20}/></div><div><p class="mtitle">Top Up Tabungan</p><p class="msub">{saving.name}</p></div></div>
@@ -351,7 +368,7 @@
 {/if}
 
 {#if showDeductModal && saving}
-<div class="overlay" role="dialog" aria-modal="true" onclick={(e)=>{if(e.target===e.currentTarget)showDeductModal=false;}}>
+<div class="overlay" role="dialog" aria-modal="true" aria-label="Tarik tabungan" tabindex="-1" onkeydown={(e)=>{if(e.key==='Escape')showDeductModal=false;}} onclick={(e)=>{if(e.target===e.currentTarget)showDeductModal=false;}}>
   <div class="modal">
     <div class="mhandle"></div>
     <div class="mhead"><div class="micon micon--red"><Icon name="expense" size={20}/></div><div><p class="mtitle">Tarik Tabungan</p><p class="msub">{saving.name}</p></div></div>
@@ -372,7 +389,7 @@
 {/if}
 
 {#if showEditModal && saving}
-<div class="overlay" role="dialog" aria-modal="true" onclick={(e)=>{if(e.target===e.currentTarget)showEditModal=false;}}>
+<div class="overlay" role="dialog" aria-modal="true" aria-label="Edit tabungan" tabindex="-1" onkeydown={(e)=>{if(e.key==='Escape')showEditModal=false;}} onclick={(e)=>{if(e.target===e.currentTarget)showEditModal=false;}}>
   <div class="modal">
     <div class="mhandle"></div>
     <div class="mhead"><div class="micon"><Icon name="edit" size={20}/></div><div><p class="mtitle">Edit Tabungan</p><p class="msub">Ubah detail target</p></div></div>
@@ -393,7 +410,7 @@
 {/if}
 
 {#if showDeleteConfirm && saving}
-<div class="overlay" role="dialog" aria-modal="true" onclick={(e)=>{if(e.target===e.currentTarget)showDeleteConfirm=false;}}>
+<div class="overlay" role="dialog" aria-modal="true" aria-label="Konfirmasi hapus tabungan" tabindex="-1" onkeydown={(e)=>{if(e.key==='Escape')showDeleteConfirm=false;}} onclick={(e)=>{if(e.target===e.currentTarget)showDeleteConfirm=false;}}>
   <div class="modal" style="text-align:center;">
     <div class="mhandle"></div>
     <div class="del-icon"><Icon name="trash" size={30}/></div>
@@ -408,7 +425,7 @@
 {/if}
 
 {#if showMilestone && saving}
-<div class="overlay overlay--center" role="dialog" aria-modal="true" onclick={()=>showMilestone=false}>
+<div class="overlay overlay--center" role="dialog" aria-modal="true" aria-label="Pencapaian tabungan" tabindex="-1" onkeydown={(e)=>{if(e.key==='Escape')showMilestone=false;}} onclick={(e)=>{if(e.target===e.currentTarget)showMilestone=false;}}>
   <div class="milestone">
     {#each Array(40) as _,i}<div class="confetti" style="--i:{i}"></div>{/each}
     <div class="ms-icon"><Icon name="sparkles" size={56}/></div>
@@ -436,7 +453,8 @@
   .btn-back-plain{padding:10px 20px;background:#EFF6FF;color:#2196F3;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;}
 
   /* Header */
-  .header{background:linear-gradient(145deg,#2196F3,#4F96E5,#4F96E5);padding:24px 20px 88px;position:relative;overflow:hidden;}
+  .root{min-height:100%;background:linear-gradient(180deg,#e7f4ff 0%,#f4faff 55%,#f9fbff 100%);}
+  .header{background:linear-gradient(145deg,#155fc7 0%,#278fea 55%,#7bc7f5 100%);padding:24px 20px 72px;position:relative;overflow:hidden;border-radius:0 0 32px 32px;}
   .header--done{background:linear-gradient(145deg,#5CC8AC,#3FAF92,#2A8E77);}
   .blob{position:absolute;border-radius:50%;background:rgba(255,255,255,.08);}
   .b1{width:180px;height:180px;top:-50px;right:-40px;}
@@ -455,40 +473,32 @@
   .saving-name{font-size:22px;font-weight:900;color:white;margin:0 0 4px;}
   .deadline-text{font-size:12px;color:rgba(255,255,255,.75);font-weight:700;margin:0;display:flex;align-items:center;gap:5px;}
 
-  .progress-card{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:20px;padding:16px;}
-  .progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-  .amount-white{font-size:15px;font-weight:900;color:white;margin:0;}
-  .pct-big{font-size:28px;font-weight:900;color:white;}
+  .progress-card{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.42);border-radius:24px;padding:18px;box-shadow:0 14px 30px rgba(6,67,147,.15);backdrop-filter:blur(16px);}
+  .progress-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:20px;}
+  .progress-row>div{min-width:0;}
+  .amount-white{font-size:clamp(14px,4vw,20px);font-weight:900;color:white;margin:0;overflow-wrap:anywhere;}
+  .progress-status{display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:12px;font-weight:800;margin-bottom:8px;}
+  .progress-status strong{font-size:18px;}
   .prog-track{height:10px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;margin-bottom:8px;}
   .prog-fill{height:100%;background:white;border-radius:99px;transition:width .6s ease;}
   .prog-fill--done{background:#86EFAC;}
   .prog-caption{font-size:12px;color:rgba(255,255,255,.75);font-weight:700;margin:0;text-align:center;}
 
   /* Body */
-  .body{padding:20px 16px;}
+  .body{padding:0 16px 36px;margin-top:-38px;position:relative;z-index:2;}
 
   /* Actions */
   .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
-  .act-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px;border-radius:20px;border:none;cursor:pointer;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.5);box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);transition:.2s;font-size:12px;font-weight:900;color:#1E293B;}
+  .act-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px;border-radius:20px;cursor:pointer;background:rgba(255,255,255,.92);border:1px solid #fff;box-shadow:0 10px 22px rgba(21,101,192,.1);transition:.2s;font-size:12px;font-weight:900;color:#1E293B;}
   .act-btn:active{transform:scale(.95);}
-  .act-btn--disabled{opacity:.4;cursor:not-allowed;}
+  .act-btn:disabled{opacity:.5;cursor:not-allowed;}
   .act-icon{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;}
   .act-icon--blue{background:#EFF6FF;color:#2196F3;}
   .act-icon--red{background:#FDF4F6;color:#EF7C97;}
-  .act-icon--purple{background:#F5F3FF;color:#7C3AED;}
+  .act-icon--purple{background:#e9f4ff;color:#1969c8;}
 
   /* Card */
-  .card{background:rgba(255,255,255,.65);border-radius:24px;padding:20px;margin-bottom:16px;border:1px solid rgba(255,255,255,.5);
-    box-shadow:
-      inset 5px 5px 10px rgba(255, 255, 255, 0.9),
-      inset -4px -6px 12px rgba(33, 150, 243, 0.10),
-      6px 10px 22px rgba(21, 101, 192, 0.10),
-      2px 3px 6px rgba(21, 101, 192, 0.06);
-  }
+  .card{background:rgba(255,255,255,.94);border-radius:24px;padding:20px;margin-bottom:16px;border:1px solid #fff;box-shadow:0 10px 24px rgba(21,101,192,.07);}
   .card-title{font-size:15px;font-weight:900;color:#1E293B;margin:0 0 16px;}
   .empty-msg{text-align:center;color:#94A3B8;font-size:13px;font-weight:700;padding:16px 0;}
 
@@ -507,7 +517,7 @@
 
   /* Activity log */
   .act-list{display:flex;flex-direction:column;gap:10px;}
-  .log-item{display:flex;gap:12px;padding:12px;background:#F8FAFC;border-radius:14px;border:1px solid #E2E8F0;}
+  .log-item{display:flex;gap:12px;padding:12px;background:#f7faff;border-radius:14px;border:1px solid #e7eef6;}
   .log-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .log-icon--green{background:#F0F9F7;color:#5CC8AC;}
   .log-icon--red{background:#FDF4F6;color:#EF7C97;}
