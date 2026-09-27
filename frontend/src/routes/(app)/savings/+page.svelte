@@ -831,19 +831,20 @@
 
   .header-inner { position:relative; max-width:760px; margin:auto; }
   .header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:18px; }
-  .header-sub { font-size:10px; color:#BFDBFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
+  .header-sub { font-size:11px; color:#DBEAFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
   .header-title { display:flex; align-items:center; gap:8px; font-size:29px; font-weight:900; color:#fff; margin:0; letter-spacing:-.03em; }
-  .header-description { max-width:260px; margin:8px 0 0; color:#DBEAFE; font-size:12px; line-height:1.4; font-weight:600; }
+  .header-description { max-width:300px; margin:8px 0 0; color:#EFF6FF; font-size:14px; line-height:1.45; font-weight:700; }
 
   .create-btn {
     background:rgba(255,255,255,.18);
     color: #ffffff;
     border:1px solid rgba(255,255,255,.35);
     border-radius: 12px;
+    min-height:44px;
     padding: 10px 16px;
     font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 900;
     cursor: pointer;
     white-space: nowrap;
     transition: transform 0.15s, filter 0.2s;
@@ -862,11 +863,11 @@
     box-shadow:0 8px 22px rgba(15,55,140,.12);
   }
   .summary-row { display:flex; justify-content:space-between; gap:14px; margin-bottom:14px; }
-  .summary-label { font-size:10px; color:#BFDBFE; margin:0 0 4px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+  .summary-label { font-size:11px; color:#DBEAFE; margin:0 0 4px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
   .summary-amount { font-size:18px; font-weight:900; color:#fff; margin:0; }
   .summary-track { height:10px; background:rgba(255,255,255,.22); border-radius:99px; padding:2px; margin-bottom:10px; }
   .summary-fill { height:100%; background:#fff; border-radius:99px; transition:width .6s ease; }
-  .summary-meta { display:flex; justify-content:space-between; gap:8px; font-size:11px; color:#DBEAFE; font-weight:700; }
+  .summary-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#EFF6FF; font-weight:700; }
   .summary-pct { color:#fff; font-weight:900; }
 
   /* Body */
@@ -880,7 +881,7 @@
   .empty-state { text-align:center; padding:60px 20px; border-radius:22px; background:rgba(255,255,255,.7); }
   .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563EB; display:grid; place-items:center; border-radius:22px; background:#E7F1FF; }
   .empty-title { font-size:17px; font-weight:900; color:#172033; margin:0 0 6px; }
-  .empty-sub { font-size:12px; line-height:1.5; color:#64748B; margin:0 0 22px; }
+  .empty-sub { font-size:14px; line-height:1.5; color:#64748B; margin:0 0 22px; }
   .empty-cta {
     background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: white;
@@ -941,8 +942,8 @@
   .saving-emoji-wrap--done { background: linear-gradient(145deg, #8ED9C6 0%, #4FBFA3 55%, #35A88C 100%); color: #fff; }
   .saving-meta { flex: 1; min-width: 0; }
   .saving-name { font-size: 15px; font-weight: 700; color: #1F2937; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .saving-deadline { font-size: 11px; color: #64748B; margin: 0; font-weight: 600; }
-  .saving-creator { font-size: 10px; color: #94A3B8; margin: 4px 0 0; font-weight: 600; }
+  .saving-deadline { font-size: 12px; color: #64748B; margin: 0; font-weight: 700; }
+  .saving-creator { font-size: 12px; color: #64748B; margin: 4px 0 0; font-weight: 700; }
   .swipe-hint { opacity: 0.5; font-size: 10px; animation: pulse 2s ease-in-out infinite; }
   
   @keyframes pulse {
@@ -995,7 +996,7 @@
 
   /* Amounts */
   .saving-amounts { display: flex; justify-content: space-between; margin-bottom: 14px; }
-  .amount-label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px; }
+  .amount-label { font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px; }
   .amount-val { font-size: 13px; font-weight: 700; color: #1F2937; margin: 0; }
   .amount-val--collected { color: #2F9A80; }
   .amount-val--remaining { color: #D2566F; }

@@ -1267,7 +1267,7 @@
         {:else}
           <p class="header-status {connected ? 'header-status--online' : 'header-status--offline'}">
             <span class="status-dot"></span>
-            {chatSubtitle} • {connected ? 'Online' : 'Offline'}
+            {savingId ? `${chatSubtitle} · ` : ''}{connected ? 'Terhubung' : 'Menyambungkan...'}
           </p>
         {/if}
       </div>
@@ -1610,9 +1610,11 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>
             </button>
           {/if}
-          <button type="button" class="in-field-btn in-field-btn--camera" onclick={openCamera} aria-label="Ambil foto">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
-          </button>
+          {#if !newMessage.trim()}
+            <button type="button" class="in-field-btn in-field-btn--camera" onclick={openCamera} aria-label="Ambil foto">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
+            </button>
+          {/if}
         </div>
 
         {#if isRecording}
@@ -2213,7 +2215,7 @@
       inset -3px -3px 7px rgba(255, 255, 255, 0.95);
     transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   }
-  .msg-input--compact { padding-right: 50px; }
+  .msg-input--compact { padding-right: 16px; }
   .msg-input::placeholder { color: #94A3B8; }
   .msg-input:focus {
     
@@ -2773,7 +2775,7 @@
   .chat-header { padding-top:calc(14px + env(safe-area-inset-top)); }
   .header-row { gap:9px; }
   .header-title { font-weight:900; }
-  .header-status { font-size:11px; font-weight:800; white-space:nowrap; }
+  .header-status { font-size:12px; font-weight:800; white-space:nowrap; }
   .back-btn { width:42px; height:42px; border:1px solid #dbeafe; border-radius:12px; background:#eff6ff; box-shadow:none; }
   .header-avatar { width:42px; height:42px; border-radius:13px; box-shadow:0 6px 14px rgba(37,99,235,.16); }
   .input-area { padding-bottom:calc(12px + env(safe-area-inset-bottom)); }

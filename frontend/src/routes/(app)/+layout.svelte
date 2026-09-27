@@ -37,6 +37,7 @@
     currentPath === '/chat' ||
     currentPath === '/analytics' ||
     currentPath === '/budget' ||
+    currentPath.startsWith('/savings/') ||
     currentPath.startsWith('/notes') ||
     currentPath.startsWith('/wishlist') ||
     currentPath.startsWith('/notifications')
@@ -154,9 +155,9 @@
   .update-card { width:min(100%,360px); max-height:calc(100dvh - 48px); overflow-y:auto; padding:28px 22px 22px; border:1px solid #e3edfa; border-radius:24px; background:#fff; box-shadow:0 24px 55px rgba(15,55,140,.16); text-align:center; }
   .update-icon { width: 58px; height: 58px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 18px; color: #2196F3; background: #E7F4FE; }
   .update-card h2 { margin: 0 0 8px; color: #1E293B; font-size: 20px; font-weight: 900; }
-  .update-card p { margin: 0 0 22px; color: #64748B; font-size: 13px; line-height: 1.55; }
+  .update-card p { margin: 0 0 22px; color: #526984; font-size: 14px; line-height: 1.55; }
   .update-actions { display: flex; flex-direction: column; gap: 8px; }
-  .update-primary, .update-secondary { display: block; width: 100%; padding: 13px; border: 0; border-radius: 14px; font: inherit; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
+  .update-primary, .update-secondary { display: block; width: 100%; min-height:48px; padding: 13px; border: 0; border-radius: 14px; font: inherit; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; }
   .update-primary { color:white; background:#2563eb; box-shadow:0 8px 18px rgba(37,99,235,.22); }
   .update-secondary { color:#475569; background:#f1f5f9; }
 
@@ -203,8 +204,8 @@
     transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.22s ease, background 0.22s ease;
   }
   .nav-label {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: 0.01em;
   }
   /* Active tab uses a quiet blue pill instead of a heavy 3D tile. */

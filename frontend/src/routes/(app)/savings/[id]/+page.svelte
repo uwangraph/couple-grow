@@ -14,6 +14,8 @@
   let contributions = $state<any[]>([]);
   let loading = $state(true);
   let loadError = $state('');
+  let activitiesError = $state(false);
+  let contributionsError = $state(false);
 
   let showTopupModal = $state(false);
   let showDeductModal = $state(false);
@@ -58,21 +60,25 @@
   }
 
   async function fetchActivities() {
+    activitiesError = false;
     try {
       const res = await fetch(`${API_URL}/savings/${id}/activities`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
-      if (res.ok) activities = (await readApiJson<{ activities?: any[] }>(res)).activities || [];
-    } catch(e) { console.error('fetchActivities error:', e); }
+      if (!res.ok) throw new Error('Gagal memuat aktivitas');
+      activities = (await readApiJson<{ activities?: any[] }>(res)).activities || [];
+    } catch(e) { activitiesError = true; console.error('fetchActivities error:', e); }
   }
 
   async function fetchContributions() {
+    contributionsError = false;
     try {
       const res = await fetch(`${API_URL}/savings/${id}/contributions`, {
         headers: { 'Authorization': `Bearer ${auth.token}` }
       });
-      if (res.ok) contributions = (await readApiJson<{ contributions?: any[] }>(res)).contributions || [];
-    } catch(e) { console.error('fetchContributions error:', e); }
+      if (!res.ok) throw new Error('Gagal memuat kontribusi');
+      contributions = (await readApiJson<{ contributions?: any[] }>(res)).contributions || [];
+    } catch(e) { contributionsError = true; console.error('fetchContributions error:', e); }
   }
 
   async function topupSaving(e: Event) {
@@ -227,7 +233,7 @@
           {#if saving.deadline}
             <p class="deadline-text">
               <Icon name="calendar" size={13} />
-              Deadline {new Date(saving.deadline).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}
+              Target selesai {new Date(saving.deadline).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}
             </p>
           {/if}
         </div>
@@ -277,16 +283,19 @@
         <div class="act-icon act-icon--red"><Icon name="expense" size={24} /></div>
         <span>Tarik</span>
       </button>
-      <button type="button" class="act-btn act-btn--purple" onclick={() => goto(`/chat?saving_id=${saving.id}&saving_name=${encodeURIComponent(saving.name)}`)}>
-        <div class="act-icon act-icon--purple"><Icon name="chat" size={24} /></div>
+      <button type="button" class="act-btn" onclick={() => goto(`/chat?saving_id=${saving.id}&saving_name=${encodeURIComponent(saving.name)}`)}>
+        <div class="act-icon act-icon--sky"><Icon name="chat" size={24} /></div>
         <span>Diskusi</span>
       </button>
     </div>
 
     <!-- Contributions -->
-    {#if contributions.length > 0}
+    {#if contributions.length > 0 || contributionsError}
       <div class="card">
         <h2 class="card-title">Kontribusi</h2>
+        {#if contributionsError}
+          <div class="inline-error"><span>Kontribusi belum bisa dimuat.</span><button type="button" onclick={fetchContributions}>Coba lagi</button></div>
+        {:else}
         <div class="contrib-list">
           {#each contributions as c}
             {@const totalC = contributions.reduce((s, x) => s + x.net_contribution, 0)}
@@ -306,13 +315,16 @@
             </div>
           {/each}
         </div>
+        {/if}
       </div>
     {/if}
 
     <!-- Activity Log -->
     <div class="card">
       <h2 class="card-title">Riwayat Aktivitas</h2>
-      {#if activities.length === 0}
+      {#if activitiesError}
+        <div class="inline-error"><span>Riwayat belum bisa dimuat.</span><button type="button" onclick={fetchActivities}>Coba lagi</button></div>
+      {:else if activities.length === 0}
         <p class="empty-msg">Belum ada aktivitas</p>
       {:else}
         <div class="act-list">
@@ -462,45 +474,47 @@
   .inner{position:relative;z-index:1;}
 
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
-  .icon-btn{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.2);border:none;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;}
+  .icon-btn{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.24);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;}
   .icon-btn:hover{background:rgba(255,255,255,.35);}
   .icon-btn--red:hover{background:rgba(239,124,151,.5);}
 
   .title-row{display:flex;gap:14px;align-items:flex-start;margin-bottom:22px;}
   .saving-icon{width:54px;height:54px;border-radius:18px;background:rgba(255,255,255,.2);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .saving-icon--done{background:rgba(255,255,255,.25);}
-  .label-small{font-size:11px;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;margin:0 0 3px;}
-  .saving-name{font-size:22px;font-weight:900;color:white;margin:0 0 4px;}
-  .deadline-text{font-size:12px;color:rgba(255,255,255,.75);font-weight:700;margin:0;display:flex;align-items:center;gap:5px;}
+  .label-small{font-size:12px;font-weight:800;color:rgba(255,255,255,.82);text-transform:uppercase;letter-spacing:.06em;margin:0 0 5px;}
+  .saving-name{font-size:clamp(22px,6vw,30px);line-height:1.2;font-weight:900;color:white;margin:0 0 8px;}
+  .deadline-text{font-size:13px;color:rgba(255,255,255,.88);font-weight:700;margin:0;display:flex;align-items:center;gap:6px;}
 
   .progress-card{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.42);border-radius:24px;padding:18px;box-shadow:0 14px 30px rgba(6,67,147,.15);backdrop-filter:blur(16px);}
   .progress-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:20px;}
   .progress-row>div{min-width:0;}
   .amount-white{font-size:clamp(14px,4vw,20px);font-weight:900;color:white;margin:0;overflow-wrap:anywhere;}
-  .progress-status{display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:12px;font-weight:800;margin-bottom:8px;}
+  .progress-status{display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:13px;font-weight:800;margin-bottom:8px;}
   .progress-status strong{font-size:18px;}
   .prog-track{height:10px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;margin-bottom:8px;}
   .prog-fill{height:100%;background:white;border-radius:99px;transition:width .6s ease;}
   .prog-fill--done{background:#86EFAC;}
-  .prog-caption{font-size:12px;color:rgba(255,255,255,.75);font-weight:700;margin:0;text-align:center;}
+  .prog-caption{font-size:13px;color:rgba(255,255,255,.88);font-weight:700;margin:0;text-align:center;}
 
   /* Body */
-  .body{padding:0 16px 36px;margin-top:-38px;position:relative;z-index:2;}
+  .body{padding:0 16px calc(36px + env(safe-area-inset-bottom));margin-top:-38px;position:relative;z-index:2;}
 
   /* Actions */
   .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
-  .act-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px;border-radius:20px;cursor:pointer;background:rgba(255,255,255,.92);border:1px solid #fff;box-shadow:0 10px 22px rgba(21,101,192,.1);transition:.2s;font-size:12px;font-weight:900;color:#1E293B;}
+  .act-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px;border-radius:20px;cursor:pointer;background:rgba(255,255,255,.96);border:1px solid #fff;box-shadow:0 10px 22px rgba(21,101,192,.1);transition:.2s;font-size:14px;font-weight:900;color:#1E293B;}
   .act-btn:active{transform:scale(.95);}
   .act-btn:disabled{opacity:.5;cursor:not-allowed;}
   .act-icon{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;}
   .act-icon--blue{background:#EFF6FF;color:#2196F3;}
   .act-icon--red{background:#FDF4F6;color:#EF7C97;}
-  .act-icon--purple{background:#e9f4ff;color:#1969c8;}
+  .act-icon--sky{background:#e9f7ff;color:#0879bd;}
 
   /* Card */
   .card{background:rgba(255,255,255,.94);border-radius:24px;padding:20px;margin-bottom:16px;border:1px solid #fff;box-shadow:0 10px 24px rgba(21,101,192,.07);}
-  .card-title{font-size:15px;font-weight:900;color:#1E293B;margin:0 0 16px;}
-  .empty-msg{text-align:center;color:#94A3B8;font-size:13px;font-weight:700;padding:16px 0;}
+  .card-title{font-size:17px;font-weight:900;color:#1E293B;margin:0 0 16px;}
+  .empty-msg{text-align:center;color:#64748B;font-size:14px;font-weight:700;padding:16px 0;}
+  .inline-error{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:14px;background:#f0f7ff;color:#45617f;font-size:13px;font-weight:700;}
+  .inline-error button{min-height:44px;padding:0 12px;border:1px solid #b6d7ff;border-radius:12px;background:#fff;color:#1769c1;font:inherit;font-weight:900;white-space:nowrap;cursor:pointer;}
 
   /* Contributions */
   .contrib-list{display:flex;flex-direction:column;gap:12px;}
@@ -508,28 +522,28 @@
   .avatar{width:40px;height:40px;border-radius:12px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#2196F3,#7FA8EA);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}
   .avatar img{width:100%;height:100%;object-fit:cover;}
   .contrib-mid{flex:1;}
-  .contrib-name{font-size:13px;font-weight:900;color:#1E293B;margin:0 0 4px;}
+  .contrib-name{font-size:14px;font-weight:900;color:#1E293B;margin:0 0 5px;}
   .cbar-wrap { height: 11px; background: #DAEBFA; border-radius: 99px; padding: 2px; box-shadow: inset 3px 3px 6px rgba(25, 118, 210, 0.20), inset -2px -2px 5px rgba(255, 255, 255, 0.95); }
   .cbar{height:100%;background:linear-gradient(90deg,#2196F3,#7FA8EA);border-radius:99px;transition:width .6s;}
   .contrib-right{text-align:right;}
   .contrib-amount{font-size:14px;font-weight:900;color:#0EA5E9;margin:0 0 2px;}
-  .contrib-pct{font-size:11px;font-weight:800;color:#94A3B8;margin:0;}
+  .contrib-pct{font-size:12px;font-weight:800;color:#64748B;margin:0;}
 
   /* Activity log */
   .act-list{display:flex;flex-direction:column;gap:10px;}
   .log-item{display:flex;gap:12px;padding:12px;background:#f7faff;border-radius:14px;border:1px solid #e7eef6;}
-  .log-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .log-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .log-icon--green{background:#F0F9F7;color:#5CC8AC;}
   .log-icon--red{background:#FDF4F6;color:#EF7C97;}
   .log-icon--yellow{background:#FEF3C7;color:#F59E0B;}
   .log-icon--blue{background:#EFF6FF;color:#2196F3;}
   .log-body{flex:1;}
-  .log-title{font-size:13px;color:#1E293B;margin:0 0 2px;font-weight:600;}
+  .log-title{font-size:14px;color:#1E293B;margin:0 0 3px;font-weight:700;line-height:1.4;}
   .log-title strong{font-weight:900;}
   .log-amount{color:#0EA5E9;font-weight:900;}
-  .log-note{font-size:11px;color:#64748B;margin:2px 0;font-weight:600;}
-  .log-milestone{font-size:11px;color:#F59E0B;margin:2px 0;font-weight:800;}
-  .log-time{font-size:10px;color:#94A3B8;margin:4px 0 0;font-weight:700;}
+  .log-note{font-size:13px;color:#64748B;margin:3px 0;font-weight:600;line-height:1.4;}
+  .log-milestone{font-size:13px;color:#A66D00;margin:3px 0;font-weight:800;}
+  .log-time{font-size:12px;color:#64748B;margin:5px 0 0;font-weight:700;}
 
   /* Overlay/Modal */
   .overlay{position:fixed;inset:0;background:rgba(30,41,59,.45);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;z-index:100;}

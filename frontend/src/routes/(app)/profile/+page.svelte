@@ -8,6 +8,7 @@
   let showPairingSection = $state(false);
   let inviteCode = $state('');
   let generatedCode = $state<string | null>(null);
+  let codeCopied = $state(false);
   let pairLoading = $state(false);
   let passwordLoading = $state(false);
   let isChangingPassword = $state(false);
@@ -54,6 +55,17 @@
       toast.error(e.message);
     } finally {
       pairLoading = false;
+    }
+  }
+
+  async function copyInviteCode() {
+    if (!generatedCode) return;
+    try {
+      await navigator.clipboard.writeText(generatedCode);
+      codeCopied = true;
+      toast.success('Kode undangan tersalin');
+    } catch {
+      toast.error('Kode tidak bisa disalin. Pilih dan salin secara manual.');
     }
   }
 
@@ -410,7 +422,7 @@
         {#if !auth.user?.partner_id}
           <button
             class="btn btn--primary btn--sm"
-            onclick={() => { showPairingSection = !showPairingSection; generatedCode = null; }}
+            onclick={() => { showPairingSection = !showPairingSection; generatedCode = null; codeCopied = false; }}
           >
             {showPairingSection ? 'Tutup' : 'Hubungkan'}
           </button>
@@ -427,10 +439,11 @@
               <span class="code-text">{generatedCode}</span>
               <p class="code-hint">Berikan kode ini ke pasanganmu</p>
             </div>
+            <button type="button" class="btn btn--outline btn--block" onclick={copyInviteCode}>{codeCopied ? 'Kode tersalin' : 'Salin kode'}</button>
           {:else}
             <button class="btn btn--outline btn--block" onclick={generateCode} disabled={pairLoading}>
               {#if !pairLoading}<Icon name="dice" size={18} style="margin-right: 8px;" />{/if}
-              {pairLoading ? 'Membuat...' : 'Generate Kode'}
+              {pairLoading ? 'Membuat...' : 'Buat kode undangan'}
             </button>
           {/if}
           <div class="divider"><span>atau</span></div>
@@ -440,6 +453,9 @@
               type="text"
               bind:value={inviteCode}
               maxlength={6}
+              autocapitalize="characters"
+              autocomplete="off"
+              oninput={() => inviteCode = inviteCode.toUpperCase().replace(/[^A-Z0-9]/g, '')}
               placeholder="000000"
               class="code-input"
               aria-label="Kode undangan pasangan"

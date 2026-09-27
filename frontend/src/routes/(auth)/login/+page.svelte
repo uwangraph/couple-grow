@@ -206,28 +206,29 @@
 
 <style>
   .form-heading { margin-bottom:24px; }
-  .eyebrow { display:block; margin-bottom:6px; color:#2563eb; font:900 10px 'Nunito',sans-serif; letter-spacing:.12em; }
-  .auth-title { font-size:23px; font-weight:900; color:#172033; margin:0 0 5px; letter-spacing:-.025em; font-family:'Nunito',sans-serif; }
-  .form-heading p { margin:0; color:#64748b; font:600 12px/1.5 'Nunito',sans-serif; }
+  .eyebrow { display:block; margin-bottom:8px; color:#2563eb; font:900 11px 'Nunito',sans-serif; letter-spacing:.12em; }
+  .auth-title { font-size:26px; font-weight:900; color:#172033; margin:0 0 7px; letter-spacing:-.025em; font-family:'Nunito',sans-serif; }
+  .form-heading p { margin:0; color:#526984; font:600 14px/1.5 'Nunito',sans-serif; }
   .field { margin-bottom:16px; }
   .field--password { margin-bottom:10px; }
   .field--reset-password { margin-bottom:24px; }
-  .form-footer { text-align:center; font:600 12px 'Nunito',sans-serif; color:#64748b; margin:20px 0 0; }
+  .form-footer { text-align:center; font:600 14px 'Nunito',sans-serif; color:#64748b; margin:20px 0 0; }
   .link-button {
     display: block;
     margin: 0 0 24px auto;
-    padding: 0;
+    min-height:44px;
+    padding: 8px 0;
     border: none;
     background: transparent;
     color: #2196F3;
-    font: 600 13px Nunito, sans-serif;
+    font: 800 14px Nunito, sans-serif;
     cursor: pointer;
   }
   .inline-auth-link {
     border: none;
     background: transparent;
     color: #2196F3;
-    font: 600 13px Nunito, sans-serif;
+    font: 800 14px Nunito, sans-serif;
     cursor: pointer;
     padding: 0;
   }

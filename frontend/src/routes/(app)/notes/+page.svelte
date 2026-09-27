@@ -298,11 +298,11 @@
   }
   .header-inner { position: relative; max-width:760px; margin:auto; }
   .header-row { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:18px; }
-  .back-btn { display:inline-flex; align-items:center; gap:5px; border:0; background:transparent; color:#DBEAFE; padding:0; margin-bottom:22px; font:700 13px 'Nunito',sans-serif; cursor:pointer; }
+  .back-btn { display:inline-flex; align-items:center; gap:6px; min-height:44px; border:0; background:transparent; color:#DBEAFE; padding:0 6px 0 0; margin-bottom:12px; font:800 14px 'Nunito',sans-serif; cursor:pointer; }
   .back-btn:hover { color:#fff; }
-  .header-sub { font-size:10px; color:#BFDBFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
+  .header-sub { font-size:11px; color:#DBEAFE; margin:0 0 6px; font-weight:900; text-transform:uppercase; letter-spacing:.12em; }
   .header-title { display:flex; align-items:center; gap:8px; font-size:29px; font-weight:900; color:#fff; margin:0; letter-spacing:-.03em; }
-  .header-description { max-width:250px; margin:8px 0 0; color:#DBEAFE; font-size:12px; line-height:1.4; font-weight:600; }
+  .header-description { max-width:300px; margin:8px 0 0; color:#EFF6FF; font-size:14px; line-height:1.45; font-weight:700; }
   .new-folder-btn {
     background:rgba(255,255,255,.18);
     border:1px solid rgba(255,255,255,.35);
@@ -310,7 +310,7 @@
     border-radius: 12px;
     padding: 8px 14px;
     font-family: 'Nunito', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
@@ -357,7 +357,7 @@
   .empty-state { text-align:center; padding:60px 20px; background:rgba(255,255,255,.7); border-radius:22px; }
   .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563EB; display:grid; place-items:center; border-radius:22px; background:#E7F1FF; }
   .empty-title { font-size:17px; font-weight:900; color:#172033; margin:0 0 6px; }
-  .empty-sub { font-size:12px; line-height:1.5; color:#64748B; margin:0 0 22px; }
+  .empty-sub { font-size:14px; line-height:1.5; color:#64748B; margin:0 0 22px; }
   .empty-cta {
     display: inline-block;
     background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
@@ -527,11 +527,16 @@
   .note-card:hover { border-color:#bfdbfe; transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.1); }
   .note-type-badge,.note-type-badge--check { width:32px; height:32px; border-radius:10px; background:#eaf3ff; color:#2563eb; box-shadow:none; }
   .note-type-badge--check { background:#e7f8f3; color:#168f78; }
-  .note-date { color:#64748b; font-weight:800; }
+  .note-date { color:#64748b; font-size:12px; font-weight:800; }
+  .note-preview { font-size:14px; }
   .note-title { overflow-wrap:anywhere; }
   .modal { max-height:calc(100dvh - 32px); overflow-y:auto; padding-bottom:max(24px,env(safe-area-inset-bottom)); box-shadow:0 -18px 40px rgba(15,55,140,.14); }
   .modal-icon-circle { border-radius:16px; background:#eaf3ff; color:#2563eb; box-shadow:none; }
   .modal-cancel { color:#475569; font-weight:800; }
+  .folder-tab { min-height:44px; }
+  .new-folder-btn,.new-note-btn { min-height:44px; }
+  .form-label { font-size:12px; color:#526984; font-weight:800; }
+  .form-input { min-height:48px; font-size:16px; }
   @media (max-width:380px) {
     .header { padding-inline:18px; }
     .body { padding-inline:14px; }

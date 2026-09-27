@@ -152,14 +152,14 @@
     width: 100%;
     text-align: center;
     box-shadow: 0 24px 55px rgba(21, 101, 192, 0.14);
-    animation: slide-up 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    animation: slide-up 0.3s ease-out;
   }
-  .onboarding-logo { width: 78px; height: 78px; object-fit: contain; margin: -12px auto 14px; display: block; padding: 3px; border: 2px solid rgba(33,150,243,.45); border-radius: 20px; background: linear-gradient(135deg, #E7F4FE, #F5FAFF); box-shadow: 0 0 0 4px rgba(255,255,255,.45), 0 8px 20px rgba(33,150,243,.18); }
-  .step-counter { margin: 0 0 14px; color:#2563eb; font-size:10px; font-weight:900; letter-spacing:.14em; }
+  .onboarding-logo { width: 78px; height: 78px; object-fit: contain; margin: -12px auto 16px; display: block; padding: 3px; border: 1px solid rgba(33,150,243,.3); border-radius: 20px; background: linear-gradient(135deg, #E7F4FE, #F5FAFF); box-shadow: 0 8px 20px rgba(33,150,243,.12); }
+  .step-counter { margin: 0 0 14px; color:#2563eb; font-size:11px; font-weight:900; letter-spacing:.12em; }
 
   @keyframes slide-up {
-    from { transform: translateY(40px) scale(0.9); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 
   .progress-dots {
@@ -199,18 +199,13 @@
     align-items: center;
     justify-content: center;
     margin: 0 auto 20px;
-    animation: bounce 0.6s ease;
-  }
-
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    box-shadow: inset 0 0 0 1px rgba(37,99,235,.08);
   }
 
   .step-title {
     font-family: 'Nunito', sans-serif;
     font-size: 24px;
-    font-weight: 800;
+    font-weight: 900;
     color: #1E293B;
     margin: 0 0 12px;
   }
@@ -218,8 +213,8 @@
   .step-desc {
     font-family: 'Nunito', sans-serif;
     font-size: 16px;
-    font-weight: 500;
-    color: #64748B;
+    font-weight: 600;
+    color: #526984;
     line-height: 1.6;
     margin: 0;
   }
@@ -228,13 +223,13 @@
     display: flex;
     gap: 12px;
   }
-  .skip-link { margin-top:16px; border:0; background:transparent; color:#64748b; font:800 12px 'Nunito',sans-serif; cursor:pointer; }
+  .skip-link { min-height:44px; margin-top:12px; padding:10px; border:0; background:transparent; color:#526984; font:800 14px 'Nunito',sans-serif; cursor:pointer; }
 
   .btn-skip {
     flex: 1;
     padding: 14px 24px;
     background: rgba(241, 245, 249, 0.8);
-    color: #64748B;
+    color: #475569;
     border: none;
     border-radius: 16px;
     font-family: 'Nunito', sans-serif;
@@ -254,7 +249,7 @@
     background: linear-gradient(145deg, #2196F3, #64B5F6);
     color: white;
     border: none;
-    border-radius: 22px;
+    border-radius: 16px;
     font-family: 'Nunito', sans-serif;
     font-size: 15px;
     font-weight: 700;
@@ -263,10 +258,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow:
-      inset 3px 3px 7px rgba(255, 255, 255, 0.4),
-      inset -3px -5px 10px rgba(13, 71, 161, 0.32),
-      5px 9px 18px rgba(21, 101, 192, 0.26);
+    box-shadow:0 8px 18px rgba(37,99,235,.22);
     transition: all 0.2s;
   }
 
@@ -277,6 +269,12 @@
 
   .btn-next:active {
     transform: translateY(0);
+  }
+
+  @media (max-height:680px) {
+    .onboarding-content { padding-block:18px; }
+    .progress-dots,.step-content { margin-bottom:18px; }
+    .step-icon { width:68px; height:68px; margin-bottom:12px; }
   }
 
 </style>

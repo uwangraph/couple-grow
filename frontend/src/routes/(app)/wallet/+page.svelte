@@ -845,16 +845,16 @@
     transition: opacity 0.15s;
   }
   .tx-action--delete {
-    right: 0;
+    left: 0;
     background: linear-gradient(135deg, #EF7C97, #D2566F);
     color: white;
-    border-radius: 0 18px 18px 0;
+    border-radius: 18px 0 0 18px;
   }
   .tx-action--edit {
-    left: 0;
+    right: 0;
     background: linear-gradient(135deg, #5CC8AC, #3FAF92);
     color: white;
-    border-radius: 18px 0 0 18px;
+    border-radius: 0 18px 18px 0;
   }
 
   .tx-row {
@@ -889,10 +889,10 @@
   .tx-icon--in { background: linear-gradient(145deg, #8ED9C6 0%, #4FBFA3 55%, #35A88C 100%); }
   .tx-icon--out { background: linear-gradient(145deg, #F7A9BC 0%, #EF7C97 55%, #E2637F 100%); }
   .tx-info { flex: 1; min-width: 0; }
-  .tx-cat { font-weight: 700; color: #1F2937; font-size: 13px; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tx-date { font-size: 11px; color: #94A3B8; margin: 0; }
-  .tx-added-by { font-size: 10px; color: #64748B; margin: 3px 0 0; font-weight: 600; }
-  .tx-amount { font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .tx-cat { font-weight: 900; color: #1F2937; font-size: 14px; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-date { font-size: 12px; color: #64748B; margin: 0; }
+  .tx-added-by { font-size: 11px; color: #64748B; margin: 3px 0 0; font-weight: 700; }
+  .tx-amount { font-weight: 900; font-size: 14px; flex-shrink: 0; }
   .tx-amount--in { color: #2F9A80; }
   .tx-amount--out { color: #D2566F; }
 

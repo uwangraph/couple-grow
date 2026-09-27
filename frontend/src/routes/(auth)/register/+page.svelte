@@ -99,11 +99,11 @@
 
 <style>
   .form-heading { margin-bottom:24px; }
-  .eyebrow { display:block; margin-bottom:6px; color:#2563eb; font:900 10px 'Nunito',sans-serif; letter-spacing:.12em; }
-  h2 { margin:0 0 5px; color:#172033; font:900 23px 'Nunito',sans-serif; letter-spacing:-.025em; }
-  .form-heading p { margin:0; color:#64748b; font:600 12px/1.5 'Nunito',sans-serif; }
+  .eyebrow { display:block; margin-bottom:8px; color:#2563eb; font:900 11px 'Nunito',sans-serif; letter-spacing:.12em; }
+  h2 { margin:0 0 7px; color:#172033; font:900 26px 'Nunito',sans-serif; letter-spacing:-.025em; }
+  .form-heading p { margin:0; color:#526984; font:600 14px/1.5 'Nunito',sans-serif; }
   .field { margin-bottom:16px; }
   .field--password { margin-bottom:22px; }
-  .field-hint { margin:6px 0 0; color:#94a3b8; font:600 11px 'Nunito',sans-serif; }
-  .form-footer { margin:20px 0 0; text-align:center; color:#64748b; font:600 12px 'Nunito',sans-serif; }
+  .field-hint { margin:7px 0 0; color:#64748b; font:600 12px/1.4 'Nunito',sans-serif; }
+  .form-footer { margin:20px 0 0; text-align:center; color:#64748b; font:600 14px 'Nunito',sans-serif; }
 </style>

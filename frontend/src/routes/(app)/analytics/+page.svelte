@@ -378,16 +378,16 @@
   }
 
   .header-inner { position: relative; }
-  .back-link { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 8px 0 0; margin:0 0 14px; border:0; background:none; color:#dbeafe; font:800 13px 'Nunito',sans-serif; cursor:pointer; }
+  .back-link { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 8px 0 0; margin:0 0 14px; border:0; background:none; color:#dbeafe; font:800 14px 'Nunito',sans-serif; cursor:pointer; }
   .header-top { display: flex; align-items: flex-start; justify-content: space-between; }
-  .header-sub { font-size: 11px; color: #bfdbfe; margin: 0 0 7px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; }
+  .header-sub { font-size: 11px; color: #dbeafe; margin: 0 0 7px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
   .header-title { display:flex; align-items:center; gap:9px; font-size: 30px; font-weight: 900; color: #fff; margin: 0; letter-spacing:-.03em; }
-  .header-description { max-width:330px; margin:8px 0 0; color:#dbeafe; font-size:13px; line-height:1.5; font-weight:600; }
+  .header-description { max-width:340px; margin:8px 0 0; color:#eff6ff; font-size:14px; line-height:1.5; font-weight:700; }
 
   /* Body */
   .body { width:100%; box-sizing:border-box; padding:20px 16px calc(36px + env(safe-area-inset-bottom)); max-width:760px; margin:auto; }
-  .analytics-alert { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; padding:14px 16px; border:1px solid #fecdd3; border-radius:14px; color:#9f1239; background:#fffafb; font-size:12px; font-weight:800; line-height:1.4; }
-  .analytics-alert button { flex:none; min-height:40px; padding:0 12px; border:1px solid #fecdd3; border-radius:10px; color:#be123c; background:#fff; font:900 12px 'Nunito',sans-serif; cursor:pointer; }
+  .analytics-alert { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; padding:14px 16px; border:1px solid #fecdd3; border-radius:14px; color:#9f1239; background:#fffafb; font-size:13px; font-weight:800; line-height:1.4; }
+  .analytics-alert button { flex:none; min-height:44px; padding:0 12px; border:1px solid #fecdd3; border-radius:10px; color:#be123c; background:#fff; font:900 13px 'Nunito',sans-serif; cursor:pointer; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner { width: 28px; height: 28px; border: 3px solid #E2E8F0; border-top-color: #2196F3; border-radius: 50%; animation: spin 0.7s linear infinite; }
@@ -493,13 +493,14 @@
   }
 
   .period-tab {
-    padding: 6px 12px;
+    min-height:44px;
+    padding: 8px 12px;
     border: none;
     background: transparent;
     border-radius: 8px;
     font-family: 'Nunito', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 800;
     color: #64748B;
     cursor: pointer;
     transition: all 0.2s;

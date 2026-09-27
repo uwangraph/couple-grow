@@ -59,7 +59,6 @@ export function swipe(node: HTMLElement, options: SwipeOptions) {
     currentX = 0;
     isDragging = true;
     node.style.transition = 'none';
-    node.style.cursor = 'grabbing';
   }
 
   function onMove(e: TouchEvent | MouseEvent) {
@@ -68,7 +67,7 @@ export function swipe(node: HTMLElement, options: SwipeOptions) {
     const dX = p.clientX - startX;
     const dY = Math.abs(p.clientY - startY);
 
-    if (dY > maxVertical) { onEnd(); return; }
+    if (dY > maxVertical) { currentX = 0; onEnd(); return; }
 
     currentX = dX;
     const clamped = Math.max(-110, Math.min(110, dX));
@@ -82,7 +81,6 @@ export function swipe(node: HTMLElement, options: SwipeOptions) {
 
     node.style.transition = 'transform 0.3s cubic-bezier(.25,.8,.25,1)';
     node.style.transform = 'translateX(0)';
-    node.style.cursor = 'grab';
     resetActions();
 
     if (currentX < -threshold) options.onSwipeLeft?.();
@@ -93,6 +91,7 @@ export function swipe(node: HTMLElement, options: SwipeOptions) {
   node.addEventListener('touchstart', onStart, { passive: true });
   node.addEventListener('touchmove', onMove, { passive: true });
   node.addEventListener('touchend', onEnd);
+  node.addEventListener('touchcancel', onEnd);
 
   // Mouse events — listen on document for move/up so drag works outside element
   node.addEventListener('mousedown', onStart);
@@ -108,7 +107,6 @@ export function swipe(node: HTMLElement, options: SwipeOptions) {
 
   // Prevent text selection while dragging
   node.style.userSelect = 'none';
-  node.style.cursor = 'grab';
 
   return {
     update(newOptions: SwipeOptions) {
@@ -120,6 +118,7 @@ export function swipe(node: HTMLElement, options: SwipeOptions) {
       node.removeEventListener('touchstart', onStart);
       node.removeEventListener('touchmove', onMove);
       node.removeEventListener('touchend', onEnd);
+      node.removeEventListener('touchcancel', onEnd);
       node.removeEventListener('mousedown', onStart);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);

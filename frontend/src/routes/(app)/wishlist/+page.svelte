@@ -390,7 +390,7 @@
           </div>
           <div>
             <h3 class="modal-title">{editingWishlist ? 'Edit Wishlist' : 'Tambah Wishlist'}</h3>
-            <p class="modal-subtitle">Impian yang pengen diwujudkan</p>
+            <p class="modal-subtitle">Rencana yang ingin kalian wujudkan</p>
           </div>
         </div>
         <form class="modal-form" onsubmit={saveWishlist}>
@@ -472,21 +472,22 @@
   }
   .header-inner { position: relative; max-width:760px; margin:auto; }
   .header-top { display: flex; align-items: flex-end; justify-content: space-between; gap:12px; }
-  .back-btn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color:#DBEAFE; padding: 0; margin-bottom: 22px; font:700 13px 'Nunito',sans-serif; cursor: pointer; }
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; min-height:44px; border: 0; background: transparent; color:#DBEAFE; padding: 0 6px 0 0; margin-bottom: 12px; font:800 14px 'Nunito',sans-serif; cursor: pointer; }
   .back-btn:hover { color:#fff; }
-  .header-sub { font-size: 10px; color:#BFDBFE; margin: 0 0 6px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
+  .header-sub { font-size: 11px; color:#DBEAFE; margin: 0 0 6px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; }
   .header-title { display:flex; align-items:center; gap:8px; font-size: 29px; font-weight: 900; color:#fff; margin: 0; letter-spacing:-.03em; }
-  .header-description { max-width:255px; margin:8px 0 0; color:#DBEAFE; font-size:12px; line-height:1.4; font-weight:600; }
+  .header-description { max-width:300px; margin:8px 0 0; color:#EFF6FF; font-size:14px; line-height:1.45; font-weight:700; }
 
   .create-btn {
     background:rgba(255,255,255,.18);
     color:#ffffff;
     border:1px solid rgba(255,255,255,.35);
     border-radius: 12px;
+    min-height:44px;
     padding: 10px 16px;
     font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 900;
     cursor: pointer;
     white-space: nowrap;
     transition: transform 0.15s, filter 0.2s;
@@ -507,7 +508,7 @@
   .empty-state { text-align:center; padding:64px 20px; background:rgba(255,255,255,.66); border-radius:24px; }
   .empty-icon { width:72px; height:72px; margin:0 auto 16px; color:#2563eb; display:grid; place-items:center; border-radius:22px; background:#e7f1ff; }
   .empty-title { font-size:17px; font-weight:900; color:#172033; margin:0 0 6px; }
-  .empty-sub { max-width:240px; font-size:12px; line-height:1.5; color:#64748B; margin:0 auto 22px; }
+  .empty-sub { max-width:280px; font-size:14px; line-height:1.5; color:#64748B; margin:0 auto 22px; }
   .empty-cta {
     background: linear-gradient(145deg, #4FACF4 0%, #2196F3 55%, #1976D2 100%);
     color: white;
@@ -732,17 +733,20 @@
   .menu-btn { border-radius: 10px; box-shadow: none; }
   .form-input { border: 1px solid #E2E8F0; box-shadow: none; background: #F8FAFC; border-radius: 12px; }
   .form-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
-  .priority-badge { font-weight:900; font-size:11px; letter-spacing:.02em; }
+  .priority-badge { font-weight:900; font-size:12px; letter-spacing:.02em; }
   .wish-card { display:flex; flex-direction:column; min-width:0; }
   .wish-name,.wish-saving span { overflow-wrap:anywhere; }
   .wish-price { margin-top:auto; color:#1d4ed8; }
   .wish-saving { align-self:flex-start; color:#1d4ed8; background:#eff6ff; border:1px solid #dbeafe; font-weight:800; }
-  .wish-check { width:42px; height:42px; }
+  .wish-check { width:44px; height:44px; }
   .wish-menu { gap:8px; }
-  .menu-btn { width:40px; height:40px; background:#eff6ff; color:#2563eb; border:1px solid #dbeafe; }
+  .menu-btn { width:44px; height:44px; background:#eff6ff; color:#2563eb; border:1px solid #dbeafe; }
   .menu-btn:hover { background:#dbeafe; }
   .menu-btn--delete,.menu-btn--delete:hover { background:#fff1f2; color:#e11d48; border-color:#ffe4e6; }
   .modal { box-shadow:0 -18px 40px rgba(15,55,140,.14); padding-bottom:max(24px,env(safe-area-inset-bottom)); max-height:calc(100dvh - 32px); }
+  .form-label { font-size:12px; color:#526984; }
+  .form-input { min-height:48px; font-size:16px; }
+  .modal-subtitle { color:#64748B; }
   .modal-cancel { color:#475569; background:#f1f5f9; border-radius:12px; }
   @media (max-width:380px) {
     .header { padding-inline:18px; }

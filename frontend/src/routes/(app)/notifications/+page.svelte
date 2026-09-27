@@ -19,6 +19,9 @@
   let notifications = $state<Notification[]>([]);
   let loading = $state(true);
   let errorMsg = $state('');
+  let markAllLoading = $state(false);
+  let actionError = $state('');
+  let unreadCount = $derived(notifications.filter(item => !item.is_read).length);
 
   onMount(() => { void loadNotifications(); });
 
@@ -26,15 +29,13 @@
     if (!auth.token) { goto('/login'); return; }
     loading = true;
     errorMsg = '';
+    actionError = '';
     try {
       const res = await fetch(`${API_URL}/notifications`, { headers: { Authorization: `Bearer ${auth.token}` } });
       if (res.status === 401) { auth.logout(); goto('/login'); return; }
       const data = await readApiJson<{ notifications?: Notification[]; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Gagal memuat notifikasi');
       notifications = data.notifications || [];
-      if (notifications.some(item => !item.is_read)) {
-        void fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: { Authorization: `Bearer ${auth.token}` } }).catch(() => {});
-      }
     } catch (error) {
       errorMsg = error instanceof Error ? error.message : 'Notifikasi belum bisa dimuat.';
     } finally {
@@ -42,10 +43,26 @@
     }
   }
 
+  async function markAllRead() {
+    if (!auth.token || markAllLoading || unreadCount === 0) return;
+    markAllLoading = true;
+    actionError = '';
+    try {
+      const res = await fetch(`${API_URL}/notifications/read-all`, { method: 'PUT', headers: { Authorization: `Bearer ${auth.token}` } });
+      if (res.status === 401) { auth.logout(); goto('/login'); return; }
+      if (!res.ok) throw new Error('Gagal menandai notifikasi sebagai dibaca.');
+      notifications = notifications.map(item => ({ ...item, is_read: true }));
+    } catch (error) {
+      actionError = error instanceof Error ? error.message : 'Gagal memperbarui notifikasi.';
+    } finally {
+      markAllLoading = false;
+    }
+  }
+
   function formatDate(value: string) {
     const parsed = new Date(value.includes('T') ? value : value.replace(' ', 'T') + 'Z');
     if (Number.isNaN(parsed.getTime())) return '';
-    return parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    return parsed.toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   function openNotification(item: Notification) {
@@ -102,7 +119,11 @@
         </div>
       </div>
     {:else}
-      <div class="list-heading"><h2>Terbaru</h2><span>{notifications.length} kabar</span></div>
+      <div class="list-heading">
+        <div><h2>Terbaru</h2><span>{notifications.length} kabar{unreadCount ? ` · ${unreadCount} belum dibaca` : ''}</span></div>
+        {#if unreadCount > 0}<button type="button" class="mark-all" disabled={markAllLoading} onclick={markAllRead}>{markAllLoading ? 'Memproses...' : 'Tandai dibaca'}</button>{/if}
+      </div>
+      {#if actionError}<p class="action-error" role="alert">{actionError}</p>{/if}
       <div class="notification-list">
         {#each notifications as item (item.id)}
           <button type="button" class="item {item.is_read ? '' : 'unread'}" onclick={() => openNotification(item)}>
@@ -124,16 +145,20 @@
   .page { min-height:100%; color:#172033; font-family:'Nunito',sans-serif; }
   .header { padding:calc(24px + env(safe-area-inset-top)) 22px 28px; border-radius:0 0 28px 28px; background:linear-gradient(155deg,#1d4ed8,#2563eb 55%,#3b82f6); box-shadow:0 12px 26px rgba(37,99,235,.18); }
   .header-inner { max-width:760px; margin:auto; }
-  .back { display:inline-flex; align-items:center; gap:6px; min-height:44px; margin:0 0 14px; padding:0 8px 0 0; border:0; background:none; color:#dbeafe; font:800 13px 'Nunito',sans-serif; cursor:pointer; }
+  .back { display:inline-flex; align-items:center; gap:6px; min-height:44px; margin:0 0 14px; padding:0 8px 0 0; border:0; background:none; color:#dbeafe; font:800 14px 'Nunito',sans-serif; cursor:pointer; }
   .title-row { display:flex; align-items:center; gap:13px; }
   .title-icon { width:49px; height:49px; flex:none; display:grid; place-items:center; border:1px solid rgba(255,255,255,.3); border-radius:16px; color:white; background:rgba(255,255,255,.15); }
-  .title-row p { margin:0 0 3px; color:#bfdbfe; font-size:10px; font-weight:900; letter-spacing:.12em; }
+  .title-row p { margin:0 0 3px; color:#dbeafe; font-size:11px; font-weight:900; letter-spacing:.12em; }
   .title-row h1 { margin:0; color:white; font-size:29px; font-weight:900; letter-spacing:-.03em; }
-  .header-description { margin:13px 0 0; color:#dbeafe; font-size:12px; font-weight:600; line-height:1.5; }
-  main { max-width:760px; margin:auto; padding:24px 16px 40px; }
-  .list-heading { display:flex; align-items:baseline; justify-content:space-between; margin:0 3px 14px; }
+  .header-description { margin:13px 0 0; color:#eff6ff; font-size:14px; font-weight:700; line-height:1.5; }
+  main { max-width:760px; margin:auto; padding:24px 16px calc(40px + env(safe-area-inset-bottom)); }
+  .list-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 3px 14px; }
+  .list-heading > div { min-width:0; }
   .list-heading h2 { margin:0; font-size:17px; font-weight:900; }
-  .list-heading span { color:#64748b; font-size:11px; font-weight:700; }
+  .list-heading span { color:#64748b; font-size:12px; font-weight:700; }
+  .mark-all { min-height:44px; padding:8px 12px; flex:none; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1d4ed8; font:800 12px 'Nunito',sans-serif; cursor:pointer; }
+  .mark-all:disabled { opacity:.6; cursor:wait; }
+  .action-error { margin:0 3px 12px; color:#be3455; font-size:13px; font-weight:700; }
   .notification-list { display:grid; gap:10px; }
   .item { display:flex; align-items:flex-start; gap:12px; width:100%; padding:15px; border:1px solid rgba(255,255,255,.95); border-radius:18px; background:rgba(255,255,255,.88); box-shadow:0 8px 22px rgba(30,64,175,.06); color:inherit; text-align:left; cursor:pointer; transition:transform .15s ease,box-shadow .15s ease; }
   .item:hover { transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.1); }
@@ -143,19 +168,19 @@
   .item-icon--wishlist { background:#fff4e4; color:#b8680b; }
   .item-icon--note,.item-icon--folder { background:#edf2ff; color:#4f5ecb; }
   .content { min-width:0; flex:1; display:flex; flex-direction:column; gap:4px; }
-  .item-title { display:flex; align-items:center; gap:7px; color:#172033; font-size:13px; font-weight:900; line-height:1.35; }
+  .item-title { display:flex; align-items:center; gap:7px; color:#172033; font-size:14px; font-weight:900; line-height:1.35; }
   .unread-dot { width:7px; height:7px; flex:none; border-radius:50%; background:#2563eb; }
-  .item-message { color:#64748b; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
-  .item-meta { display:flex; align-items:center; gap:6px; margin-top:4px; color:#94a3b8; font-size:10px; font-weight:700; }
+  .item-message { color:#526984; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+  .item-meta { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:4px; color:#64748b; font-size:12px; font-weight:700; }
   .item-actor { max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#2563eb; font-weight:900; }
   .item-date { color:#64748b; font-weight:700; }
   .item-arrow { align-self:center; color:#60a5fa; font-size:21px; }
   .empty-state { min-height:min(460px,60svh); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px; padding:28px 20px; border:1px solid rgba(255,255,255,.85); border-radius:24px; background:rgba(255,255,255,.52); box-shadow:0 10px 28px rgba(30,64,175,.04); text-align:center; }
   .empty-icon { width:76px; height:76px; display:grid; place-items:center; margin-bottom:6px; border:1px solid rgba(255,255,255,.95); border-radius:24px; background:rgba(255,255,255,.75); color:#60a5fa; box-shadow:0 12px 25px rgba(30,64,175,.08); }
   .empty-state strong { font-size:17px; font-weight:900; }
-  .empty-state > span:last-of-type { max-width:255px; color:#64748b; font-size:12px; line-height:1.6; }
+  .empty-state > span:last-of-type { max-width:280px; color:#64748b; font-size:14px; line-height:1.6; }
   .empty-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:8px; }
-  .empty-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 15px; border:1px solid #bfdbfe; border-radius:12px; color:#1d4ed8; background:#fff; text-decoration:none; font-size:12px; font-weight:900; }
+  .empty-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 15px; border:1px solid #bfdbfe; border-radius:12px; color:#1d4ed8; background:#fff; text-decoration:none; font-size:14px; font-weight:900; }
   .empty-actions a:first-child { border-color:#2563eb; color:#fff; background:#2563eb; }
   .retry { min-height:44px; margin-top:7px; padding:10px 18px; border:0; border-radius:11px; background:#2563eb; color:#fff; font:800 12px 'Nunito',sans-serif; cursor:pointer; }
   .loading-list { display:grid; gap:10px; }
