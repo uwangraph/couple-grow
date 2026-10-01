@@ -109,7 +109,7 @@
       <Icon name="arrow" size={20} style="transform: rotate(180deg)" />
     </button>
 
-    <span class="topbar-title">Edit catatan</span>
+    <span class="topbar-title">{id === 'new' ? 'Catatan baru' : 'Edit catatan'}</span>
     <div class="topbar-actions">
       {#if id !== 'new'}
         <button type="button" class="delete-btn" onclick={deleteNote}>Hapus</button>
@@ -129,8 +129,8 @@
 
   <div class="editor-intro">
     <p class="eyebrow">CATATAN KALIAN</p>
-    <h1>Teruskan ceritanya.</h1>
-    <p>Perbarui ide dan rencana kalian di satu tempat.</p>
+    <h1>{id === 'new' ? 'Mulai cerita baru.' : 'Teruskan ceritanya.'}</h1>
+    <p>{id === 'new' ? 'Simpan ide dan rencana kalian di satu tempat.' : 'Perbarui ide dan rencana kalian di satu tempat.'}</p>
   </div>
 
   <!-- Title Area -->
@@ -269,6 +269,12 @@
     justify-content: space-between;
     padding: calc(14px + env(safe-area-inset-top)) 18px 10px;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(240, 248, 255, .9);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
   .back-btn {
     width: 44px;
@@ -298,9 +304,9 @@
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
   .topbar-title { min-width:0; margin-left:10px; margin-right:auto; color:#1e293b; font-size:14px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .editor-intro { padding:22px 20px 0; }
-  .editor-intro .eyebrow { margin:0 0 5px; color:#2563eb; font-size:10px; font-weight:900; letter-spacing:.13em; }
+  .editor-intro .eyebrow { margin:0 0 5px; color:#2563eb; font-size:11px; font-weight:900; letter-spacing:.13em; }
   .editor-intro h1 { margin:0 0 5px; color:#172033; font-size:clamp(23px,6vw,30px); font-weight:900; line-height:1.18; letter-spacing:-.035em; }
-  .editor-intro > p:last-child { margin:0; color:#64748b; font-size:12px; font-weight:600; line-height:1.5; }
+  .editor-intro > p:last-child { margin:0; color:#526984; font-size:14px; font-weight:700; line-height:1.5; }
   .editor-alert {
     display: flex;
     align-items: center;
@@ -324,8 +330,8 @@
     background: rgba(239, 124, 151, 0.08);
     color: #D2566F;
     font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 800;
     cursor: pointer;
     transition: background 0.15s;
   }
@@ -335,11 +341,11 @@
     padding: 8px 20px;
     border-radius: 12px;
     border: none;
-    background: #2196F3;
+    background: #2563eb;
     color: white;
     font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 900;
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -353,7 +359,7 @@
 
   /* Title */
   .title-area { margin:24px 18px 0; padding:22px 20px 12px; border:1px solid #e3edfa; border-bottom:0; border-radius:20px 20px 0 0; background:rgba(255,255,255,.9); }
-  .section-kicker { display: block; margin-bottom: 8px; color: #6485a5; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+  .section-kicker { display: block; margin-bottom: 8px; color: #526984; font-size: 12px; font-weight: 900; letter-spacing: .1em; }
   .title-input {
     width: 100%;
     border: none;
@@ -365,12 +371,12 @@
     background: transparent;
     margin-bottom: 12px;
   }
-  .title-input::placeholder { color: #CBD5E1; }
+  .title-input::placeholder { color: #8da2bd; }
   .title-input:focus-visible { outline:2px solid #60a5fa; outline-offset:4px; border-radius:6px; }
   .title-meta { display: flex; gap: 8px; flex-wrap: wrap; }
   .meta-pill {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 800;
     color: #1976D2;
     background: rgba(33, 150, 243, 0.1); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.7), 1px 2px 5px rgba(21, 101, 192, 0.10);
     padding: 3px 10px;
@@ -394,14 +400,15 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-height: 44px;
     padding: 10px 13px;
     border-radius: 99px;
     border: 1px solid rgba(226, 232, 240, 0.9);
     background: rgba(255,255,255,.7);
     color: #64748B;
     font-family: 'Nunito', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 800;
     cursor: pointer;
     transition: all 0.15s;
   }
@@ -462,8 +469,8 @@
   .check-item:focus-within { border-color: rgba(33, 150, 243, 0.4); }
 
   .check-bubble {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 2.5px solid #94A3B8;
     background: white;
@@ -487,16 +494,16 @@
     font-weight: 600;
     color: #1F2937;
   }
-  .check-text::placeholder { color: #CBD5E1; }
+  .check-text::placeholder { color: #8da2bd; }
   .check-text--done { text-decoration: line-through; color: #94A3B8; }
 
   .check-delete {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border-radius: 8px;
     border: none;
     background: transparent;
-    color: #CBD5E1;
+    color: #64748b;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -511,14 +518,15 @@
     align-items: center;
     gap: 10px;
     width: 100%;
+    min-height: 48px;
     padding: 13px 16px;
     border: 1.5px dashed #CBD5E1;
     border-radius: 14px;
     background: transparent;
-    color: #64748B;
+    color: #2563eb;
     font-family: 'Nunito', sans-serif;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 800;
     cursor: pointer;
     transition: all 0.15s;
     margin-top: 4px;

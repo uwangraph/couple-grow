@@ -163,7 +163,7 @@
           <Icon name="folder" size={36} />
         </div>
         <p class="empty-title">Belum ada folder</p>
-        <p class="empty-sub">Buat folder pertama untuk mulai menulis</p>
+        <p class="empty-sub">Buat ruang untuk ide, cerita, dan rencana kalian.</p>
         <button class="empty-cta" onclick={() => showFolderModal = true}>+ Buat Folder</button>
       </div>
 
@@ -208,7 +208,7 @@
             <Icon name="edit" size={40} />
           </div>
           <p class="empty-notes-title">Folder ini masih kosong</p>
-          <p class="empty-notes-sub">Yuk mulai menulis catatan pertama!</p>
+          <p class="empty-notes-sub">Mulai dengan satu ide atau daftar kecil yang ingin kalian kerjakan.</p>
           {#if selectedFolder}
             <a href="/notes/new?folder_id={selectedFolder}" class="empty-cta" aria-label="Buat catatan baru">+ Buat Catatan</a>
           {/if}
@@ -219,13 +219,15 @@
           {#each notes as note}
             {@const type = getNoteType(note)}
             {@const preview = getNotePreview(note)}
-            <a href="/notes/{note.id}" class="note-card">
+            {@const typeLabel = type === 'checklist' ? 'Checklist' : type === 'spreadsheet' ? 'Spreadsheet' : 'Teks'}
+            <a href="/notes/{note.id}" class="note-card" aria-label="Buka catatan {note.title || 'Tanpa Judul'}, format {typeLabel}">
               <div class="note-card-top">
                 <span class="note-type-badge {type === 'checklist' ? 'note-type-badge--check' : ''}">
                   <Icon name={type === 'checklist' ? 'check' : type === 'spreadsheet' ? 'wallet' : 'edit'} size={14} />
+                  {typeLabel}
                 </span>
                 <span class="note-date">
-                  {new Date(note.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                  Diedit {new Date(note.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </span>
               </div>
               <h3 class="note-title">{note.title || 'Catatan Tanpa Judul'}</h3>
@@ -269,7 +271,7 @@
             />
           </div>
           <div class="modal-actions">
-            <button type="button" class="modal-cancel" onclick={() => showFolderModal = false}>Batal</button>
+            <button type="button" class="modal-cancel" onclick={() => showFolderModal = false} disabled={folderSaving}>Batal</button>
             <button type="submit" class="modal-submit" disabled={folderSaving}>{folderSaving ? 'Membuat...' : 'Buat Folder'}</button>
           </div>
         </form>
@@ -537,6 +539,14 @@
   .new-folder-btn,.new-note-btn { min-height:44px; }
   .form-label { font-size:12px; color:#526984; font-weight:800; }
   .form-input { min-height:48px; font-size:16px; }
+  .note-card { gap:10px; }
+  .note-card-top { gap:10px; }
+  .note-type-badge,.note-type-badge--check { width:auto; min-height:32px; padding:6px 9px; gap:5px; font-size:12px; font-weight:900; white-space:nowrap; }
+  .note-date { text-align:right; line-height:1.35; }
+  .empty-notes-title { font-size:17px; font-weight:900; }
+  .empty-notes-sub { max-width:290px; margin-inline:auto; color:#526984; font-size:14px; line-height:1.5; }
+  .empty-cta { min-height:44px; display:inline-flex; align-items:center; justify-content:center; font-weight:900; }
+  .modal-cancel:disabled { opacity:.6; cursor:wait; }
   @media (max-width:380px) {
     .header { padding-inline:18px; }
     .body { padding-inline:14px; }
