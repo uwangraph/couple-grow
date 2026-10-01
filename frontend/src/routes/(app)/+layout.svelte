@@ -82,7 +82,7 @@
     </div>
   {/if}
   <!-- Main Content -->
-  <main style="flex: 1; overflow-y: auto; padding-bottom: {hideBottomNav ? '0' : 'calc(96px + env(safe-area-inset-bottom))'}; display: flex; flex-direction: column;">
+  <main class="app-main" style:padding-bottom={hideBottomNav ? '0' : 'calc(96px + env(safe-area-inset-bottom))'}>
     {#if auth.user && !auth.user.partner_id}
       <div class="partner-banner">
         <Icon name="couple" size={16} />
@@ -91,7 +91,7 @@
       </div>
     {/if}
 
-    <div style="flex: 1; overflow-y: auto;">
+    <div class="app-content">
       {@render children()}
     </div>
   </main>
@@ -146,9 +146,11 @@
     max-width: 100%; /* Full width for mobile and tablet */
     background: transparent; /* Use body background */
   }
+  .app-main { flex:1; min-height:0; display:flex; flex-direction:column; }
+  .app-content { flex:1; min-height:0; overflow-y:auto; overscroll-behavior-y:contain; }
   .partner-banner { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 8px; padding:10px 14px; z-index:40; background:rgba(239,247,255,.94); border-bottom:1px solid #d8eafd; color:#36577b; font-size:12px; font-weight:700; text-align:center; }
   .partner-banner :global(svg) { flex-shrink:0; color:#1976d2; }
-  .partner-banner a { color:#1565c0; text-decoration:none; font-weight:900; white-space:nowrap; }
+  .partner-banner a { display:inline-flex; align-items:center; min-height:36px; color:#1565c0; text-decoration:none; font-weight:900; white-space:nowrap; }
   .partner-banner a:focus-visible, .nav-tab:focus-visible { outline:2px solid #1976d2; outline-offset:3px; border-radius:10px; }
 
   .update-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: rgba(30,41,59,.42); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
@@ -173,7 +175,7 @@
     justify-content: space-around;
     align-items: center;
     gap: 2px;
-    height: 68px;
+    height: 72px;
     padding: 0 8px;
     border: 1px solid rgba(255,255,255,.9);
     border-radius: 22px;
@@ -204,7 +206,7 @@
     transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.22s ease, background 0.22s ease;
   }
   .nav-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.01em;
   }

@@ -376,7 +376,7 @@
   .notification-btn {
     border-radius: 13px;
     box-shadow: 0 5px 14px rgba(30,64,175,.08);
-    display: grid; place-items: center; width: 42px; height: 42px;
+    display: grid; place-items: center; width: 44px; height: 44px;
     border: none;
     background: rgba(255,255,255,.82);
     border: 1px solid rgba(255,255,255,.9);
@@ -391,16 +391,17 @@
       inset -3px -3px 8px rgba(255, 255, 255, 0.9),
       1px 2px 5px rgba(21, 101, 192, 0.08);
   }
-  .greeting-sub { font-size: 13px; color: #64748B; margin: 0 0 2px; font-weight: 600; }
-  .greeting-name { font-size: 25px; font-weight: 800; color: #172033; margin: 0 0 10px; letter-spacing: -0.03em; }
+  .greeting-sub { font-size: 14px; color: #526984; margin: 0 0 2px; font-weight: 700; }
+  .greeting-name { font-size: clamp(26px, 7vw, 32px); font-weight: 900; color: #172033; margin: 0 0 10px; letter-spacing: -0.03em; overflow-wrap:anywhere; }
   .partner-line { font-size: 13px; margin: 0; display: flex; align-items: center; gap: 5px; font-weight: 600; }
   .partner-chip {
     display: inline-flex; align-items: center; gap: 6px;
     background: rgba(255,255,255,0.75);
     border: 1px solid rgba(203,213,225,0.7);
     border-radius: 999px;
-    padding: 5px 12px;
-    font-size: 12px; font-weight: 600; color: #475569;
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 13px; font-weight: 700; color: #475569;
   }
   .partner-inline-img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
   .partner-cta { font-size: 13px; color: #1976D2; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
@@ -414,7 +415,7 @@
     box-shadow: 0 14px 30px rgba(37,99,235,.22);
   }
   .balance-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: rgba(255,255,255,.72);
     text-transform: uppercase;
@@ -422,11 +423,12 @@
     margin: 0 0 8px;
   }
   .balance-amount {
-    font-size: 36px;
+    font-size: clamp(29px, 9vw, 42px);
     font-weight: 800;
     color: #fff;
     margin: 0 0 20px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
   }
   .balance-split { display: flex; gap: 0; }
   .balance-item {
@@ -447,9 +449,9 @@
   .balance-item-icon { font-size: 16px; font-weight: 800; }
   .balance-item--in .balance-item-icon { color: #86EFAC; }
   .balance-item--out .balance-item-icon { color: #FDA4AF; }
-  .balance-item-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.7); margin: 0 0 2px; }
+  .balance-item-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.8); margin: 0 0 2px; }
   .balance-item--in .balance-item-val, .balance-item--out .balance-item-val { color: #fff; }
-  .balance-item-val { font-size: 14px; font-weight: 700; margin: 0; }
+  .balance-item-val { font-size: 16px; font-weight: 800; margin: 0; overflow-wrap:anywhere; }
   .balance-retry { margin-top:12px; padding:8px 0 0; border:0; border-top:1px solid rgba(255,255,255,.25); width:100%; background:none; color:#fff; font:800 11px 'Nunito',sans-serif; text-align:left; cursor:pointer; }
 
   /* Quick Actions */
@@ -472,7 +474,7 @@
     gap: 9px;
     cursor: pointer;
     font-family: 'Nunito', sans-serif;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     color: #1F2937;
     text-align: center;
@@ -488,8 +490,8 @@
   }
 
   .quick-icon {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -504,7 +506,7 @@
   .insights-icon { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:14px; color:#fff; background:linear-gradient(145deg,#60a5fa,#1976d2); box-shadow:0 5px 14px rgba(37,99,235,.2); }
   .insights-copy { min-width:0; display:flex; flex:1; flex-direction:column; gap:3px; }
   .insights-copy strong { font-size:14px; font-weight:800; }
-  .insights-copy small { color:#64748b; font-size:11px; line-height:1.35; }
+  .insights-copy small { color:#526984; font-size:13px; line-height:1.4; }
   .insights-arrow { color:#1976d2; font-size:24px; }
 
   /* Semua ubin tetap di keluarga biru; dua warna pendukung diredam
@@ -524,8 +526,8 @@
   /* Sections */
   .section { margin-bottom: 24px; }
   .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-  .section-title { font-size: 15px; font-weight: 800; color: #172033; margin: 0; letter-spacing: -0.01em; }
-  .section-more { font-size: 13px; font-weight: 600; color: #1976D2; text-decoration: none; }
+  .section-title { font-size: 18px; font-weight: 900; color: #172033; margin: 0; letter-spacing: -0.02em; }
+  .section-more { display:inline-flex; align-items:center; min-height:44px; font-size: 14px; font-weight: 800; color: #1976D2; text-decoration: none; }
   .section-error { margin-bottom:20px; padding:13px 15px; border:1px solid #fecdd3; border-radius:14px; background:#fffafb; color:#9f3450; font-size:12px; font-weight:700; }
   .section-error button { margin-left:5px; padding:0; border:0; background:none; color:#1d4ed8; font:900 12px 'Nunito',sans-serif; cursor:pointer; }
 
@@ -552,8 +554,8 @@
   .savings-row > div:first-child { min-width:0; }
   .savings-name,.savings-sub { overflow-wrap:anywhere; }
   .savings-card:hover { border-color:#bfdbfe; transform:translateY(-2px); box-shadow:0 12px 26px rgba(30,64,175,.1); }
-  .savings-name { font-weight: 700; color: #1F2937; font-size: 14px; margin: 0 0 3px; }
-  .savings-sub { font-size: 12px; color: #94A3B8; margin: 0; }
+  .savings-name { font-weight: 800; color: #1F2937; font-size: 16px; margin: 0 0 3px; }
+  .savings-sub { font-size: 13px; color: #64748B; margin: 0; }
   .savings-pct-badge {
     font-size: 14px;
     font-weight: 800;
@@ -619,9 +621,9 @@
   .tx-icon--in { background: linear-gradient(145deg, #8ED9C6 0%, #4FBFA3 55%, #35A88C 100%); }
   .tx-icon--out { background: linear-gradient(145deg, #F7A9BC 0%, #EF7C97 55%, #E2637F 100%); }
   .tx-info { flex: 1; min-width: 0; }
-  .tx-cat { font-weight: 700; color: #1F2937; font-size: 13px; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tx-date { font-size: 11px; color: #94A3B8; margin: 0; }
-  .tx-amount { font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .tx-cat { font-weight: 800; color: #1F2937; font-size: 14px; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-date { font-size: 12px; color: #64748B; margin: 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tx-amount { font-weight: 900; font-size: 14px; flex-shrink: 0; margin-left:8px; }
   .tx-amount--in { color: #2F9A80; }
   .tx-amount--out { color: #D2566F; }
 
@@ -636,7 +638,7 @@
     padding: 30px;
     text-align: center;
     color: #5B6B85;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
   }
   .empty-link { color: #1976D2; font-weight: 700; text-decoration: none; display: block; margin-top: 8px; }
@@ -648,13 +650,16 @@
   .skeleton--saving { height:94px; border-radius:18px; }
   @media (max-width:420px) {
     .quick-actions { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:24px; }
-    .quick-btn { min-height:68px; flex-direction:row; justify-content:flex-start; gap:10px; padding:11px; text-align:left; font-size:12px; line-height:1.25; }
-    .quick-icon { width:38px; height:38px; flex:none; }
+    .quick-btn { min-height:72px; flex-direction:row; justify-content:flex-start; gap:10px; padding:11px; text-align:left; font-size:13px; line-height:1.25; }
+    .quick-icon { width:42px; height:42px; flex:none; }
+    .balance-card { padding:21px; }
+    .balance-item { min-width:0; padding:10px; gap:7px; }
+    .balance-item > div { min-width:0; }
   }
 
   /* Modal Styles */
   .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(30,41,59,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
-  .modal { background:rgba(255,255,255,0.92);  border-top: 1px solid rgba(255,255,255,0.8); padding: 20px 24px 48px; border-radius: 28px 28px 0 0; width: 100%; max-width: 540px; text-align:center; box-shadow:
+  .modal { background:rgba(255,255,255,0.92);  border-top: 1px solid rgba(255,255,255,0.8); padding: 20px 24px calc(28px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; width: 100%; max-width: 540px; max-height:90svh; overflow-y:auto; text-align:center; box-shadow:
       inset 5px 5px 10px rgba(255, 255, 255, 0.9),
       inset -4px -6px 12px rgba(33, 150, 243, 0.10),
       6px 10px 22px rgba(21, 101, 192, 0.10),
