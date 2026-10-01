@@ -18,6 +18,7 @@
   let estimatedPrice = $state('');
   let priority = $state(2); // 1=low, 2=medium, 3=high
   let linkedSavingId = $state('');
+  let savingWishlist = $state(false);
 
   onMount(async () => {
     if (!auth.token) { goto('/login'); return; }
@@ -78,13 +79,15 @@
 
   async function saveWishlist(e: Event) {
     e.preventDefault();
+    if (savingWishlist || !name.trim()) return;
+    savingWishlist = true;
     try {
       if (editingWishlist) {
         const res = await fetch(`${API_URL}/wishlists/${editingWishlist.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
           body: JSON.stringify({
-            name,
+            name: name.trim(),
             description: description || null,
             estimated_price: estimatedPrice ? parseInt(estimatedPrice) : null,
             priority,
@@ -98,7 +101,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
           body: JSON.stringify({
-            name,
+            name: name.trim(),
             description: description || null,
             estimated_price: estimatedPrice ? parseInt(estimatedPrice) : null,
             priority,
@@ -114,6 +117,8 @@
       toast.success(editingWishlist ? 'Wishlist berhasil diupdate!' : 'Wishlist berhasil ditambahkan!');
     } catch(e: any) {
       toast.error(e.message || 'Gagal menyimpan wishlist');
+    } finally {
+      savingWishlist = false;
     }
   }
 
@@ -165,6 +170,7 @@
   let mediumPriority = $derived(wishlists.filter(w => !w.is_completed && w.priority === 2));
   let lowPriority = $derived(wishlists.filter(w => !w.is_completed && w.priority <= 1));
   let completed = $derived(wishlists.filter(w => w.is_completed));
+  let activeCount = $derived(wishlists.length - completed.length);
 </script>
 
 <div class="wishlist-root">
@@ -217,12 +223,17 @@
       </div>
 
     {:else}
+      <div class="wishlist-summary" aria-label="Ringkasan wishlist">
+        <div><strong>{activeCount}</strong><span>Masih direncanakan</span></div>
+        <span class="summary-divider" aria-hidden="true"></span>
+        <div><strong>{completed.length}</strong><span>Sudah tercapai</span></div>
+      </div>
       
       <!-- High Priority -->
       {#if highPriority.length > 0}
         <div class="priority-section">
           <h2 class="priority-title">
-            <span class="priority-badge" style="background:#FDF4F6;color:#EF7C97">Prioritas Tinggi</span>
+            <span class="priority-badge" style="background:#FDF4F6;color:#EF7C97">Prioritas Tinggi · {highPriority.length}</span>
           </h2>
           <div class="wishlist-grid">
             {#each highPriority as wish}
@@ -267,7 +278,7 @@
       {#if mediumPriority.length > 0}
         <div class="priority-section">
           <h2 class="priority-title">
-            <span class="priority-badge" style="background:#FEF3C7;color:#F59E0B">Prioritas Sedang</span>
+            <span class="priority-badge" style="background:#FEF3C7;color:#a16207">Prioritas Sedang · {mediumPriority.length}</span>
           </h2>
           <div class="wishlist-grid">
             {#each mediumPriority as wish}
@@ -308,7 +319,7 @@
       {#if lowPriority.length > 0}
         <div class="priority-section">
           <h2 class="priority-title">
-            <span class="priority-badge" style="background:#F1F5F9;color:#64748B">Prioritas Rendah</span>
+            <span class="priority-badge" style="background:#F1F5F9;color:#475569">Prioritas Rendah · {lowPriority.length}</span>
           </h2>
           <div class="wishlist-grid">
             {#each lowPriority as wish}
@@ -349,7 +360,7 @@
       {#if completed.length > 0}
         <div class="priority-section">
           <h2 class="priority-title">
-            <span class="priority-badge" style="background:#F0F9F7;color:#5CC8AC">Tercapai</span>
+            <span class="priority-badge" style="background:#F0F9F7;color:#168f78">Tercapai · {completed.length}</span>
           </h2>
           <div class="wishlist-grid">
             {#each completed as wish}
@@ -419,6 +430,8 @@
             <input
               id="wish-price"
               type="number"
+              min="0"
+              inputmode="numeric"
               bind:value={estimatedPrice}
               placeholder="0"
               class="form-input"
@@ -442,8 +455,8 @@
             </select>
           </div>
           <div class="modal-actions">
-            <button type="button" class="modal-cancel" onclick={() => showModal = false}>Batal</button>
-            <button type="submit" class="modal-submit">Simpan</button>
+            <button type="button" class="modal-cancel" onclick={() => showModal = false} disabled={savingWishlist}>Batal</button>
+            <button type="submit" class="modal-submit" disabled={savingWishlist}>{savingWishlist ? 'Menyimpan...' : 'Simpan'}</button>
           </div>
         </form>
       </div>
@@ -498,6 +511,11 @@
   .create-btn:active { transform: scale(0.96); }
 
   .body { max-width:760px; margin:auto; padding:24px 16px; }
+  .wishlist-summary { display:flex; align-items:center; gap:18px; margin-bottom:24px; padding:16px 20px; border:1px solid #dbeafe; border-radius:18px; background:rgba(255,255,255,.8); box-shadow:0 8px 20px rgba(30,64,175,.05); }
+  .wishlist-summary > div { display:flex; flex:1; flex-direction:column; gap:2px; min-width:0; }
+  .wishlist-summary strong { color:#1d4ed8; font-size:24px; font-weight:900; line-height:1.1; }
+  .wishlist-summary span:not(.summary-divider) { color:#526984; font-size:12px; font-weight:800; line-height:1.3; }
+  .summary-divider { align-self:stretch; width:1px; background:#dbeafe; }
 
   .wish-skeleton { display:flex; flex-direction:column; gap:12px; min-height:138px; padding:18px; border:1px solid #e3edfa; border-radius:18px; background:rgba(255,255,255,.85); }
   .wish-skeleton div { height:13px; width:70%; border-radius:8px; background:linear-gradient(100deg,#e8f1fb,#f8fbff,#e8f1fb); background-size:200% 100%; animation:wish-shimmer 1.4s ease-in-out infinite; }
@@ -727,6 +745,7 @@
       5px 9px 18px rgba(21, 101, 192, 0.26); transition: transform 0.12s;
   }
   .modal-submit:active { transform: scale(0.97); }
+  .modal-submit:disabled,.modal-cancel:disabled { opacity:.6; cursor:wait; }
 
   .wish-card, .empty-state { border: 1px solid rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(30,64,175,.06); border-radius: 18px; }
   .empty-cta, .modal-submit { background: #2563EB; box-shadow: 0 8px 18px rgba(37,99,235,.2); border-radius: 12px; }
